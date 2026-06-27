@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>日常小秘書 v20.2</title>
+<title>日常小秘書</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&family=Noto+Sans+TC:wght@400;700;900&display=swap" media="print" onload="this.media='all'">
@@ -2822,7 +2822,7 @@ function renderHome(){
     <button onclick="openAllLedger()" style="margin-top:10px;width:100%;padding:14px;border:none;border-radius:14px;background:var(--br);color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 3h12v18H6.5A1.5 1.5 0 015 19.5V4.5A1.5 1.5 0 016.5 3z"/><path d="M9 3v18"/><path d="M11.5 8.5h4"/><path d="M11.5 12h4"/></svg>查看全館收支</button>
   </div>
   <button onclick="openSyncSheet()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid var(--bdr);border-radius:14px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7 18a4 4 0 01-.5-7.97A5 5 0 0116.5 9.2 3.5 3.5 0 0117 18H7z"/></svg>雲端同步${syncEnabled?'<span style="color:#16a34a;font-weight:900">・已啟用</span>':''}</button>
-  <div style="text-align:center;color:var(--t5);font-size:10px;margin:18px 0 8px;opacity:.7">日常小秘書 v20.2 · build ${BUILD_ID}</div>`;
+  <div style="text-align:center;color:var(--t5);font-size:10px;margin:18px 0 8px;opacity:.7">日常小秘書 · build ${BUILD_ID}</div>`;
 }
 // ===== 全館收支整合檢視 =====
 let ledgerFilter={module:'all',q:''};
@@ -4855,9 +4855,26 @@ async function handleImg(e,p){
     if(json.currency!=null)document.getElementById(p+'-cur').value=json.currency;
     if(json.amount!=null)document.getElementById(p+'-amt').value=json.amount;
     if(json.aiNote)document.getElementById(p+'-ainote').value=json.aiNote;
-    // If multiple items, show toast hint
-    if(items.length>1)toast(`🔍 辨識到 ${items.length} 筆，已填入第 1 筆`);
-    else toast('🔍 圖片辨識完成！');
+    // 多杯：自動切到 Together 模式，把第 2..N 杯建成獨立紀錄
+    if(items.length>1){
+      const drinkerSel=document.getElementById(p+'-drinker');
+      const hasTog=drinkerSel&&[...drinkerSel.options].some(o=>o.value==='Together');
+      if(hasTog){
+        drinkerSel.value='Together';
+        handleDrinkerChange(p);
+        togetherItems[p]=[];
+        for(let i=1;i<items.length;i++){
+          const it=items[i]||{};
+          togetherItems[p].push({drink:it.drinkName||'',topping:(it.toppings!=null?String(it.toppings):''),amount:(it.amount!=null?it.amount:'')});
+        }
+        renderTogetherList(p);
+        toast(`🔍 辨識到 ${items.length} 杯：第1杯在主表單，其餘已建在下方 Together 清單`);
+      }else{
+        toast(`🔍 辨識到 ${items.length} 筆，已填入第 1 筆`);
+      }
+    }else{
+      toast('🔍 圖片辨識完成！');
+    }
   }catch(err){toast('⚠️ 辨識失敗，請手動填寫');}
   allImgBtns.forEach(b=>b.innerHTML='📷掃圖');
   e.target.value='';
