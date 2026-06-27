@@ -4844,34 +4844,30 @@ async function handleImg(e,p){
       if(opts.includes(String(v)))el.value=String(v);
       else{el.value='c';const ci=document.getElementById(cid);if(ci){ci.value=v;ci.style.display='block';}}
     };
-    if(json.brand!=null)document.getElementById(p+'-brand').value=json.brand||'';
-    if(json.drinkName!=null)document.getElementById(p+'-drink').value=json.drinkName||'';
-    if(json.category!=null)document.getElementById(p+'-category').value=json.category||'';
-    if(json.size!=null)setV(p+'-size',json.size,p+'-size-c');
-    if(json.toppings!=null)setV(p+'-topping',json.toppings,p+'-topping-c');
-    if(json.sugar!=null)document.getElementById(p+'-sugar').value=json.sugar;
-    if(json.ice!=null)document.getElementById(p+'-ice').value=json.ice;
-    if(json.payment!=null)setV(p+'-pay',json.payment,p+'-pay-c');
-    if(json.currency!=null)document.getElementById(p+'-cur').value=json.currency;
-    if(json.amount!=null)document.getElementById(p+'-amt').value=json.amount;
-    if(json.aiNote)document.getElementById(p+'-ainote').value=json.aiNote;
-    // 多杯：自動切到 Together 模式，把第 2..N 杯建成獨立紀錄
+    // 把一筆 AI 結果填入指定面板（'a' 或 'b'）
+    const applyAI=(pp,j)=>{
+      if(!j)return;
+      if(j.brand!=null)document.getElementById(pp+'-brand').value=j.brand||'';
+      if(j.drinkName!=null)document.getElementById(pp+'-drink').value=j.drinkName||'';
+      if(j.category!=null)document.getElementById(pp+'-category').value=j.category||'';
+      if(j.size!=null)setV(pp+'-size',j.size,pp+'-size-c');
+      if(j.toppings!=null)setV(pp+'-topping',j.toppings,pp+'-topping-c');
+      if(j.sugar!=null)document.getElementById(pp+'-sugar').value=j.sugar;
+      if(j.ice!=null)document.getElementById(pp+'-ice').value=j.ice;
+      if(j.payment!=null)setV(pp+'-pay',j.payment,pp+'-pay-c');
+      if(j.currency!=null)document.getElementById(pp+'-cur').value=j.currency;
+      if(j.amount!=null)document.getElementById(pp+'-amt').value=j.amount;
+      if(j.aiNote)document.getElementById(pp+'-ainote').value=j.aiNote;
+    };
+    // 第 1 杯 → 目前面板
+    applyAI(p,items[0]||json);
+    // 多杯：第 2 杯 → 另一個面板（A↔B），若是 B 則自動啟用
+    const other=(p==='a')?'b':'a';
     if(items.length>1){
-      const drinkerSel=document.getElementById(p+'-drinker');
-      const hasTog=drinkerSel&&[...drinkerSel.options].some(o=>o.value==='Together');
-      if(hasTog){
-        drinkerSel.value='Together';
-        handleDrinkerChange(p);
-        togetherItems[p]=[];
-        for(let i=1;i<items.length;i++){
-          const it=items[i]||{};
-          togetherItems[p].push({drink:it.drinkName||'',topping:(it.toppings!=null?String(it.toppings):''),amount:(it.amount!=null?it.amount:'')});
-        }
-        renderTogetherList(p);
-        toast(`🔍 辨識到 ${items.length} 杯：第1杯在主表單，其餘已建在下方 Together 清單`);
-      }else{
-        toast(`🔍 辨識到 ${items.length} 筆，已填入第 1 筆`);
-      }
+      if(other==='b'&&!panelBEnabled)toggleB();
+      applyAI(other,items[1]);
+      if(items.length>2)toast(`🔍 辨識到 ${items.length} 杯：已填入左右兩個表單（前 2 杯），其餘 ${items.length-2} 杯請手動新增`);
+      else toast('🔍 辨識到 2 杯：左表單第1杯、右表單第2杯，可分別存成兩筆');
     }else{
       toast('🔍 圖片辨識完成！');
     }
