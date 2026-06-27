@@ -1,0 +1,16 @@
+{
+  // Cloudflare Workers 專案設定（讓拖拉上傳建不出來的「後端」能正常跑）
+  "name": "smartdailyassistant",
+  "main": "_worker.js",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS"
+  },
+  // 雲端同步用的 KV。部署前把下面的 id 換成你的 KV namespace ID。
+  "kv_namespaces": [
+    { "binding": "SYNC_KV", "id": "24da3e2055df4c85b3969d5ba50e5696" }
+  ]
+  // 注意：GEMINI_API_KEY 是「密鑰」，不要寫在這裡，
+  //       要用 `npx wrangler secret put GEMINI_API_KEY` 或在儀表板設定。
+}
