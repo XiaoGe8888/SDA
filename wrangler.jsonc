@@ -9,7 +9,7 @@
   },
   // 雲端同步用的 KV。部署前把下面的 id 換成你的 KV namespace ID。
   "kv_namespaces": [
-    { "binding": "SYNC_KV", "id": "24da3e2055df4c85b3969d5ba50e5696" }
+    { "binding": "SYNC_KV", "id": "9e9ced482a864782891151a6fb2fcc39" }
   ]
   // 注意：GEMINI_API_KEY 是「密鑰」，不要寫在這裡，
   //       要用 `npx wrangler secret put GEMINI_API_KEY` 或在儀表板設定。
