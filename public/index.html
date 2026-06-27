@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>日常小秘書</title>
+<meta name="description" content="日常小秘書📝 請登入以繼續｜飲料紀錄｜美食紀錄｜交通紀錄｜分帳">
+<meta property="og:title" content="日常小秘書">
+<meta property="og:description" content="日常小秘書📝 請登入以繼續｜飲料紀錄｜美食紀錄｜交通紀錄｜分帳">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="日常小秘書">
+<meta name="twitter:description" content="日常小秘書📝 請登入以繼續｜飲料紀錄｜美食紀錄｜交通紀錄｜分帳">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&family=Noto+Sans+TC:wght@400;700;900&display=swap" media="print" onload="this.media='all'">
@@ -694,7 +701,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
       </div>
       <div class="form-footer">
         <button class="btn-cancel" onclick="confirmCancel()">取消</button>
-        <button class="btn-save" onclick="saveRecords()">💾 儲存紀錄</button>
+        <button class="btn-save" onclick="saveRecs()">💾 儲存紀錄</button>
       </div>
     </div>
   </div>
@@ -1593,7 +1600,7 @@ function normalizeAll(){
   const rows=[];
   (typeof recs!=='undefined'?recs:[]).forEach(r=>rows.push({module:'drink',label:'飲料',icon:'🧋',name:r.drink||r.category||'飲料',brand:r.brand||'',category:r.category||'',amount:Number(r.amount)||0,currency:r.currency||'NT$',payer:r.payer||'',person:r.drinker||'',recorder:r.recorder||'',payment:r.payment||'',country:r.country||'',area:r.area||'',date:r.date||'',time:r.time||'',rating:Number(r.rating)||0,kind:'expense',meta:{sugar:r.sugar||'',ice:r.ice||'',size:r.size||'',topping:r.topping||''}}));
   (typeof meals!=='undefined'?meals:[]).forEach(r=>rows.push({module:'food',label:'美食',icon:'🍱',name:r.dish||r.cuisine||'餐點',brand:r.brand||'',category:r.cuisine||r.diningType||'',amount:Number(r.amount)||0,currency:r.currency||'NT$',payer:r.payer||'',person:r.eater||'',recorder:r.recorder||'',payment:r.payment||'',country:'',area:'',date:r.date||'',time:r.time||'',rating:Number(r.rating)||0,kind:'expense',meta:{diningType:r.diningType||'',cuisine:r.cuisine||'',spicy:r.spicy||'',satiety:r.satiety||''}}));
-  (typeof travels!=='undefined'?travels:[]).forEach(r=>rows.push({module:'travel',label:'航班',icon:(typeof travelIcon==='function'?travelIcon(r.type):'🚆'),name:(typeof travelName==='function'?travelName(r.type):r.type)||'航班',brand:r.company||'',category:r.type||'',amount:Number(r.ticketPrice)||0,currency:'NT$',payer:'',person:r.recorder||'',recorder:r.recorder||'',payment:r.payment||'',country:'',area:'',date:r.date||'',time:r.depTime||'',rating:0,kind:'expense',meta:{route:(r.depPort&&r.arrPort)?(r.depPort+'→'+r.arrPort):'',dep:r.depPort||'',arr:r.arrPort||''}}));
+  (typeof travels!=='undefined'?travels:[]).forEach(r=>rows.push({module:'travel',label:'交通',icon:(typeof travelIcon==='function'?travelIcon(r.type):'🚆'),name:(typeof travelName==='function'?travelName(r.type):r.type)||'交通',brand:r.company||'',category:r.type||'',amount:Number(r.ticketPrice)||0,currency:'NT$',payer:'',person:r.recorder||'',recorder:r.recorder||'',payment:r.payment||'',country:'',area:'',date:r.date||'',time:r.depTime||'',rating:0,kind:'expense',meta:{route:(r.depPort&&r.arrPort)?(r.depPort+'→'+r.arrPort):'',dep:r.depPort||'',arr:r.arrPort||''}}));
   (typeof splitGroups!=='undefined'?splitGroups:[]).forEach(g=>(g.expenses||[]).forEach(e=>rows.push({module:'split',label:'分帳',icon:(typeof catIcon==='function'?catIcon(e.cat):'🧾'),name:e.desc||(typeof catMeta==='function'?catMeta(e.cat).name:'')||'分帳',brand:g.name||'',category:e.cat||'',amount:Number(e.amount)||0,currency:e.currency||g.currency||'NT$',payer:(typeof memberName==='function'?memberName(g,e.payerId):''),person:'',recorder:'',payment:e.payment||'',country:'',area:'',date:e.date||'',time:e.time||'',rating:0,kind:e.kind==='income'?'income':'expense',meta:{}})));
   rows.forEach(r=>{ r.timeTag=lifeTimeTag(r.time); r.dayType=lifeDayType(r.date); });
   return rows;
@@ -1641,7 +1648,7 @@ function renderDashChips(){
   const pe=document.getElementById('dash-period');
   if(pe) pe.innerHTML=[['today','今日'],['week','本週'],['month','本月'],['quarter','本季'],['year','本年'],['all','全部']].map(function(a){var k=a[0],t=a[1];var on=dashPeriod===k;return '<button type="button" onclick="dashSetPeriod(\''+k+'\')" style="flex:0 0 auto;padding:7px 14px;border-radius:20px;border:1px solid '+(on?'var(--br)':'var(--bdr)')+';background:'+(on?'var(--br)':'var(--bg)')+';color:'+(on?'#fff':'var(--t5)')+';font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">'+t+'</button>';}).join('');
   const se=document.getElementById('dash-scope');
-  if(se) se.innerHTML=[['all','🌐 全館'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','✈️ 航班'],['split','🧾 分帳']].map(function(a){var k=a[0],t=a[1];var on=dashScopeMod===k;return '<button type="button" onclick="dashSetScopeMod(\''+k+'\')" style="flex:0 0 auto;padding:6px 12px;border-radius:20px;border:1px solid '+(on?'var(--bd)':'var(--bdr)')+';background:'+(on?'var(--bd)':'var(--bg)')+';color:'+(on?'#fff':'var(--t5)')+';font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">'+t+'</button>';}).join('');
+  if(se) se.innerHTML=[['all','🌐 全館'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳']].map(function(a){var k=a[0],t=a[1];var on=dashScopeMod===k;return '<button type="button" onclick="dashSetScopeMod(\''+k+'\')" style="flex:0 0 auto;padding:6px 12px;border-radius:20px;border:1px solid '+(on?'var(--bd)':'var(--bdr)')+';background:'+(on?'var(--bd)':'var(--bg)')+';color:'+(on?'#fff':'var(--t5)')+';font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">'+t+'</button>';}).join('');
 }
 function renderDashboardBody(){
   renderDashChips();
@@ -1663,7 +1670,7 @@ function buildRichStatsHTML(boxId){
   }
   const spend=rows.filter(r=>r.kind!=='income');
   const income=rows.filter(r=>r.kind==='income');
-  const MODMETA={drink:{label:'🧋 飲料',c:'#f59e0b'},food:{label:'🍱 美食',c:'#ef4444'},travel:{label:'✈️ 航班',c:'#3b82f6'},split:{label:'🧾 分帳',c:'#8b5cf6'}};
+  const MODMETA={drink:{label:'🧋 飲料',c:'#f59e0b'},food:{label:'🍱 美食',c:'#ef4444'},travel:{label:'🚆 交通',c:'#3b82f6'},split:{label:'🧾 分帳',c:'#8b5cf6'}};
   const sec=t=>'<div class="sec-ttl" style="margin-top:18px">'+t+'</div>';
   // ===== KPI 概況（以主要幣別計算金額）=====
   const curTotals={}; spend.forEach(r=>curTotals[r.currency]=(curTotals[r.currency]||0)+r.amount);
@@ -1909,7 +1916,7 @@ async function genDashInsight(scope, period, boxId){
     const pc=(Object.entries(cur).sort((a,b)=>b[1]-a[1])[0]||['NT$'])[0];
     const brands={},names={},tags={},payers={}; spend.forEach(r=>{ if(r.brand)brands[r.brand]=(brands[r.brand]||0)+1; if(r.name)names[r.name]=(names[r.name]||0)+1; if(r.timeTag)tags[r.timeTag]=(tags[r.timeTag]||0)+1; if(r.payer)payers[r.payer]=(payers[r.payer]||0)+1; });
     const top=(m,n)=>Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n).map(e=>e[0]+'('+e[1]+')').join('、');
-    const scopeName={all:'全館',drink:'飲料',food:'美食',travel:'航班',split:'分帳'}[scope];
+    const scopeName={all:'全館',drink:'飲料',food:'美食',travel:'交通',split:'分帳'}[scope];
     const periodName={today:'今日',week:'本週',month:'本月',quarter:'本季',year:'本年',all:'全部'}[period];
     const total=Math.round(Object.values(cur).reduce((a,b)=>a+b,0));
     const summary='範圍：'+scopeName+'\n期間：'+periodName+'\n消費筆數：'+spend.length+'\n總支出：'+pc+total+'\n最常店家/品牌：'+(top(brands,5)||'無')+'\n最常品項：'+(top(names,5)||'無')+'\n時段分布：'+(top(tags,5)||'無')+'\n常付款者：'+(top(payers,3)||'無');
@@ -2800,7 +2807,7 @@ function renderHome(){
     </div>
     <div onclick="enterModule('travel')" class="dc-card" style="text-align:center;padding:20px 8px;touch-action:manipulation">
       <div style="margin-bottom:8px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15.5l-7.5-4V5a1.5 1.5 0 00-3 0v6.5L3 15.5v1.8l7.5-2.2v3.6l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-3.6L21 17.3v-1.8z"/></svg></div>
-      <div class="dc-title" style="justify-content:center;font-size:13px">航班紀錄</div>
+      <div class="dc-title" style="justify-content:center;font-size:13px">交通紀錄</div>
       <div class="dc-sub" style="margin-top:4px;font-size:10px">${travelMonthRecs.length} 趟・本月</div>
     </div>
     <div onclick="enterSplit()" class="dc-card" style="text-align:center;padding:20px 8px;touch-action:manipulation">
@@ -2815,7 +2822,7 @@ function renderHome(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('drink','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 8h12l-1.2 11.3a1 1 0 01-1 .7H8.2a1 1 0 01-1-.7L6 8z"/><path d="M5 8h14"/><path d="M14.5 3.5l1.5 4.5"/></svg></div><div class="iv" style="font-size:18px">${drinkMonthTotal}</div><div class="il">飲料 NT$</div></div>
       <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('food','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7 3v4"/><path d="M9 3v4"/><path d="M11 3v4"/><path d="M7 7h4"/><path d="M9 7v14"/><path d="M16 3c-1.6 0-2.4 3-2.4 6 0 2.2 1 3 2.4 3v9"/></svg></div><div class="iv" style="font-size:18px">${foodMonthTotal}</div><div class="il">美食 NT$</div></div>
-      <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('travel','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15.5l-7.5-4V5a1.5 1.5 0 00-3 0v6.5L3 15.5v1.8l7.5-2.2v3.6l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-3.6L21 17.3v-1.8z"/></svg></div><div class="iv" style="font-size:18px">${travelMonthTotal}</div><div class="il">航班 NT$</div></div>
+      <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('travel','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15.5l-7.5-4V5a1.5 1.5 0 00-3 0v6.5L3 15.5v1.8l7.5-2.2v3.6l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-3.6L21 17.3v-1.8z"/></svg></div><div class="iv" style="font-size:18px">${travelMonthTotal}</div><div class="il">交通 NT$</div></div>
       <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('split','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 3.5h12V21l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3L6 21V3.5z"/><path d="M9 8h6"/><path d="M9 11.5h6"/><path d="M9 15h4"/></svg></div><div class="iv" style="font-size:18px">${splitMonthCount}</div><div class="il">分帳・本月筆數</div></div>
     </div>
     <button onclick="openDashboard('all')" style="margin-top:14px;width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#9a7d52,#6f5a3e);color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M20 20H3"/></svg>統計中心</button>
@@ -2840,8 +2847,8 @@ function collectAllLedger(){
     sub:join([m.cuisine,m.portion,m.diningType,m.payment]),
     payer:m.payer||m.eater||'',amount:Number(m.amount)||0,currency:m.currency||'NT$',type:'expense',note:m.note||''}));
   (typeof travels!=='undefined'?travels:[]).forEach(t=>{const route=[t.depPort,t.arrPort].filter(Boolean).join('→');
-    out.push({date:t.date||'',time:t.depTime||'',module:'travel',label:'航班',icon:travelIcon(t.type),
-      detail:[t.company,route,travelName(t.type)].filter(Boolean).join(' ')||'航班',
+    out.push({date:t.date||'',time:t.depTime||'',module:'travel',label:'交通',icon:travelIcon(t.type),
+      detail:[t.company,route,travelName(t.type)].filter(Boolean).join(' ')||'交通',
       sub:join([t.no,t.seat]),
       payer:'',amount:Number(t.ticketPrice)||0,currency:'NT$',type:'expense',note:''});});
   (typeof splitGroups!=='undefined'?splitGroups:[]).forEach(g=>(g.expenses||[]).forEach(e=>out.push({
@@ -2876,7 +2883,7 @@ function ledgerFilterSet(m){ledgerFilter.module=m;renderLedgerFilters();renderLe
 function ledgerSearch(v){ledgerFilter.q=v;renderLedgerBody();}
 function renderLedgerFilters(){
   const el=document.getElementById('ledger-filters');if(!el)return;
-  const tabs=[['all','全部'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','✈️ 航班'],['split','🧾 分帳']];
+  const tabs=[['all','全部'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳']];
   el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px">${tabs.map(([k,lb])=>{
     const on=ledgerFilter.module===k;
     return `<button onclick="ledgerFilterSet('${k}')" style="padding:7px 12px;border-radius:9px;border:1px solid ${on?'var(--amb)':'var(--bdr)'};background:${on?'var(--crm)':'var(--bg)'};color:${on?'var(--br)':'var(--t5)'};font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;touch-action:manipulation">${lb}</button>`;
@@ -2930,10 +2937,10 @@ function enterModule(mod){
   document.getElementById('burger').style.display='';
   document.getElementById('hdr-home-btn').style.display='';
   document.getElementById('hdr-logo').style.cursor='pointer';
-  const logoMap={drink:'<div class="logo-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 8h12l-1.2 11.3a1 1 0 01-1 .7H8.2a1 1 0 01-1-.7L6 8z"/><path d="M5 8h14"/><path d="M14.5 3.5l1.5 4.5"/></svg></div>紀錄日常',food:'<div class="logo-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7 3v4"/><path d="M9 3v4"/><path d="M11 3v4"/><path d="M7 7h4"/><path d="M9 7v14"/><path d="M16 3c-1.6 0-2.4 3-2.4 6 0 2.2 1 3 2.4 3v9"/></svg></div>紀錄美食',travel:'<div class="logo-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15.5l-7.5-4V5a1.5 1.5 0 00-3 0v6.5L3 15.5v1.8l7.5-2.2v3.6l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-3.6L21 17.3v-1.8z"/></svg></div>紀錄航班'};
+  const logoMap={drink:'<div class="logo-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 8h12l-1.2 11.3a1 1 0 01-1 .7H8.2a1 1 0 01-1-.7L6 8z"/><path d="M5 8h14"/><path d="M14.5 3.5l1.5 4.5"/></svg></div>紀錄日常',food:'<div class="logo-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7 3v4"/><path d="M9 3v4"/><path d="M11 3v4"/><path d="M7 7h4"/><path d="M9 7v14"/><path d="M16 3c-1.6 0-2.4 3-2.4 6 0 2.2 1 3 2.4 3v9"/></svg></div>紀錄美食',travel:'<div class="logo-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15.5l-7.5-4V5a1.5 1.5 0 00-3 0v6.5L3 15.5v1.8l7.5-2.2v3.6l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-3.6L21 17.3v-1.8z"/></svg></div>紀錄交通'};
   document.getElementById('hdr-logo').innerHTML=logoMap[mod];
   document.getElementById('lbl-cal').textContent='紀錄日常';
-  const btnMap={drink:'✏️新增飲品紀錄',food:'✏️新增美食紀錄',travel:'✏️新增航班／船班紀錄'};
+  const btnMap={drink:'✏️新增飲品紀錄',food:'✏️新增美食紀錄',travel:'✏️新增交通紀錄'};
   document.getElementById('btn-new-record').innerHTML=btnMap[mod];
   document.getElementById('page-home').style.display='none';
   goTab('cal');
@@ -3423,6 +3430,10 @@ function collectPanel(p){
 }
 
 function saveRecs(){
+  try{ _saveRecsImpl(); }
+  catch(e){ console.error('儲存失敗:',e); saveFail((e&&e.message)?('系統錯誤 — '+e.message):'發生未知錯誤，請重試'); }
+}
+function _saveRecsImpl(){
   const entries=[];
   const ra=collectPanel('a');
   if(!ra.brand&&!ra.drink){toast('⚠️ 無法儲存：請至少填寫「品牌」或「飲品名稱」');return;}
@@ -4256,9 +4267,9 @@ function renderTravelCal(){
 
   page.innerHTML=`
   <div class="sc">
-    <div class="sc-card"><div class="sc-lbl">本月航班花費</div><div class="sc-val">${curTot}</div><div class="sc-sub">NT$</div></div>
+    <div class="sc-card"><div class="sc-lbl">本月交通花費</div><div class="sc-val">${curTot}</div><div class="sc-sub">NT$</div></div>
     <div class="sc-card"><div class="sc-lbl">累計總花費</div><div class="sc-val">${tot}</div><div class="sc-sub">NT$ 全部記錄</div></div>
-    <div class="sc-card"><div class="sc-lbl">✈️ 航班次數</div><div class="sc-val">${flightCount}</div><div class="sc-sub">次</div></div>
+    <div class="sc-card"><div class="sc-lbl">🚆 交通次數</div><div class="sc-val">${flightCount}</div><div class="sc-sub">次</div></div>
     <div class="sc-card"><div class="sc-lbl">🚢 船班次數</div><div class="sc-val">${shipCount}</div><div class="sc-sub">次</div></div>
   </div>
   <div class="cal-card">
@@ -6301,14 +6312,14 @@ function renderSettings(){
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button onclick="setSettingsTab('drink')" id="settings-tab-drink" class="fmt-toggle-btn${settingsTab==='drink'?' active':''}" style="flex:1;padding:10px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;touch-action:manipulation">🧋 飲料設定</button>
       <button onclick="setSettingsTab('food')" id="settings-tab-food" class="fmt-toggle-btn${settingsTab==='food'?' active':''}" style="flex:1;padding:10px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;touch-action:manipulation">🍱 美食設定</button>
-      <button onclick="setSettingsTab('travel')" id="settings-tab-travel" class="fmt-toggle-btn${settingsTab==='travel'?' active':''}" style="flex:1;padding:10px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;touch-action:manipulation">✈️ 航班設定</button>
+      <button onclick="setSettingsTab('travel')" id="settings-tab-travel" class="fmt-toggle-btn${settingsTab==='travel'?' active':''}" style="flex:1;padding:10px;border-radius:10px;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;touch-action:manipulation">🚆 交通設定</button>
     </div>
     <div id="settings-budget-body"></div>
   </div>
   <div class="chart-card">
     <div style="text-align:center;margin-bottom:4px">
       <div class="ct" style="justify-content:center">📦 資料管理中心</div>
-      <div style="font-size:11px;color:var(--t5);margin-top:-6px;margin-bottom:14px">請選擇您要執行的操作項目（飲料／美食／航班船班資料分開處理）</div>
+      <div style="font-size:11px;color:var(--t5);margin-top:-6px;margin-bottom:14px">請選擇您要執行的操作項目（飲料／美食／交通資料分開處理）</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div onclick="openDataCenterPanel('export')" class="dc-card" style="touch-action:manipulation">
@@ -6354,7 +6365,7 @@ function renderSettings(){
     </div>
     <div style="padding:12px;background:#eff6ff;border-radius:12px;border:1px solid #bfdbfe;margin-bottom:8px">
       <div style="font-size:22px;margin-bottom:4px">✈️🚢</div>
-      <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">航班／船班模組</div>
+      <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">交通模組</div>
       <div style="font-size:17px;font-weight:900;color:#2563eb;font-family:'Noto Serif TC',serif">V${TRAVEL_VERSION}</div>
     </div>
     <div style="padding:12px 14px;background:var(--crm);border-radius:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
@@ -6369,7 +6380,7 @@ function renderSettings(){
     </button>
     <div id="changelog-body" style="display:none;margin-top:12px"></div>
     <div style="font-size:10px;color:var(--t5);margin-top:10px;line-height:1.6;text-align:center">
-      四套版本號各自獨立計算（🧋飲料／🍱美食／✈️🚢航班船班／⚙️系統），互不影響，皆採 Major.Minor.Patch（SemVer）規則判定。
+      四套版本號各自獨立計算（🧋飲料／🍱美食／🚆交通／⚙️系統），互不影響，皆採 Major.Minor.Patch（SemVer）規則判定。
     </div>
   </div>
   <div class="chart-card">
@@ -6464,7 +6475,7 @@ function submitChangePassword(name){
 function confirmRemoveAccount(name){
   showDangerConfirm(
     '是否確認刪除？',
-    `帳號「${name}」將被刪除：僅刪除登入帳號本身，不會刪除該帳號名下已記錄的飲料／美食／航班紀錄（紀錄仍保留在資料中）。`,
+    `帳號「${name}」將被刪除：僅刪除登入帳號本身，不會刪除該帳號名下已記錄的飲料／美食／交通紀錄（紀錄仍保留在資料中）。`,
     ()=>{
       const result=removeAccount(name);
       if(result.ok){
@@ -6511,13 +6522,13 @@ function renderSettingsBudget(){
         <input type="number" id="travel-budget-input" value="${travelBudget}" style="flex:1;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);font-family:inherit;font-size:16px;font-weight:900;color:var(--bd);outline:none">
         <button onclick="saveTravelBudgetInput()" style="padding:10px 18px;border:none;border-radius:10px;background:var(--br);color:#fff;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">儲存</button>
       </div>
-      <div style="font-size:12px;color:var(--t5);line-height:1.6">設定後會在航班／船班紀錄月曆頁面顯示交通預算使用進度，與飲料／美食預算完全分開計算。</div>`;
+      <div style="font-size:12px;color:var(--t5);line-height:1.6">設定後會在交通紀錄月曆頁面顯示交通預算使用進度，與飲料／美食預算完全分開計算。</div>`;
   }
 }
 function saveTravelBudgetInput(){
   const v=Number(document.getElementById('travel-budget-input').value);
   if(isNaN(v)||v<0){toast('請輸入有效金額');return;}
-  saveTravelBudget(v);toast('✅ 航班預算已更新');
+  saveTravelBudget(v);toast('✅ 交通預算已更新');
 }
 function saveFoodBudgetInput(){
   const v=Number(document.getElementById('food-budget-input').value);
@@ -6604,8 +6615,8 @@ function saveBudget(){
 
 function exportData(){
   const mod=currentModule;
-  const fileNameMap={drink:'手搖紀錄備份',food:'美食紀錄備份',travel:'航班紀錄備份'};
-  const labelMap={drink:'飲料',food:'美食',travel:'航班'};
+  const fileNameMap={drink:'手搖紀錄備份',food:'美食紀錄備份',travel:'交通紀錄備份'};
+  const labelMap={drink:'飲料',food:'美食',travel:'交通'};
   const scopeTag=superModeUnlocked?'全部資料':`${currentUser}個人資料`;
   let data;
   if(mod==='food'){
@@ -6630,7 +6641,7 @@ function exportData(){
 function importData(e){
   const file=e.target.files[0];if(!file)return;
   const mod=currentModule;
-  const labelMap={drink:'飲料',food:'美食',travel:'航班'};
+  const labelMap={drink:'飲料',food:'美食',travel:'交通'};
   const r=new FileReader();
   r.onload=ev=>{
     try{
@@ -6678,7 +6689,7 @@ function confirmClearAll(){
   const mod=currentModule;
   const personFieldMap={drink:'drinker',food:'eater',travel:'_person'};
   const dataMap={drink:recs,food:meals,travel:travels};
-  const labelMap={drink:'飲料',food:'美食',travel:'航班'};
+  const labelMap={drink:'飲料',food:'美食',travel:'交通'};
   const fullData=dataMap[mod];
   const dataWithPerson=mod==='travel'?fullData.map(r=>({...r,_person:r.panel==='a'?PERSON_A:PERSON_B})):fullData;
   const visData=visibleRecs(dataWithPerson,personFieldMap[mod],mod);
@@ -6769,7 +6780,7 @@ function renderPermissionMatrixUI(){
   sheet.id='perm-matrix-sheet';
   sheet.style.cssText='position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;touch-action:manipulation';
   sheet.onclick=(e)=>{if(e.target===sheet)closePermMatrixSheet();};
-  const moduleLabels={drink:'🧋 飲料模組',food:'🍱 美食模組',travel:'✈️🚢 航班/船班模組'};
+  const moduleLabels={drink:'🧋 飲料模組',food:'🍱 美食模組',travel:'🚆 交通模組'};
   sheet.innerHTML=`
     <div style="background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;padding:22px" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -6903,7 +6914,7 @@ function renderRestorePanel(body){
   }
   const sorted=[...trashBin].sort((a,b)=>b.deletedAt-a.deletedAt);
   body.innerHTML=`
-    <div style="font-size:11px;color:var(--t5);margin-bottom:14px">共 ${trashBin.length} 筆，依刪除時間排序（飲料／美食／航班船班皆顯示於此）</div>
+    <div style="font-size:11px;color:var(--t5);margin-bottom:14px">共 ${trashBin.length} 筆，依刪除時間排序（飲料／美食／交通皆顯示於此）</div>
     ${sorted.map((t,idx)=>{
       const r=t.record;
       const isMeal=t.recordType==='meal';
@@ -7042,7 +7053,7 @@ function renderMaintainPanel(body){
       ${mMissing?`<div style="font-size:11px;color:var(--warn);background:#fef2f2;padding:8px 12px;border-radius:8px;margin-top:10px">⚠️ 有 ${mMissing} 筆紀錄缺少店家、餐點或金額</div>`:`<div style="font-size:11px;color:#15803d;background:#dcfce7;padding:8px 12px;border-radius:8px;margin-top:10px">✅ 所有紀錄欄位完整</div>`}
     </div>
     <div class="chart-card" style="margin-bottom:14px">
-      <div class="ct">✈️🚢 航班／船班紀錄統計</div>
+      <div class="ct">🚆 交通紀錄統計</div>
       <div class="st-grid" style="margin-bottom:4px">
         <div class="ic"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15.5l-7.5-4V5a1.5 1.5 0 00-3 0v6.5L3 15.5v1.8l7.5-2.2v3.6l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-3.6L21 17.3v-1.8z"/></svg></div><div class="iv">${travels.length}</div><div class="il">總紀錄數</div></div>
         <div class="ic"><div class="ic-icon">💰</div><div class="iv">${tTot}</div><div class="il">累計票價 NT$</div></div>
@@ -7057,7 +7068,7 @@ function renderMaintainPanel(body){
     </div>
     <div class="chart-card">
       <div class="ct">📦 回收桶總用量</div>
-      <div style="font-size:12px;color:var(--t);line-height:1.8">回收桶共用儲存區，總大小：<strong>${trashSize} KB</strong>（30天後自動釋放，飲料／美食／航班船班紀錄各自獨立標記不互相影響）</div>
+      <div style="font-size:12px;color:var(--t);line-height:1.8">回收桶共用儲存區，總大小：<strong>${trashSize} KB</strong>（30天後自動釋放，飲料／美食／交通紀錄各自獨立標記不互相影響）</div>
     </div>
   `;
 }
