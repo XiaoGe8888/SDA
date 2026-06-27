@@ -1,6 +1,6 @@
 {
   // Cloudflare Workers 專案設定（讓拖拉上傳建不出來的「後端」能正常跑）
-  "name": "smartdailyassistant",
+  "name": "sda",
   "main": "_worker.js",
   "compatibility_date": "2026-06-01",
   "assets": {
