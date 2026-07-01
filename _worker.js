@@ -178,6 +178,103 @@ async function lineReply(token, replyToken, text) {
   });
 }
 
+// 取得傳訊者的 LINE 顯示名稱（多人共用時用來標記是誰記的）
+async function lineProfile(token, userId) {
+  if (!userId) return null;
+  try {
+    const r = await fetch('https://api.line.me/v2/bot/profile/' + userId, {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!r.ok) return null;
+    const d = await r.json().catch(() => null);
+    return d ? d.displayName : null;
+  } catch (e) { return null; }
+}
+
+// 用 Gemini 解析「珍奶 60」→ { item, amount, category }
+async function parseExpense(text, env) {
+  const apiKey = env.SmartDailyAssistant_GEMINI_API_KEY;
+  if (!apiKey) return null;
+  const model = env.GEMINI_MODEL || DEFAULT_MODEL;
+  const prompt =
+    '你是記帳解析助手。使用者會傳一句話記帳，請解析出「品項」「金額」「分類」。\n' +
+    '分類只能是這四種之一：drink（手搖飲料、咖啡、飲品）、food（餐點、食物、小吃）、travel（交通、車票、油錢、停車、計程車）、other（其他）。\n' +
+    '只回傳一個 JSON，不要有任何其他文字、不要用程式碼區塊，格式：{"item":"品項名稱","amount":金額數字,"category":"分類"}。\n' +
+    '如果句子裡沒有可辨識的金額，回傳：{"amount":null}。\n' +
+    '使用者訊息：' + text;
+  const geminiBody = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { maxOutputTokens: 200, thinkingConfig: { thinkingBudget: 0 } },
+  };
+  const url = GEMINI_BASE + encodeURIComponent(model) + ':generateContent';
+  let up;
+  try {
+    up = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(geminiBody),
+    });
+  } catch (e) { return null; }
+  const gdata = await up.json().catch(() => null);
+  if (!up.ok || !gdata) return null;
+  let out = '';
+  const cand = gdata.candidates && gdata.candidates[0];
+  if (cand && cand.content && Array.isArray(cand.content.parts)) {
+    out = cand.content.parts.map((p) => (p && p.text) ? p.text : '').join('');
+  }
+  const m = out.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch (e) { return null; }
+}
+
+// 處理一則記帳訊息：解析 → 存 KV → 回覆
+async function handleExpenseMessage(ev, token, env) {
+  const text = (ev.message.text || '').trim();
+  const userId = (ev.source && ev.source.userId) || '';
+
+  // 指令：查自己的 User ID（多人加入時，家人朋友傳「我的id」就能拿到自己的 ID）
+  if (/^(我的id|我的ID|id|ID)$/.test(text)) {
+    await lineReply(token, ev.replyToken, '你的 User ID：\n' + (userId || '（讀取不到）'));
+    return;
+  }
+
+  const parsed = await parseExpense(text, env);
+  if (!parsed || parsed.amount == null || isNaN(Number(parsed.amount))) {
+    await lineReply(token, ev.replyToken, '看不懂這筆耶 😅\n請用「品項 金額」的方式記，例如：\n・珍奶 60\n・午餐 120\n・計程車 250');
+    return;
+  }
+
+  let userName = '';
+  try { userName = (await lineProfile(token, userId)) || ''; } catch (e) {}
+
+  const now = new Date();
+  const record = {
+    id: 'L' + now.getTime(),
+    item: parsed.item || text,
+    amount: Math.round(Number(parsed.amount)),
+    category: parsed.category || 'other',
+    userId: userId,
+    userName: userName,
+    ts: now.getTime(),
+  };
+
+  try {
+    const kv = env.SYNC_KV;
+    if (!kv) throw new Error('no kv');
+    const raw = await kv.get('line:log');
+    const list = raw ? JSON.parse(raw) : [];
+    list.push(record);
+    await kv.put('line:log', JSON.stringify(list));
+  } catch (e) {
+    await lineReply(token, ev.replyToken, '記錄時發生問題，請稍後再試 🙏');
+    return;
+  }
+
+  const catLabel = { drink: '🧋 飲料', food: '🍱 美食', travel: '🚆 交通', other: '📝 其他' }[record.category] || '📝 其他';
+  const who = userName ? '（' + userName + '）' : '';
+  await lineReply(token, ev.replyToken, '✅ 已記錄' + who + '\n' + catLabel + '：' + record.item + '　$' + record.amount);
+}
+
 async function handleLine(request, env) {
   // LINE 的 webhook 只會用 POST。用瀏覽器直接開會是 GET，回個 OK 方便測試。
   if (request.method !== 'POST') return new Response('LINE webhook OK');
@@ -201,14 +298,25 @@ async function handleLine(request, env) {
 
   const events = data.events || [];
   for (const ev of events) {
-    // 階段 2：只做「原封不動回覆」（echo 測試），確認整條線通了
     if (ev.type === 'message' && ev.message && ev.message.type === 'text' && ev.replyToken) {
       try {
-        await lineReply(token, ev.replyToken, ev.message.text);
-      } catch (e) { /* 先忽略，之後階段再處理錯誤 */ }
+        await handleExpenseMessage(ev, token, env);
+      } catch (e) {
+        try { await lineReply(token, ev.replyToken, '發生了一點問題 🙏 請再試一次'); } catch (e2) {}
+      }
     }
   }
   return new Response('OK');
+}
+
+// 讀取 LINE 記帳資料（給 App 讀、也方便測試時用瀏覽器查看）
+async function handleLineLog(request, env) {
+  if (request.method === 'OPTIONS') return withCORS(new Response(null, { status: 204 }));
+  const kv = env.SYNC_KV;
+  if (!kv) return withCORS(json({ error: 'KV not bound' }, 500));
+  const raw = await kv.get('line:log');
+  const list = raw ? JSON.parse(raw) : [];
+  return withCORS(json({ count: list.length, records: list }));
 }
 
 // ---------- 主路由 ----------
@@ -218,6 +326,7 @@ export default {
     if (url.pathname === '/api/gemini') return handleGemini(request, env);
     if (url.pathname === '/api/sync') return handleSync(request, env);
     if (url.pathname === '/api/line') return handleLine(request, env);
+    if (url.pathname === '/api/line-log') return handleLineLog(request, env);
     // 其餘交給靜態資源（你的 index.html 等）
     return env.ASSETS.fetch(request);
   },
