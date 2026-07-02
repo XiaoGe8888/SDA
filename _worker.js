@@ -191,6 +191,33 @@ async function lineProfile(token, userId) {
   } catch (e) { return null; }
 }
 
+// 取得「群組聊天室」裡發言者的顯示名稱 —— 跟 1對1 用的 API 不一樣
+// （1對1用 /v2/bot/profile/{userId}；群組要用 /v2/bot/group/{groupId}/member/{userId}）
+async function lineGroupMemberProfile(token, groupId, userId) {
+  if (!groupId || !userId) return null;
+  try {
+    const r = await fetch('https://api.line.me/v2/bot/group/' + groupId + '/member/' + userId, {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!r.ok) return null;
+    const d = await r.json().catch(() => null);
+    return d ? d.displayName : null;
+  } catch (e) { return null; }
+}
+
+// 取得群組名稱，存進紀錄裡方便之後分辨是哪個LINE群組傳的
+async function lineGroupSummary(token, groupId) {
+  if (!groupId) return null;
+  try {
+    const r = await fetch('https://api.line.me/v2/bot/group/' + groupId + '/summary', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!r.ok) return null;
+    const d = await r.json().catch(() => null);
+    return d ? d.groupName : null;
+  } catch (e) { return null; }
+}
+
 // 用 Gemini 解析「珍奶 60」→ { item, amount, category }
 async function parseExpense(text, env) {
   const apiKey = env.SmartDailyAssistant_GEMINI_API_KEY;
@@ -228,24 +255,46 @@ async function parseExpense(text, env) {
 }
 
 // 處理一則記帳訊息：解析 → 存 KV → 回覆
+// isGroup=true 時是「群組聊天室」，行為跟 1對1 稍有不同（見下方註解）
 async function handleExpenseMessage(ev, token, env) {
   const text = (ev.message.text || '').trim();
   const userId = (ev.source && ev.source.userId) || '';
+  const isGroup = !!(ev.source && ev.source.type === 'group');
+  const groupId = isGroup ? ((ev.source && ev.source.groupId) || '') : '';
 
   // 指令：查自己的 User ID（多人加入時，家人朋友傳「我的id」就能拿到自己的 ID）
   if (/^(我的id|我的ID|id|ID)$/.test(text)) {
     await lineReply(token, ev.replyToken, '你的 User ID：\n' + (userId || '（讀取不到）'));
     return;
   }
+  // 指令：查群組 ID（之後要把這個 LINE 群組連結到 App 的分帳群組時會用到）
+  if (/^(群組id|群組ID)$/i.test(text)) {
+    await lineReply(token, ev.replyToken, isGroup
+      ? ('這個群組的 ID：\n' + groupId)
+      : '這不是群組聊天室，沒有群組 ID 喔。');
+    return;
+  }
 
   const parsed = await parseExpense(text, env);
   if (!parsed || parsed.amount == null || isNaN(Number(parsed.amount))) {
-    await lineReply(token, ev.replyToken, '看不懂這筆耶 😅\n請用「品項 金額」的方式記，例如：\n・珍奶 60\n・午餐 120\n・計程車 250');
+    // 群組裡看不懂就安靜略過（大家可能在聊別的事，不要洗版）；1對1才提示格式
+    if (!isGroup) {
+      await lineReply(token, ev.replyToken, '看不懂這筆耶 😅\n請用「品項 金額」的方式記，例如：\n・珍奶 60\n・午餐 120\n・計程車 250');
+    }
     return;
   }
 
   let userName = '';
-  try { userName = (await lineProfile(token, userId)) || ''; } catch (e) {}
+  try {
+    userName = (isGroup
+      ? await lineGroupMemberProfile(token, groupId, userId)
+      : await lineProfile(token, userId)) || '';
+  } catch (e) {}
+
+  let groupName = '';
+  if (isGroup) {
+    try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {}
+  }
 
   const now = new Date();
   const record = {
@@ -255,6 +304,8 @@ async function handleExpenseMessage(ev, token, env) {
     category: parsed.category || 'other',
     userId: userId,
     userName: userName,
+    groupId: groupId,
+    groupName: groupName,
     ts: now.getTime(),
   };
 
