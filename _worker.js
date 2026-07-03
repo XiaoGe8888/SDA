@@ -372,34 +372,160 @@ function flagshipBuildRecord(session, userId, userName) {
   };
 }
 
-// 處理旗艦版多輪問答訊息。回傳 true 代表這則訊息已經處理完畢（不用再走原本的簡易/標準解析）；
-// 回傳 false 代表跟旗艦版無關，交給原本的 handleExpenseMessage 處理。
+FLAGSHIP_SCHEMAS.simple = {
+  label: '🟢 簡易版', kind: 'rigid',
+  core: [{ key: 'item', q: '買了什麼？', quick: null }],
+  extended: [{ key: 'amount', q: '多少錢？', quick: null, numeric: true }],
+};
+FLAGSHIP_SCHEMAS.standard = {
+  label: '🟡 標準版', kind: 'freeform',
+  core: [{ prompt: '跟我說說買了什麼、細節如何？（品牌/SIZE/甜度這些都可以一起講，我會自動抓）' }],
+  extended: [{ prompt: '付款方式跟金額呢？' }],
+};
+
+const TIER_TRIGGERS = { '簡易版': 'simple', '標準版': 'standard', '旗艦版': 'drink' };
+const MODULE_TRIGGERS = { '飲料': 'drink', '美食': 'food', '交通': 'travel', '記帳': 'split' };
+const MODULE_LABELS = { drink: '🧋 飲料', food: '🍱 美食', travel: '🚆 交通', split: '💰 記帳' };
+const TRAVEL_TYPE_TRIGGERS = { '✈️ 航班': 'flight', '🚢 船班': 'ship', '🚄 高鐵': 'hsr', '🚆 火車': 'train', '🚇 地鐵': 'metro', '🚖 打車': 'taxi' };
+const TRAVEL_TYPE_OPTIONS = Object.keys(TRAVEL_TYPE_TRIGGERS);
+const TRAVEL_TYPE_LABELS = { flight: '✈️ 航班', ship: '🚢 船班', hsr: '🚄 高鐵', train: '🚆 火車', metro: '🚇 地鐵', taxi: '🚖 打車' };
+
+// 把 parseExpense() 解析出的結果組成一筆記錄 —— 直接訊息、標準版雙表單最後都靠這個組資料，邏輯統一
+const DETAIL_KEYS = ['brand', 'size', 'topping', 'sugar', 'ice', 'cuisine', 'portion', 'diningType', 'transportType', 'depPort', 'arrPort', 'payment'];
+function buildRecordFromParsed(parsed, fallbackText, userId, userName, groupId, groupName, tierOverride) {
+  const now = new Date();
+  const hasDetail = DETAIL_KEYS.some((k) => parsed[k] != null && String(parsed[k]).trim() !== '');
+  const record = {
+    id: 'L' + now.getTime(),
+    item: parsed.item || fallbackText,
+    amount: Math.round(Number(parsed.amount) || 0),
+    category: parsed.category || 'other',
+    userId: userId,
+    userName: userName,
+    groupId: groupId || '',
+    groupName: groupName || '',
+    ts: now.getTime(),
+  };
+  if (tierOverride) {
+    record.detailed = true;
+    record.tier = tierOverride;
+    DETAIL_KEYS.forEach((k) => { if (parsed[k] != null && String(parsed[k]).trim() !== '') record[k] = String(parsed[k]).trim(); });
+  } else if (hasDetail) {
+    record.detailed = true;
+    record.tier = 'standard';
+    DETAIL_KEYS.forEach((k) => { if (parsed[k] != null && String(parsed[k]).trim() !== '') record[k] = String(parsed[k]).trim(); });
+  }
+  return record;
+}
+function buildSimpleRecord(session, userId, userName) {
+  const a = session.answers || {};
+  const now = new Date();
+  const catMap = { drink: 'drink', food: 'food', travel: 'travel', split: 'other' };
+  const record = {
+    id: 'L' + now.getTime(),
+    item: a.item || '', amount: Math.round(Number(a.amount) || 0), category: catMap[session.module] || 'other',
+    userId, userName, groupId: '', groupName: '', ts: now.getTime(),
+  };
+  if (session.travelType) record.transportType = session.travelType;
+  return record;
+}
+async function saveLineLogRecord(record, env) {
+  const kv = env.SYNC_KV;
+  if (!kv) throw new Error('no kv');
+  const raw = await kv.get('line:log');
+  const list = raw ? JSON.parse(raw) : [];
+  list.push(record);
+  await kv.put('line:log', JSON.stringify(list));
+}
+
+// 選完模組（交通還要選完子類型）之後共用的下一步：旗艦版非飲料先誠實告知還在開發；其餘進到選模式
+async function flagshipProceedAfterModule(session, userId, env, token, replyToken) {
+  if (session.flow === 'drink' && session.module !== 'drink') {
+    await clearFlagshipSession(userId, env);
+    const moduleLabel = session.module === 'travel'
+      ? (TRAVEL_TYPE_LABELS[session.travelType] || MODULE_LABELS.travel)
+      : MODULE_LABELS[session.module];
+    await lineReplyQuick(token, replyToken, moduleLabel + ' 的旗艦版問答還在開發中，目前只有🧋飲料做完整套流程，其他會陸續完成，敬請期待 🙏', null);
+    return;
+  }
+  await setFlagshipSession(userId, session, env);
+  const flow = FLAGSHIP_SCHEMAS[session.flow];
+  await lineReplyQuick(
+    token, replyToken,
+    flow.label + '：要用哪種模式？\n單表單：一次問完（或一句話講完）\n雙表單：分兩段問，中間會停一下\n\n要用哪一種？',
+    ['單表單模式', '雙表單模式']
+  );
+}
+
+// 處理旗艦版／簡易版／標準版的多輪問答訊息（三種tier共用同一套引擎，用session.flow分辨）。
+// 回傳 true 代表這則訊息已經處理完畢；回傳 false 代表跟這套機制無關，交給 handleExpenseMessage 處理。
 async function handleFlagshipMessage(ev, token, env) {
   const text = (ev.message.text || '').trim();
   const userId = (ev.source && ev.source.userId) || '';
   const isGroup = !!(ev.source && ev.source.type === 'group');
-  if (isGroup || !userId) return false; // 旗艦版目前只做1對1，群組訊息一律不處理
+  if (isGroup || !userId) return false; // 這套多輪問答目前只做1對1
 
   let session = await getFlagshipSession(userId, env);
 
   if (!session) {
-    if (text !== FLAGSHIP_TRIGGER) return false; // 沒有進行中流程、也不是觸發關鍵字 → 不是旗艦版的事
-    session = { flow: 'drink', mode: null, stage: 'core', stepIndex: 0, answers: {} };
+    const tier = TIER_TRIGGERS[text];
+    if (!tier) return false;
+    session = { flow: tier, module: null, mode: null, stage: 'core', stepIndex: 0, answers: {} };
     await setFlagshipSession(userId, session, env);
-    await lineReplyQuick(
-      token, ev.replyToken,
-      '🧋 飲料旗艦版開始！\n單表單：一次問完全部\n雙表單：分兩段問，中間會先給你看目前記到的內容\n\n要用哪一種？',
-      ['單表單模式', '雙表單模式']
-    );
+    await lineReplyButtons(token, ev.replyToken, '請選擇模組', '要記錄哪個模組呢？', [
+      { label: '🧋 飲料', text: '飲料' },
+      { label: '🍱 美食', text: '美食' },
+      { label: '🚆 交通', text: '交通' },
+      { label: '💰 記帳', text: '記帳' },
+    ]);
     return true;
   }
 
   if (/^(取消|cancel)$/i.test(text)) {
     await clearFlagshipSession(userId, env);
-    await lineReplyQuick(token, ev.replyToken, '已取消這次的旗艦版記錄。', null);
+    await lineReplyQuick(token, ev.replyToken, '已取消這次的記錄。', null);
     return true;
   }
 
+  // ---- 選模組（所有版本共用，先選模組才能接著選模式、進對應問答）----
+  if (!session.module) {
+    const mod = MODULE_TRIGGERS[text];
+    if (!mod) {
+      await lineReplyButtons(token, ev.replyToken, '請選擇模組', '要記錄哪個模組呢？', [
+        { label: '🧋 飲料', text: '飲料' },
+        { label: '🍱 美食', text: '美食' },
+        { label: '🚆 交通', text: '交通' },
+        { label: '💰 記帳', text: '記帳' },
+      ]);
+      return true;
+    }
+    session.module = mod;
+    if (mod === 'travel') {
+      // 交通還要再選一次是哪一種交通工具，選完才繼續下一步
+      await setFlagshipSession(userId, session, env);
+      await lineReplyQuick(token, ev.replyToken, '要記錄哪一種交通呢？', TRAVEL_TYPE_OPTIONS);
+      return true;
+    }
+    await flagshipProceedAfterModule(session, userId, env, token, ev.replyToken);
+    return true;
+  }
+
+  // ---- 選交通子類型（只有選了🚆交通才會進到這裡）----
+  if (session.module === 'travel' && !session.travelType) {
+    const tt = TRAVEL_TYPE_TRIGGERS[text];
+    if (!tt) {
+      await lineReplyQuick(token, ev.replyToken, '請從下面選一種交通方式：', TRAVEL_TYPE_OPTIONS);
+      return true;
+    }
+    session.travelType = tt;
+    session.answers.transportType = tt; // 先預存起來，標準版雙表單問答時會用到
+    await flagshipProceedAfterModule(session, userId, env, token, ev.replyToken);
+    return true;
+  }
+
+  const flow = FLAGSHIP_SCHEMAS[session.flow];
+
+  // ---- 選模式 ----
   if (!session.mode) {
     if (/^單/.test(text)) session.mode = 'single';
     else if (/^雙/.test(text)) session.mode = 'dual';
@@ -407,18 +533,70 @@ async function handleFlagshipMessage(ev, token, env) {
       await lineReplyQuick(token, ev.replyToken, '請選擇：單表單模式 或 雙表單模式', ['單表單模式', '雙表單模式']);
       return true;
     }
+
+    // 簡易版/標準版選「單表單」＝現有一則訊息搞定的行為，給說明就結束，不用真的開對話
+    if (session.mode === 'single' && session.flow !== 'drink') {
+      await clearFlagshipSession(userId, env);
+      const helpText = session.flow === 'simple'
+        ? '🟢 簡易版：打「品項 金額」，例如：\n・珍奶 60\n・午餐 120\n・計程車 250'
+        : '🟡 標準版：一句話講詳細一點，我會自動幫你抓細節，沒提到的不會亂猜，例如：\n・清心的四季春大杯少糖去冰現金60\n・鼎泰豐小籠包中份現金380';
+      await lineReplyQuick(token, ev.replyToken, helpText, null);
+      return true;
+    }
+
     await setFlagshipSession(userId, session, env);
-    const field = flagshipCurrentField(session);
-    await lineReplyQuick(token, ev.replyToken, field.q, field.quick);
+    if (flow.kind === 'freeform') {
+      await lineReplyQuick(token, ev.replyToken, flow.core[0].prompt, null);
+    } else {
+      const field = flagshipCurrentField(session);
+      await lineReplyQuick(token, ev.replyToken, field.q, field.quick);
+    }
     return true;
   }
 
+  // ---- freeform（標準版-雙表單）：每一輪都用Gemini解析整句話，而不是一題一題問固定欄位 ----
+  if (flow.kind === 'freeform') {
+    const parsed = await parseExpense(text, env);
+    if (session.stage === 'core') {
+      Object.assign(session.answers, parsed || {});
+      session.stage = 'extended';
+      await setFlagshipSession(userId, session, env);
+      await lineReplyQuick(token, ev.replyToken, flow.extended[0].prompt, null);
+      return true;
+    }
+    if (parsed) {
+      if (parsed.amount != null) session.answers.amount = parsed.amount;
+      if (parsed.payment) session.answers.payment = parsed.payment;
+      if (!session.answers.item && parsed.item) session.answers.item = parsed.item;
+      if (!session.answers.category && parsed.category) session.answers.category = parsed.category;
+    }
+    if (session.answers.amount == null || isNaN(Number(session.answers.amount))) {
+      await setFlagshipSession(userId, session, env);
+      await lineReplyQuick(token, ev.replyToken, '還是沒抓到金額耶，直接跟我說金額多少就好', null);
+      return true;
+    }
+    let userName = '';
+    try { userName = (await lineProfile(token, userId)) || ''; } catch (e) {}
+    const record = buildRecordFromParsed(session.answers, text, userId, userName, '', '', 'standard');
+    try {
+      await saveLineLogRecord(record, env);
+    } catch (e) {
+      await clearFlagshipSession(userId, env);
+      await lineReplyQuick(token, ev.replyToken, '存檔時發生問題，請稍後再試一次 🙏', null);
+      return true;
+    }
+    await clearFlagshipSession(userId, env);
+    await lineReplyQuick(token, ev.replyToken, '✅ 標準版（雙表單）記錄完成！\n' + record.item + '　$' + record.amount + '\n之後可以到App的「📱LINE記帳」裡匯入。', null);
+    return true;
+  }
+
+  // ---- rigid（簡易版-雙表單 / 旗艦版-飲料）：一題一題問固定欄位 ----
   const field = flagshipCurrentField(session);
   if (field) {
     if (field.numeric) {
       const n = Number(String(text).replace(/[^0-9.]/g, ''));
       if (isNaN(n)) {
-        await lineReplyQuick(token, ev.replyToken, '這題要填數字喔，金額多少？', null);
+        await lineReplyQuick(token, ev.replyToken, '這題要填數字喔，' + field.q, null);
         return true;
       }
       session.answers[field.key] = n;
@@ -428,15 +606,13 @@ async function handleFlagshipMessage(ev, token, env) {
     session.stepIndex++;
   }
 
-  const flow = FLAGSHIP_SCHEMAS[session.flow];
   const currentList = session.stage === 'core' ? flow.core : flow.extended;
-
   if (session.stepIndex >= currentList.length) {
     if (session.stage === 'core') {
       session.stage = 'extended';
       session.stepIndex = 0;
       const nextField = flagshipCurrentField(session);
-      if (session.mode === 'dual') {
+      if (session.mode === 'dual' && session.flow === 'drink') {
         const a = session.answers;
         const summary = '📋 目前記到這裡：\n品牌：' + (a.brand || '未填') + '\n飲品：' + (a.drink || '未填')
           + '\nSIZE：' + (a.size || '未填') + '\n加料：' + (a.topping || '無') + '\n甜度：' + (a.sugar || '未填')
@@ -449,29 +625,24 @@ async function handleFlagshipMessage(ev, token, env) {
       }
       return true;
     }
-    // 核心+交易資料都問完了 → 存檔
+    // 全部問完 → 存檔
     let userName = '';
     try { userName = (await lineProfile(token, userId)) || ''; } catch (e) {}
-    const record = flagshipBuildRecord(session, userId, userName);
+    const record = session.flow === 'drink'
+      ? flagshipBuildRecord(session, userId, userName)
+      : buildSimpleRecord(session, userId, userName);
     try {
-      const kv = env.SYNC_KV;
-      if (!kv) throw new Error('no kv');
-      const raw = await kv.get('line:log');
-      const list = raw ? JSON.parse(raw) : [];
-      list.push(record);
-      await kv.put('line:log', JSON.stringify(list));
+      await saveLineLogRecord(record, env);
     } catch (e) {
       await clearFlagshipSession(userId, env);
       await lineReplyQuick(token, ev.replyToken, '存檔時發生問題，請稍後再試一次 🙏', null);
       return true;
     }
     await clearFlagshipSession(userId, env);
-    await lineReplyQuick(
-      token, ev.replyToken,
-      '✅ 飲料旗艦版記錄完成！\n' + (record.brand ? record.brand + '・' : '') + record.drink + '　$' + record.amount
-        + '\n之後可以到App的「📱LINE記帳」裡匯入。',
-      null
-    );
+    const doneText = session.flow === 'drink'
+      ? '✅ 飲料旗艦版記錄完成！\n' + (record.brand ? record.brand + '・' : '') + record.drink + '　$' + record.amount + '\n之後可以到App的「📱LINE記帳」裡匯入。'
+      : '✅ 簡易版（雙表單）記錄完成！\n' + record.item + '　$' + record.amount;
+    await lineReplyQuick(token, ev.replyToken, doneText, null);
     return true;
   }
 
@@ -481,7 +652,7 @@ async function handleFlagshipMessage(ev, token, env) {
   return true;
 }
 
-// 處理一則記帳訊息：解析 → 存 KV → 回覆
+// 處理一則記帳訊息（直接打一句話，沒有進到多輪問答的情況）：解析 → 存 KV → 回覆
 // isGroup=true 時是「群組聊天室」，行為跟 1對1 稍有不同（見下方註解）
 async function handleExpenseMessage(ev, token, env) {
   const text = (ev.message.text || '').trim();
@@ -501,7 +672,6 @@ async function handleExpenseMessage(ev, token, env) {
       : '這不是群組聊天室，沒有群組 ID 喔。');
     return;
   }
-
   // 指令：圖文選單點「日常小秘書」時送出的觸發文字 —— 回一張「按鈕卡片」讓你三選一
   if (/^日常小秘書$/.test(text)) {
     await lineReplyButtons(
@@ -514,20 +684,6 @@ async function handleExpenseMessage(ev, token, env) {
         { label: '🔴 旗艦版', text: '旗艦版' },
       ]
     );
-    return;
-  }
-  // 指令：圖文選單／自己打字都可以觸發，說明簡易版/標準版怎麼用（旗艦版本身就是關鍵字，直接會進流程，不需要額外說明）
-  // 指令：叫出三個版本的選單（貼按鈕在訊息下面，點了就直接觸發對應版本）
-  if (/^(選單|menu)$/i.test(text)) {
-    await lineReplyQuick(token, ev.replyToken, '想用哪一種方式記帳？', ['簡易版', '標準版', '旗艦版']);
-    return;
-  }
-  if (/^簡易版$/.test(text)) {
-    await lineReplyQuick(token, ev.replyToken, '🟢 簡易版：打「品項 金額」，例如：\n・珍奶 60\n・午餐 120\n・計程車 250', null);
-    return;
-  }
-  if (/^標準版$/.test(text)) {
-    await lineReplyQuick(token, ev.replyToken, '🟡 標準版：一句話講詳細一點，我會自動幫你抓細節，沒提到的不會亂猜，例如：\n・清心的四季春大杯少糖去冰現金60\n・鼎泰豐小籠包中份現金380\n・搭Uber從家裡到機場現金350', null);
     return;
   }
 
@@ -552,34 +708,10 @@ async function handleExpenseMessage(ev, token, env) {
     try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {}
   }
 
-  const now = new Date();
-  // 標準版：如果Gemini有從這句話裡抓到品牌/SIZE/加料/甜度/冰塊/付款方式其中任何一項，就算「標準版」，把這些欄位一起存起來
-  const detailKeys = ['brand', 'size', 'topping', 'sugar', 'ice', 'cuisine', 'portion', 'diningType', 'transportType', 'depPort', 'arrPort', 'payment'];
-  const hasDetail = detailKeys.some((k) => parsed[k] != null && String(parsed[k]).trim() !== '');
-  const record = {
-    id: 'L' + now.getTime(),
-    item: parsed.item || text,
-    amount: Math.round(Number(parsed.amount)),
-    category: parsed.category || 'other',
-    userId: userId,
-    userName: userName,
-    groupId: groupId,
-    groupName: groupName,
-    ts: now.getTime(),
-  };
-  if (hasDetail) {
-    record.detailed = true;
-    record.tier = 'standard';
-    detailKeys.forEach((k) => { if (parsed[k] != null && String(parsed[k]).trim() !== '') record[k] = String(parsed[k]).trim(); });
-  }
+  const record = buildRecordFromParsed(parsed, text, userId, userName, groupId, groupName);
 
   try {
-    const kv = env.SYNC_KV;
-    if (!kv) throw new Error('no kv');
-    const raw = await kv.get('line:log');
-    const list = raw ? JSON.parse(raw) : [];
-    list.push(record);
-    await kv.put('line:log', JSON.stringify(list));
+    await saveLineLogRecord(record, env);
   } catch (e) {
     await lineReply(token, ev.replyToken, '記錄時發生問題，請稍後再試 🙏');
     return;
