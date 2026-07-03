@@ -438,6 +438,40 @@ async function saveLineLogRecord(record, env) {
   await kv.put('line:log', JSON.stringify(list));
 }
 
+// 使用者在「確認取消」時選擇不取消 → 重新提示目前該回答的問題，讓他知道接著回答什麼
+async function flagshipReprompt(session, token, replyToken) {
+  if (!session.module) {
+    await lineReplyButtons(token, replyToken, '請選擇模組', '（接續剛剛的紀錄）要記錄哪個模組呢？', [
+      { label: '🧋 飲料', text: '飲料' },
+      { label: '🍱 美食', text: '美食' },
+      { label: '🚆 交通', text: '交通' },
+      { label: '💰 記帳', text: '記帳' },
+    ]);
+    return;
+  }
+  if (session.module === 'travel' && !session.travelType) {
+    await lineReplyQuick(token, replyToken, '（接續剛剛的紀錄）要記錄哪一種交通呢？', TRAVEL_TYPE_OPTIONS);
+    return;
+  }
+  if (!session.mode) {
+    const flow = FLAGSHIP_SCHEMAS[session.flow];
+    await lineReplyQuick(
+      token, replyToken,
+      '（接續剛剛的紀錄）\n' + flow.label + '：要用哪種模式？\n單表單：一次問完（或一句話講完）\n雙表單：分兩段問，中間會停一下\n\n要用哪一種？',
+      ['單表單模式', '雙表單模式']
+    );
+    return;
+  }
+  const flow = FLAGSHIP_SCHEMAS[session.flow];
+  if (flow.kind === 'freeform') {
+    const prompt = session.stage === 'core' ? flow.core[0].prompt : flow.extended[0].prompt;
+    await lineReplyQuick(token, replyToken, '（接續剛剛的紀錄）\n' + prompt, null);
+    return;
+  }
+  const field = flagshipCurrentField(session);
+  if (field) await lineReplyQuick(token, replyToken, '（接續剛剛的紀錄）\n' + field.q, field.quick);
+}
+
 // 選完模組（交通還要選完子類型）之後共用的下一步：旗艦版非飲料先誠實告知還在開發；其餘進到選模式
 async function flagshipProceedAfterModule(session, userId, env, token, replyToken) {
   if (session.flow === 'drink' && session.module !== 'drink') {
@@ -481,9 +515,25 @@ async function handleFlagshipMessage(ev, token, env) {
     return true;
   }
 
+  // 取消確認：分兩步，先問「確定嗎」，按「確認刪除」才真的清掉，避免不小心打到「取消」就整筆不見
+  if (session.pendingCancel) {
+    if (/^確認刪除$/.test(text)) {
+      await clearFlagshipSession(userId, env);
+      await lineReplyQuick(token, ev.replyToken, '已取消這次的記錄。', null);
+      return true;
+    }
+    session.pendingCancel = false;
+    await setFlagshipSession(userId, session, env);
+    await flagshipReprompt(session, token, ev.replyToken);
+    return true;
+  }
   if (/^(取消|cancel)$/i.test(text)) {
-    await clearFlagshipSession(userId, env);
-    await lineReplyQuick(token, ev.replyToken, '已取消這次的記錄。', null);
+    session.pendingCancel = true;
+    await setFlagshipSession(userId, session, env);
+    await lineReplyButtons(token, ev.replyToken, '確認取消', '確定要放棄這筆紀錄嗎？\n尚未儲存的內容將會遺失。', [
+      { label: '取消', text: '取消' },
+      { label: '確認刪除', text: '確認刪除' },
+    ]);
     return true;
   }
 
