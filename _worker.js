@@ -330,6 +330,14 @@ async function lineReplyQuick(token, replyToken, text, quickOptions) {
   });
 }
 
+// 跟 lineReplyQuick 一樣，但一定會附加「結束」選項——用在「還在等你回答」的問題上，
+// 這樣任何一步都能直接點按鈕離開，不用特地打字
+async function lineReplyAsk(token, replyToken, text, quickOptions) {
+  const opts = (quickOptions || []).slice();
+  if (!opts.includes('結束')) opts.push('結束');
+  return lineReplyQuick(token, replyToken, text, opts);
+}
+
 // 送出「按鈕卡片」訊息（Buttons Template）—— 跟快速回覆不同，這種按鈕會留在對話紀錄裡（不會消失），
 // 畫面上長得比較像截圖裡那種「文字+下面一顆按鈕」的卡片。最多4個按鈕、label最多20字。
 async function lineReplyButtons(token, replyToken, altText, bodyText, buttons) {
@@ -356,13 +364,13 @@ function flagshipCurrentField(session) {
   return list[session.stepIndex] || null;
 }
 
-function flagshipBuildRecord(session, userId, userName) {
+function flagshipBuildRecord(session, userId, userName, groupId, groupName) {
   const a = session.answers || {};
   const now = new Date();
   return {
     id: 'L' + now.getTime(),
     item: a.drink || '', amount: Math.round(Number(a.amount) || 0), category: 'drink',
-    userId, userName, groupId: '', groupName: '', ts: now.getTime(),
+    userId, userName, groupId: groupId || '', groupName: groupName || '', ts: now.getTime(),
     detailed: true, tier: 'flagship',
     brand: a.brand || '', drink: a.drink || '', size: a.size || '',
     topping: a.topping && a.topping !== '無' ? a.topping : '',
@@ -417,14 +425,14 @@ function buildRecordFromParsed(parsed, fallbackText, userId, userName, groupId, 
   }
   return record;
 }
-function buildSimpleRecord(session, userId, userName) {
+function buildSimpleRecord(session, userId, userName, groupId, groupName) {
   const a = session.answers || {};
   const now = new Date();
   const catMap = { drink: 'drink', food: 'food', travel: 'travel', split: 'other' };
   const record = {
     id: 'L' + now.getTime(),
     item: a.item || '', amount: Math.round(Number(a.amount) || 0), category: catMap[session.module] || 'other',
-    userId, userName, groupId: '', groupName: '', ts: now.getTime(),
+    userId, userName, groupId: groupId || '', groupName: groupName || '', ts: now.getTime(),
   };
   if (session.travelType) record.transportType = session.travelType;
   return record;
@@ -450,12 +458,12 @@ async function flagshipReprompt(session, token, replyToken) {
     return;
   }
   if (session.module === 'travel' && !session.travelType) {
-    await lineReplyQuick(token, replyToken, '（接續剛剛的紀錄）要記錄哪一種交通呢？', TRAVEL_TYPE_OPTIONS);
+    await lineReplyAsk(token, replyToken, '（接續剛剛的紀錄）要記錄哪一種交通呢？', TRAVEL_TYPE_OPTIONS);
     return;
   }
   if (!session.mode) {
     const flow = FLAGSHIP_SCHEMAS[session.flow];
-    await lineReplyQuick(
+    await lineReplyAsk(
       token, replyToken,
       '（接續剛剛的紀錄）\n' + flow.label + '：要用哪種模式？\n單表單：一次問完（或一句話講完）\n雙表單：分兩段問，中間會停一下\n\n要用哪一種？',
       ['單表單模式', '雙表單模式']
@@ -465,11 +473,11 @@ async function flagshipReprompt(session, token, replyToken) {
   const flow = FLAGSHIP_SCHEMAS[session.flow];
   if (flow.kind === 'freeform') {
     const prompt = session.stage === 'core' ? flow.core[0].prompt : flow.extended[0].prompt;
-    await lineReplyQuick(token, replyToken, '（接續剛剛的紀錄）\n' + prompt, null);
+    await lineReplyAsk(token, replyToken, '（接續剛剛的紀錄）\n' + prompt, null);
     return;
   }
   const field = flagshipCurrentField(session);
-  if (field) await lineReplyQuick(token, replyToken, '（接續剛剛的紀錄）\n' + field.q, field.quick);
+  if (field) await lineReplyAsk(token, replyToken, '（接續剛剛的紀錄）\n' + field.q, field.quick);
 }
 
 // 選完模組（交通還要選完子類型）之後共用的下一步：旗艦版非飲料先誠實告知還在開發；其餘進到選模式
@@ -484,7 +492,7 @@ async function flagshipProceedAfterModule(session, userId, env, token, replyToke
   }
   await setFlagshipSession(userId, session, env);
   const flow = FLAGSHIP_SCHEMAS[session.flow];
-  await lineReplyQuick(
+  await lineReplyAsk(
     token, replyToken,
     flow.label + '：要用哪種模式？\n單表單：一次問完（或一句話講完）\n雙表單：分兩段問，中間會停一下\n\n要用哪一種？',
     ['單表單模式', '雙表單模式']
@@ -497,7 +505,8 @@ async function handleFlagshipMessage(ev, token, env) {
   const text = (ev.message.text || '').trim();
   const userId = (ev.source && ev.source.userId) || '';
   const isGroup = !!(ev.source && ev.source.type === 'group');
-  if (isGroup || !userId) return false; // 這套多輪問答目前只做1對1
+  const groupId = isGroup ? ((ev.source && ev.source.groupId) || '') : '';
+  if (!userId) return false; // session用userId分辨，群組裡不同人各自有各自的流程，不會互相干擾
 
   let session = await getFlagshipSession(userId, env);
 
@@ -527,7 +536,7 @@ async function handleFlagshipMessage(ev, token, env) {
     await flagshipReprompt(session, token, ev.replyToken);
     return true;
   }
-  if (/^(取消|cancel)$/i.test(text)) {
+  if (/^(取消|cancel|結束|結束此次對話|離開|退出|quit|exit)$/i.test(text)) {
     session.pendingCancel = true;
     await setFlagshipSession(userId, session, env);
     await lineReplyButtons(token, ev.replyToken, '確認取消', '確定要放棄這筆紀錄嗎？\n尚未儲存的內容將會遺失。', [
@@ -553,7 +562,7 @@ async function handleFlagshipMessage(ev, token, env) {
     if (mod === 'travel') {
       // 交通還要再選一次是哪一種交通工具，選完才繼續下一步
       await setFlagshipSession(userId, session, env);
-      await lineReplyQuick(token, ev.replyToken, '要記錄哪一種交通呢？', TRAVEL_TYPE_OPTIONS);
+      await lineReplyAsk(token, ev.replyToken, '要記錄哪一種交通呢？', TRAVEL_TYPE_OPTIONS);
       return true;
     }
     await flagshipProceedAfterModule(session, userId, env, token, ev.replyToken);
@@ -564,7 +573,7 @@ async function handleFlagshipMessage(ev, token, env) {
   if (session.module === 'travel' && !session.travelType) {
     const tt = TRAVEL_TYPE_TRIGGERS[text];
     if (!tt) {
-      await lineReplyQuick(token, ev.replyToken, '請從下面選一種交通方式：', TRAVEL_TYPE_OPTIONS);
+      await lineReplyAsk(token, ev.replyToken, '請從下面選一種交通方式：', TRAVEL_TYPE_OPTIONS);
       return true;
     }
     session.travelType = tt;
@@ -580,7 +589,7 @@ async function handleFlagshipMessage(ev, token, env) {
     if (/^單/.test(text)) session.mode = 'single';
     else if (/^雙/.test(text)) session.mode = 'dual';
     else {
-      await lineReplyQuick(token, ev.replyToken, '請選擇：單表單模式 或 雙表單模式', ['單表單模式', '雙表單模式']);
+      await lineReplyAsk(token, ev.replyToken, '請選擇：單表單模式 或 雙表單模式', ['單表單模式', '雙表單模式']);
       return true;
     }
 
@@ -596,10 +605,10 @@ async function handleFlagshipMessage(ev, token, env) {
 
     await setFlagshipSession(userId, session, env);
     if (flow.kind === 'freeform') {
-      await lineReplyQuick(token, ev.replyToken, flow.core[0].prompt, null);
+      await lineReplyAsk(token, ev.replyToken, flow.core[0].prompt, null);
     } else {
       const field = flagshipCurrentField(session);
-      await lineReplyQuick(token, ev.replyToken, field.q, field.quick);
+      await lineReplyAsk(token, ev.replyToken, field.q, field.quick);
     }
     return true;
   }
@@ -611,7 +620,7 @@ async function handleFlagshipMessage(ev, token, env) {
       Object.assign(session.answers, parsed || {});
       session.stage = 'extended';
       await setFlagshipSession(userId, session, env);
-      await lineReplyQuick(token, ev.replyToken, flow.extended[0].prompt, null);
+      await lineReplyAsk(token, ev.replyToken, flow.extended[0].prompt, null);
       return true;
     }
     if (parsed) {
@@ -622,12 +631,16 @@ async function handleFlagshipMessage(ev, token, env) {
     }
     if (session.answers.amount == null || isNaN(Number(session.answers.amount))) {
       await setFlagshipSession(userId, session, env);
-      await lineReplyQuick(token, ev.replyToken, '還是沒抓到金額耶，直接跟我說金額多少就好', null);
+      await lineReplyAsk(token, ev.replyToken, '還是沒抓到金額耶，直接跟我說金額多少就好', null);
       return true;
     }
     let userName = '';
-    try { userName = (await lineProfile(token, userId)) || ''; } catch (e) {}
-    const record = buildRecordFromParsed(session.answers, text, userId, userName, '', '', 'standard');
+    let groupName = '';
+    try {
+      userName = (isGroup ? await lineGroupMemberProfile(token, groupId, userId) : await lineProfile(token, userId)) || '';
+    } catch (e) {}
+    if (isGroup) { try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {} }
+    const record = buildRecordFromParsed(session.answers, text, userId, userName, groupId, groupName, 'standard');
     try {
       await saveLineLogRecord(record, env);
     } catch (e) {
@@ -646,7 +659,7 @@ async function handleFlagshipMessage(ev, token, env) {
     if (field.numeric) {
       const n = Number(String(text).replace(/[^0-9.]/g, ''));
       if (isNaN(n)) {
-        await lineReplyQuick(token, ev.replyToken, '這題要填數字喔，' + field.q, null);
+        await lineReplyAsk(token, ev.replyToken, '這題要填數字喔，' + field.q, null);
         return true;
       }
       session.answers[field.key] = n;
@@ -668,19 +681,23 @@ async function handleFlagshipMessage(ev, token, env) {
           + '\nSIZE：' + (a.size || '未填') + '\n加料：' + (a.topping || '無') + '\n甜度：' + (a.sugar || '未填')
           + '\n冰塊：' + (a.ice || '未填') + '\n\n接著問付款相關資料 👇\n\n' + nextField.q;
         await setFlagshipSession(userId, session, env);
-        await lineReplyQuick(token, ev.replyToken, summary, nextField.quick);
+        await lineReplyAsk(token, ev.replyToken, summary, nextField.quick);
       } else {
         await setFlagshipSession(userId, session, env);
-        await lineReplyQuick(token, ev.replyToken, nextField.q, nextField.quick);
+        await lineReplyAsk(token, ev.replyToken, nextField.q, nextField.quick);
       }
       return true;
     }
     // 全部問完 → 存檔
     let userName = '';
-    try { userName = (await lineProfile(token, userId)) || ''; } catch (e) {}
+    let groupName = '';
+    try {
+      userName = (isGroup ? await lineGroupMemberProfile(token, groupId, userId) : await lineProfile(token, userId)) || '';
+    } catch (e) {}
+    if (isGroup) { try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {} }
     const record = session.flow === 'drink'
-      ? flagshipBuildRecord(session, userId, userName)
-      : buildSimpleRecord(session, userId, userName);
+      ? flagshipBuildRecord(session, userId, userName, groupId, groupName)
+      : buildSimpleRecord(session, userId, userName, groupId, groupName);
     try {
       await saveLineLogRecord(record, env);
     } catch (e) {
@@ -698,7 +715,7 @@ async function handleFlagshipMessage(ev, token, env) {
 
   await setFlagshipSession(userId, session, env);
   const nextField = flagshipCurrentField(session);
-  await lineReplyQuick(token, ev.replyToken, nextField.q, nextField.quick);
+  await lineReplyAsk(token, ev.replyToken, nextField.q, nextField.quick);
   return true;
 }
 
