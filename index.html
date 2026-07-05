@@ -1415,7 +1415,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-07-03d';
+const BUILD_ID='2026-07-05c';
 // --- Anthropic API Helper ---
 // ============ AI 連線設定（上線用）============
 // 上線到你自己的網域時：把 App 與「代理函式」放在同一個專案，這裡保持 '/api/gemini' 不用改。
@@ -2911,7 +2911,9 @@ function renderLineLogBody(records){
     const dstr=(d.getMonth()+1)+'/'+d.getDate()+' '+p2(d.getHours())+':'+p2(d.getMinutes());
     const rid=splitEsc(String(r.id||''));
     let importBtn;
-    if(r.groupId){
+    if(r.synced){
+      importBtn='<span style="padding:6px 10px;border-radius:8px;background:var(--crm);color:var(--br);font-family:inherit;font-size:11px;font-weight:900;white-space:nowrap">✅ 已自動同步</span>';
+    } else if(r.groupId){
       importBtn='<button onclick="lineOpenSplitImport(\''+rid+'\')" style="padding:6px 10px;border:1px solid var(--amb);border-radius:8px;background:var(--crm);color:var(--br);font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;touch-action:manipulation">📥 匯入分帳</button>';
     } else if(r.category==='other'){
       importBtn='<div style="display:flex;gap:4px">'
@@ -2947,6 +2949,9 @@ async function lineLogRemoveRemote(ids){
   }catch(e){ /* 移除失敗不影響已經匯入成功的資料；殘留在line:log的紀錄下次還會看到，重新匯入即可 */ }
 }
 // 沒有groupId（1對1）的LINE記錄 → 依分類直接搬進飲料/美食/交通
+// LINE顯示名稱 → App內部使用者名稱對照（drinker/payer/recorder要跟App一致，統計才不會把同一個人拆成兩筆）
+const APP_USER_NAME_MAP={'洪小格':'XiaoGe','yann':'XiaoYan'};
+function toAppUserName(n){ return APP_USER_NAME_MAP[n]||n||''; }
 async function lineImportSimple(id,targetModule){
   const r=lineLogCache.find(x=>String(x.id)===String(id));
   if(!r){toast('⚠️ 找不到這筆紀錄，請重新整理');return;}
@@ -2957,8 +2962,9 @@ async function lineImportSimple(id,targetModule){
       date:dt.date,time:dt.time,country:'',area:'',
       brand:r.brand||'',drink:r.item||'',category:'',size:r.size||'',topping:r.topping||'',
       sugar:r.sugar||'',ice:r.ice||'',payment:r.payment||'',currency:'NT$',amount:Number(r.amount)||0,
-      drinker:r.userName||'',payer:r.userName||'',recorder:r.userName||'',
+      drinker:toAppUserName(r.userName),payer:toAppUserName(r.userName),recorder:toAppUserName(r.userName),
       note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':''),ainote:'',rating:Number(r.rating)||0,
+      source:'LINE',
     });
     recs.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
     if(!saveRecords())return;
@@ -2968,8 +2974,9 @@ async function lineImportSimple(id,targetModule){
       date:dt.date,time:dt.time,category:'',
       brand:r.brand||'',dish:r.item||'',cuisine:r.cuisine||'',portion:r.portion||'中份',spicy:'',diningType:r.diningType||'',
       satiety:'',revisit:'',rating:Number(r.rating)||0,payment:r.payment||'',currency:'NT$',amount:Number(r.amount)||0,
-      eater:r.userName||'',payer:r.userName||'',recorder:r.userName||'',
+      eater:toAppUserName(r.userName),payer:toAppUserName(r.userName),recorder:toAppUserName(r.userName),
       note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':''),ainote:'',
+      source:'LINE',
     });
     meals.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
     if(!saveMeals())return;
@@ -2981,7 +2988,8 @@ async function lineImportSimple(id,targetModule){
       depTime:dt.time,arrTime:'',duration:'',ticketPrice:Number(r.amount)||0,
       vehicleType:'',regNo:'',seat:'',plateNo:'',
       note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':'')+(r.item?' · '+r.item:''),
-      recorder:r.userName||'',payment:r.payment||'',
+      recorder:toAppUserName(r.userName),payment:r.payment||'',
+      source:'LINE',
     });
     travels.sort((a,b)=>(b.date||'')<(a.date||'')?-1:1);
     if(!saveTravels())return;
@@ -3036,7 +3044,8 @@ function lineSplitGroupChanged(){
   const rid=ov&&ov.dataset?ov.dataset.rid:null;
   const r=rid?lineLogCache.find(x=>String(x.id)===String(rid)):null;
   if(r&&r.userName){
-    const match=g.members.find(m=>m.name===r.userName);
+    const mapped=toAppUserName(r.userName);
+    const match=g.members.find(m=>m.name===r.userName||m.name===mapped);
     if(match)sel.value=String(match.id);
   }
 }
@@ -3066,7 +3075,7 @@ async function lineConfirmSplitImport(id){
   openLineLog();
 }
 // ===== 全館收支整合檢視 =====
-let ledgerFilter={module:'all',q:''};
+let ledgerFilter={module:'all',source:'all',q:''};
 function ledgerTypeLabel(t){return t==='income'?'收入':'支出';}
 function ledgerFmt(n){n=Number(n)||0;return n.toLocaleString('en-US',{maximumFractionDigits:2});}
 function collectAllLedger(){
@@ -3075,26 +3084,26 @@ function collectAllLedger(){
   (typeof recs!=='undefined'?recs:[]).forEach(r=>out.push({date:r.date||'',time:r.time||'',module:'drink',label:'飲料',icon:'🧋',
     detail:[r.brand,r.drink].filter(Boolean).join(' ')||'飲料',
     sub:join([r.size,r.sugar,r.ice,r.payment]),
-    payer:r.payer||r.drinker||'',amount:Number(r.amount)||0,currency:r.currency||'NT$',type:'expense',note:r.note||''}));
+    payer:r.payer||r.drinker||'',amount:Number(r.amount)||0,currency:r.currency||'NT$',type:'expense',note:r.note||'',source:r.source||'APP'}));
   (typeof meals!=='undefined'?meals:[]).forEach(m=>out.push({date:m.date||'',time:m.time||'',module:'food',label:'美食',icon:'🍱',
     detail:[m.brand,m.dish].filter(Boolean).join(' ')||'美食',
     sub:join([m.cuisine,m.portion,m.diningType,m.payment]),
-    payer:m.payer||m.eater||'',amount:Number(m.amount)||0,currency:m.currency||'NT$',type:'expense',note:m.note||''}));
+    payer:m.payer||m.eater||'',amount:Number(m.amount)||0,currency:m.currency||'NT$',type:'expense',note:m.note||'',source:m.source||'APP'}));
   (typeof travels!=='undefined'?travels:[]).forEach(t=>{const route=[t.depPort,t.arrPort].filter(Boolean).join('→');
     out.push({date:t.date||'',time:t.depTime||'',module:'travel',label:'交通',icon:travelIcon(t.type),
       detail:[t.company,route,travelName(t.type)].filter(Boolean).join(' ')||'交通',
       sub:join([t.no,t.seat]),
-      payer:'',amount:Number(t.ticketPrice)||0,currency:'NT$',type:'expense',note:''});});
+      payer:'',amount:Number(t.ticketPrice)||0,currency:'NT$',type:'expense',note:'',source:t.source||'APP'});});
   (typeof splitGroups!=='undefined'?splitGroups:[]).forEach(g=>(g.expenses||[]).forEach(e=>out.push({
     date:e.date||'',time:e.time||'',module:'split',label:'分帳',icon:catIcon(e.cat),
     detail:`${e.desc||'(未命名)'}（${g.name}）`,
     sub:`${catMeta(e.cat).name}・分 ${(e.participantIds||[]).length} 人`,
-    payer:memberName(g,e.payerId),amount:Number(e.amount)||0,currency:e.currency||g.currency||'NT$',type:e.kind==='income'?'income':'expense',note:e.note||''})));
+    payer:memberName(g,e.payerId),amount:Number(e.amount)||0,currency:e.currency||g.currency||'NT$',type:e.kind==='income'?'income':'expense',note:e.note||'',source:e.source||'APP'})));
   out.sort((a,b)=>(a.date<b.date?1:a.date>b.date?-1:0));
   return out;
 }
 function openAllLedger(){
-  ledgerFilter={module:'all',q:''};
+  ledgerFilter={module:'all',source:'all',q:''};
   const ov=document.createElement('div');
   ov.id='allledger-ov';
   ov.style.cssText='position:fixed;inset:0;z-index:350;background:var(--bg);display:flex;flex-direction:column';
@@ -3114,19 +3123,26 @@ function openAllLedger(){
 }
 function closeAllLedger(){const o=document.getElementById('allledger-ov');if(o)o.remove();}
 function ledgerFilterSet(m){ledgerFilter.module=m;renderLedgerFilters();renderLedgerBody();}
+function ledgerSourceFilterSet(s){ledgerFilter.source=s;renderLedgerFilters();renderLedgerBody();}
 function ledgerSearch(v){ledgerFilter.q=v;renderLedgerBody();}
 function renderLedgerFilters(){
   const el=document.getElementById('ledger-filters');if(!el)return;
   const tabs=[['all','全部'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳']];
-  el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px">${tabs.map(([k,lb])=>{
+  const srcTabs=[['all','全部來源'],['LINE','📱 LINE'],['APP','💻 App']];
+  el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${tabs.map(([k,lb])=>{
     const on=ledgerFilter.module===k;
     return `<button onclick="ledgerFilterSet('${k}')" style="padding:7px 12px;border-radius:9px;border:1px solid ${on?'var(--amb)':'var(--bdr)'};background:${on?'var(--crm)':'var(--bg)'};color:${on?'var(--br)':'var(--t5)'};font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;touch-action:manipulation">${lb}</button>`;
+  }).join('')}</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px">${srcTabs.map(([k,lb])=>{
+    const on=(ledgerFilter.source||'all')===k;
+    return `<button onclick="ledgerSourceFilterSet('${k}')" style="padding:5px 10px;border-radius:8px;border:1px solid ${on?'var(--br)':'var(--bdr)'};background:${on?'var(--br)':'var(--bg)'};color:${on?'#fff':'var(--t5)'};font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;touch-action:manipulation">${lb}</button>`;
   }).join('')}</div>`;
 }
 function renderLedgerBody(){
   const el=document.getElementById('ledger-body');if(!el)return;
   let rows=collectAllLedger();
   if(ledgerFilter.module!=='all')rows=rows.filter(r=>r.module===ledgerFilter.module);
+  if(ledgerFilter.source&&ledgerFilter.source!=='all')rows=rows.filter(r=>r.source===ledgerFilter.source);
   const qRaw=(ledgerFilter.q||'').trim();const q=qRaw.toLowerCase();
   if(q)rows=rows.filter(r=>r.detail.toLowerCase().includes(q)||(r.payer||'').toLowerCase().includes(q)||(r.note||'').toLowerCase().includes(q)||(r.sub||'').toLowerCase().includes(q)||r.label.includes(qRaw));
   const sumEl=document.getElementById('ledger-summary');
@@ -3155,7 +3171,7 @@ function renderLedgerBody(){
         <div style="display:flex;align-items:center;gap:10px;min-width:0">
           <div style="font-size:20px;flex-shrink:0;line-height:1">${r.icon}</div>
           <div style="min-width:0">
-            <div class="rc-br">${splitEsc(r.detail)} <span style="font-size:9px;font-weight:900;color:var(--br);background:var(--crm);padding:1px 6px;border-radius:6px;margin-left:2px;white-space:nowrap">${r.label}</span></div>
+            <div class="rc-br">${splitEsc(r.detail)} <span style="font-size:9px;font-weight:900;color:var(--br);background:var(--crm);padding:1px 6px;border-radius:6px;margin-left:2px;white-space:nowrap">${r.label}</span> <span style="font-size:9px;font-weight:700;color:var(--t5);border:1px solid var(--bdr);padding:1px 6px;border-radius:6px;white-space:nowrap">${r.source==='LINE'?'📱 LINE':'💻 App'}</span></div>
             <div class="rc-nm" style="white-space:normal;line-height:1.5">${r.payer?'付款：'+splitEsc(r.payer):'付款：—'}${r.time?' ・ '+splitEsc(r.time):''}${r.sub?' ・ '+splitEsc(r.sub):''}${r.note?' ・ 📝'+splitEsc(r.note):''}</div>
           </div>
         </div>
@@ -3670,6 +3686,7 @@ function collectPanel(p){
     recorder:getCustom(p+'-recorder',p+'-recorder-c'),note:document.getElementById(p+'-note').value,
     ainote:document.getElementById(p+'-ainote').value,
     rating:Number(document.getElementById(p+'-rating').value)||0,
+    source:'APP',
   };
 }
 
@@ -4071,6 +4088,7 @@ function collectMealPanel(p){
     recorder:getCustom(p+'-m-recorder',p+'-m-recorder-c'),
     note:document.getElementById(p+'-m-note').value,
     ainote:document.getElementById(p+'-m-ainote').value,
+    source:'APP',
   };
 }
 
@@ -4350,7 +4368,7 @@ function collectTravelPanel(p){
       gate:get(`${p}-t-flight-gate`),
       depTime:get(`${p}-t-flight-dep-time`),arrTime:get(`${p}-t-flight-arr-time`),duration:get(`${p}-t-flight-duration`),ticketPrice:Number(get(`${p}-t-flight-price`))||0,
       vehicleType:get(`${p}-t-flight-aircraft`),regNo:get(`${p}-t-flight-reg`),seat:get(`${p}-t-flight-seat`),gateNo:get(`${p}-t-flight-gateno`),note:get(`${p}-t-flight-note`),
-      recorder,payment,
+      recorder,payment,source:'APP',
     };
   } else if(travelTemplate==='ship'){
     return{
@@ -4359,7 +4377,7 @@ function collectTravelPanel(p){
       depPort:get(`${p}-t-ship-dep`),arrPort:get(`${p}-t-ship-arr`),transitPort:get(`${p}-t-ship-transit`),
       depTime:get(`${p}-t-ship-dep-time`),arrTime:get(`${p}-t-ship-arr-time`),duration:get(`${p}-t-ship-duration`),ticketPrice:Number(get(`${p}-t-ship-price`))||0,
       vehicleType:get(`${p}-t-ship-vessel-type`),regNo:get(`${p}-t-ship-reg`),seat:get(`${p}-t-ship-cabin`),note:get(`${p}-t-ship-note`),
-      recorder,payment,
+      recorder,payment,source:'APP',
     };
   } else {
     return{
@@ -4368,7 +4386,7 @@ function collectTravelPanel(p){
       depPort:get(`${p}-t-gen-dep`),arrPort:get(`${p}-t-gen-arr`),transitPort:get(`${p}-t-gen-transit`),
       depTime:get(`${p}-t-gen-dep-time`),arrTime:get(`${p}-t-gen-arr-time`),duration:get(`${p}-t-gen-duration`),ticketPrice:Number(get(`${p}-t-gen-price`))||0,
       vehicleType:get(`${p}-t-gen-vtype`),regNo:'',seat:get(`${p}-t-gen-seat`),plateNo:get(`${p}-t-gen-plate`),note:get(`${p}-t-gen-note`),
-      recorder,payment,
+      recorder,payment,source:'APP',
     };
   }
 }

@@ -437,13 +437,94 @@ function buildSimpleRecord(session, userId, userName, groupId, groupName) {
   if (session.travelType) record.transportType = session.travelType;
   return record;
 }
+// ⚠️ 完全自動同步：使用者已經確認接受風險（如果App端剛好有還沒同步的編輯，可能會被覆蓋）
+// 把一筆LINE記錄轉成跟App localStorage一樣的欄位格式，準備直接寫進同步資料裡
+// LINE顯示名稱 → App內部用的使用者名稱對照表（drinker/payer/recorder這些欄位要跟App一致，統計才不會被拆成兩個人）
+// 沒有對照到的名字就原樣使用，之後家人朋友增加時可以再補進這個表
+const APP_USER_NAME_MAP = { '洪小格': 'XiaoGe', 'yann': 'XiaoYan' };
+function toAppUserName(lineDisplayName) {
+  return APP_USER_NAME_MAP[lineDisplayName] || lineDisplayName || '';
+}
+
+function shapeForAutoSync(record) {
+  const now = new Date(record.ts || Date.now());
+  const p2 = (n) => String(n).padStart(2, '0');
+  const date = now.getFullYear() + '-' + p2(now.getMonth() + 1) + '-' + p2(now.getDate());
+  const time = p2(now.getHours()) + ':' + p2(now.getMinutes());
+  const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const tierTag = record.detailed ? '（' + (record.tier === 'flagship' ? '旗艦版' : '標準版') + '）' : '';
+
+  if (record.category === 'drink') {
+    return { lsKey: 'boba_recs', entry: {
+      id: genId(), panel: '1', sn: '', snp: '',
+      date, time, country: '', area: '',
+      brand: record.brand || '', drink: record.item || '', category: '', size: record.size || '', topping: record.topping || '',
+      sugar: record.sugar || '', ice: record.ice || '', payment: record.payment || '', currency: 'NT$', amount: Number(record.amount) || 0,
+      drinker: toAppUserName(record.userName), payer: toAppUserName(record.userName), recorder: toAppUserName(record.userName),
+      note: (record.note ? record.note + ' · ' : '') + '📱 LINE自動同步' + tierTag, ainote: '', rating: Number(record.rating) || 0,
+      source: 'LINE',
+    } };
+  }
+  if (record.category === 'food') {
+    return { lsKey: 'meal_recs', entry: {
+      id: genId(), panel: '1', sn: '', snp: '',
+      date, time, category: '',
+      brand: record.brand || '', dish: record.item || '', cuisine: record.cuisine || '', portion: record.portion || '中份', spicy: '', diningType: record.diningType || '',
+      satiety: '', revisit: '', rating: Number(record.rating) || 0, payment: record.payment || '', currency: 'NT$', amount: Number(record.amount) || 0,
+      eater: toAppUserName(record.userName), payer: toAppUserName(record.userName), recorder: toAppUserName(record.userName),
+      note: (record.note ? record.note + ' · ' : '') + '📱 LINE自動同步' + tierTag, ainote: '',
+      source: 'LINE',
+    } };
+  }
+  if (record.category === 'travel') {
+    return { lsKey: 'travel_recs', entry: {
+      id: genId(), panel: 'a', type: record.transportType || 'taxi',
+      date, no: '', company: '',
+      depPort: record.depPort || '', arrPort: record.arrPort || '', transitPort: '',
+      depTime: time, arrTime: '', duration: '', ticketPrice: Number(record.amount) || 0,
+      vehicleType: '', regNo: '', seat: '', plateNo: '',
+      note: (record.note ? record.note + ' · ' : '') + '📱 LINE自動同步' + tierTag + (record.item ? ' · ' + record.item : ''),
+      recorder: toAppUserName(record.userName), payment: record.payment || '',
+      source: 'LINE',
+    } };
+  }
+  return null; // 記帳/分帳目前不支援自動同步（要選群組+對成員，無法全自動）
+}
+
+// 嘗試把記錄直接寫進使用者已綁定的同步資料裡；沒綁同步碼、或分類不支援，就回傳false（照舊只存line:log等手動匯入）
+async function autoSyncRecord(userId, record, env) {
+  try {
+    const kv = env.SYNC_KV;
+    if (!kv || !userId) return false;
+    const code = await kv.get('line:usersync:' + userId);
+    if (!code) return false;
+    const shaped = shapeForAutoSync(record);
+    if (!shaped) return false;
+    const raw = await kv.get(keyOf(code));
+    if (!raw) return false;
+    let rec;
+    try { rec = JSON.parse(raw); } catch (e) { return false; }
+    const data = rec.data || {};
+    let arr;
+    try { arr = data[shaped.lsKey] ? JSON.parse(data[shaped.lsKey]) : []; } catch (e) { arr = []; }
+    arr.unshift(shaped.entry);
+    data[shaped.lsKey] = JSON.stringify(arr);
+    await kv.put(keyOf(code), JSON.stringify({ data, updated_at: Date.now() }));
+    return true;
+  } catch (e) { return false; }
+}
+
+// 存進line:log（清單/紀錄）之外，同時試著自動同步進App；回傳這筆有沒有自動同步成功
 async function saveLineLogRecord(record, env) {
   const kv = env.SYNC_KV;
   if (!kv) throw new Error('no kv');
   const raw = await kv.get('line:log');
   const list = raw ? JSON.parse(raw) : [];
+  const synced = await autoSyncRecord(record.userId, record, env);
+  if (synced) record.synced = true;
   list.push(record);
   await kv.put('line:log', JSON.stringify(list));
+  return synced;
 }
 
 // 使用者在「確認取消」時選擇不取消 → 重新提示目前該回答的問題，讓他知道接著回答什麼
@@ -641,15 +722,17 @@ async function handleFlagshipMessage(ev, token, env) {
     } catch (e) {}
     if (isGroup) { try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {} }
     const record = buildRecordFromParsed(session.answers, text, userId, userName, groupId, groupName, 'standard');
+    let synced = false;
     try {
-      await saveLineLogRecord(record, env);
+      synced = await saveLineLogRecord(record, env);
     } catch (e) {
       await clearFlagshipSession(userId, env);
       await lineReplyQuick(token, ev.replyToken, '存檔時發生問題，請稍後再試一次 🙏', null);
       return true;
     }
     await clearFlagshipSession(userId, env);
-    await lineReplyQuick(token, ev.replyToken, '✅ 標準版（雙表單）記錄完成！\n' + record.item + '　$' + record.amount + '\n之後可以到App的「📱LINE記帳」裡匯入。', null);
+    const tailMsg = synced ? '\n✅ 已自動同步到App。' : '\n之後可以到App的「📱LINE記帳」裡匯入。';
+    await lineReplyQuick(token, ev.replyToken, '✅ 標準版（雙表單）記錄完成！\n' + record.item + '　$' + record.amount + tailMsg, null);
     return true;
   }
 
@@ -698,17 +781,19 @@ async function handleFlagshipMessage(ev, token, env) {
     const record = session.flow === 'drink'
       ? flagshipBuildRecord(session, userId, userName, groupId, groupName)
       : buildSimpleRecord(session, userId, userName, groupId, groupName);
+    let synced = false;
     try {
-      await saveLineLogRecord(record, env);
+      synced = await saveLineLogRecord(record, env);
     } catch (e) {
       await clearFlagshipSession(userId, env);
       await lineReplyQuick(token, ev.replyToken, '存檔時發生問題，請稍後再試一次 🙏', null);
       return true;
     }
     await clearFlagshipSession(userId, env);
+    const tailMsg = synced ? '\n✅ 已自動同步到App。' : '\n之後可以到App的「📱LINE記帳」裡匯入。';
     const doneText = session.flow === 'drink'
-      ? '✅ 飲料旗艦版記錄完成！\n' + (record.brand ? record.brand + '・' : '') + record.drink + '　$' + record.amount + '\n之後可以到App的「📱LINE記帳」裡匯入。'
-      : '✅ 簡易版（雙表單）記錄完成！\n' + record.item + '　$' + record.amount;
+      ? '✅ 飲料旗艦版記錄完成！\n' + (record.brand ? record.brand + '・' : '') + record.drink + '　$' + record.amount + tailMsg
+      : '✅ 簡易版（雙表單）記錄完成！\n' + record.item + '　$' + record.amount + tailMsg;
     await lineReplyQuick(token, ev.replyToken, doneText, null);
     return true;
   }
@@ -754,6 +839,41 @@ async function handleExpenseMessage(ev, token, env) {
     return;
   }
 
+  // 指令：綁定同步碼 —— 綁定後，LINE記的帳會直接自動同步進App（不用再手動匯入）
+  const syncCodeMatch = text.match(/^同步碼[:：]?\s*(.+)$/);
+  if (syncCodeMatch) {
+    const code = (syncCodeMatch[1] || '').trim().toUpperCase();
+    if (!code) {
+      await lineReply(token, ev.replyToken, '請在「同步碼」後面接你App裡設定的同步碼，例如：\n同步碼 ABCD-1234-EFGH');
+      return;
+    }
+    const kv = env.SYNC_KV;
+    if (!kv) {
+      await lineReply(token, ev.replyToken, '伺服器目前沒有連接資料庫，請稍後再試。');
+      return;
+    }
+    // 先確認這組碼底下實際有什麼，讓使用者能立刻核對是不是自己的帳號，避免打錯碼綁到空的地方都不知道
+    let drinkCount = '未知', mealCount = '未知', travelCount = '未知';
+    let codeExists = false;
+    try {
+      const raw = await kv.get(keyOf(code));
+      if (raw) {
+        codeExists = true;
+        const rec = JSON.parse(raw);
+        const data = (rec && rec.data) || {};
+        try { drinkCount = String(JSON.parse(data.boba_recs || '[]').length); } catch (e) {}
+        try { mealCount = String(JSON.parse(data.meal_recs || '[]').length); } catch (e) {}
+        try { travelCount = String(JSON.parse(data.travel_recs || '[]').length); } catch (e) {}
+      }
+    } catch (e) {}
+    await kv.put('line:usersync:' + userId, code);
+    const summary = codeExists
+      ? ('這組碼目前有：🧋飲料 ' + drinkCount + ' 筆・🍱美食 ' + mealCount + ' 筆・🚆交通 ' + travelCount + ' 筆\n如果數字跟你App裡看到的對不起來，代表可能打錯碼了，可以重新傳一次「同步碼 正確的碼」覆蓋。')
+      : '⚠️ 這組碼目前雲端還查不到資料（可能是還沒同步過，或是打錯了）。如果是新帳號還沒同步過，這是正常的；如果你App裡明明有資料，麻煩再檢查一次同步碼有沒有打對。';
+    await lineReply(token, ev.replyToken, '✅ 已綁定同步碼！之後LINE記的🧋飲料/🍱美食/🚆交通會自動同步進App，不用再手動匯入（💰記帳/分帳目前還是要手動處理）。\n\n' + summary);
+    return;
+  }
+
   const parsed = await parseExpense(text, env);
   if (!parsed || parsed.amount == null || isNaN(Number(parsed.amount))) {
     // 群組裡看不懂就安靜略過（大家可能在聊別的事，不要洗版）；1對1才提示格式
@@ -777,8 +897,9 @@ async function handleExpenseMessage(ev, token, env) {
 
   const record = buildRecordFromParsed(parsed, text, userId, userName, groupId, groupName);
 
+  let synced = false;
   try {
-    await saveLineLogRecord(record, env);
+    synced = await saveLineLogRecord(record, env);
   } catch (e) {
     await lineReply(token, ev.replyToken, '記錄時發生問題，請稍後再試 🙏');
     return;
@@ -786,7 +907,8 @@ async function handleExpenseMessage(ev, token, env) {
 
   const catLabel = { drink: '🧋 飲料', food: '🍱 美食', travel: '🚆 交通', other: '📝 其他' }[record.category] || '📝 其他';
   const who = userName ? '（' + userName + '）' : '';
-  await lineReply(token, ev.replyToken, '✅ 已記錄' + who + '\n' + catLabel + '：' + record.item + '　$' + record.amount);
+  const syncTag = synced ? '（已自動同步✅）' : '';
+  await lineReply(token, ev.replyToken, '✅ 已記錄' + who + syncTag + '\n' + catLabel + '：' + record.item + '　$' + record.amount);
 }
 
 async function handleLine(request, env) {
