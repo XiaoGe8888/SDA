@@ -1415,7 +1415,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-06-28c';
+const BUILD_ID='2026-07-05c';
 // --- Anthropic API Helper ---
 // ============ AI 連線設定（上線用）============
 // 上線到你自己的網域時：把 App 與「代理函式」放在同一個專案，這裡保持 '/api/gemini' 不用改。
@@ -2858,10 +2858,224 @@ function renderHome(){
   </div>
   <button onclick="toggleSettings()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid var(--bdr);border-radius:14px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>設定</button>
   <button onclick="openSyncSheet()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid var(--bdr);border-radius:14px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7 18a4 4 0 01-.5-7.97A5 5 0 0116.5 9.2 3.5 3.5 0 0117 18H7z"/></svg>雲端同步${syncEnabled?'<span style="color:#16a34a;font-weight:900">・已啟用</span>':''}</button>
+  <button onclick="openLineLog()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid var(--bdr);border-radius:14px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-size:16px">📱</span>LINE 記帳</button>
   <div style="text-align:center;color:var(--t5);font-size:10px;margin:18px 0 8px;opacity:.7">日常小秘書</div>`;
 }
+// ===== LINE 記帳檢視（讀取 /api/line-log）=====
+async function openLineLog(){
+  let m=document.getElementById('linelog-modal');
+  if(!m){
+    m=document.createElement('div');
+    m.id='linelog-modal';
+    m.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+    m.addEventListener('click',function(e){if(e.target===m)closeLineLog();});
+    document.body.appendChild(m);
+  }
+  m.innerHTML='<div style="background:var(--sur);width:100%;max-width:520px;max-height:85vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden">'
+    +'<div style="padding:16px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:16px;font-weight:900;color:var(--bd);font-family:\'Noto Serif TC\',serif">📱 LINE 記帳</div>'
+    +'<button onclick="closeLineLog()" style="border:none;background:var(--crm);width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;color:var(--t5)">✕</button>'
+    +'</div>'
+    +'<div style="padding:10px 18px 0"><button onclick="openLineLog()" style="width:100%;padding:8px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">🔄 重新整理</button></div>'
+    +'<div id="linelog-body" style="padding:14px 18px 20px;overflow-y:auto;flex:1"><div style="text-align:center;color:var(--t5);padding:30px">讀取中…</div></div>'
+    +'</div>';
+  m.style.display='flex';
+  try{
+    const r=await fetch('/api/line-log');
+    const d=await r.json();
+    renderLineLogBody(d.records||[]);
+  }catch(e){
+    const b=document.getElementById('linelog-body');
+    if(b)b.innerHTML='<div style="text-align:center;color:#dc2626;padding:30px">讀取失敗 😥<br><span style="font-size:12px;color:var(--t5)">請確認網路連線，或稍後再試</span></div>';
+  }
+}
+function closeLineLog(){const m=document.getElementById('linelog-modal');if(m)m.style.display='none';}
+let lineLogCache=[]; // 暫存目前顯示的LINE記帳，給下面的匯入功能查詢用
+function renderLineLogBody(records){
+  const body=document.getElementById('linelog-body');
+  if(!body)return;
+  lineLogCache=records||[];
+  if(!records||!records.length){
+    body.innerHTML='<div style="text-align:center;color:var(--t5);padding:34px 10px">還沒有任何 LINE 記帳<br><span style="font-size:12px">在 LINE 傳「珍奶 60」給小助理，就會出現在這裡</span></div>';
+    return;
+  }
+  const sorted=records.slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+  const catInfo={drink:{l:'🧋 飲料',c:'#d4a373'},food:{l:'🍱 美食',c:'#ea7e3a'},travel:{l:'🚆 交通',c:'#3b82f6'},other:{l:'📝 其他',c:'#64748b'}};
+  const total=sorted.reduce(function(s,r){return s+(Number(r.amount)||0);},0);
+  let html='<div style="background:var(--crm);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-size:12px;color:var(--t5)">共 '+sorted.length+' 筆</span>'
+    +'<span style="font-size:16px;font-weight:900;color:var(--bd)">合計 NT$ '+total.toLocaleString('en-US')+'</span></div>';
+  sorted.forEach(function(r){
+    const ci=catInfo[r.category]||catInfo.other;
+    const d=new Date(r.ts||0);
+    const dstr=(d.getMonth()+1)+'/'+d.getDate()+' '+p2(d.getHours())+':'+p2(d.getMinutes());
+    const rid=splitEsc(String(r.id||''));
+    let importBtn;
+    if(r.synced){
+      importBtn='<span style="padding:6px 10px;border-radius:8px;background:var(--crm);color:var(--br);font-family:inherit;font-size:11px;font-weight:900;white-space:nowrap">✅ 已自動同步</span>';
+    } else if(r.groupId){
+      importBtn='<button onclick="lineOpenSplitImport(\''+rid+'\')" style="padding:6px 10px;border:1px solid var(--amb);border-radius:8px;background:var(--crm);color:var(--br);font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;touch-action:manipulation">📥 匯入分帳</button>';
+    } else if(r.category==='other'){
+      importBtn='<div style="display:flex;gap:4px">'
+        +'<button onclick="lineImportSimple(\''+rid+'\',\'drink\')" title="匯入飲料" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);cursor:pointer;font-size:12px;touch-action:manipulation">🧋</button>'
+        +'<button onclick="lineImportSimple(\''+rid+'\',\'food\')" title="匯入美食" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);cursor:pointer;font-size:12px;touch-action:manipulation">🍱</button>'
+        +'<button onclick="lineImportSimple(\''+rid+'\',\'travel\')" title="匯入交通" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);cursor:pointer;font-size:12px;touch-action:manipulation">🚆</button>'
+        +'</div>';
+    } else {
+      importBtn='<button onclick="lineImportSimple(\''+rid+'\',\''+r.category+'\')" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;touch-action:manipulation">📥 匯入</button>';
+    }
+    html+='<div id="linelog-row-'+rid+'" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--bdr);gap:10px">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:14px;font-weight:700;color:var(--bd)">'+splitEsc(r.item||'')+'</div>'
+      +'<div style="font-size:11px;color:var(--t5);margin-top:3px"><span style="color:'+ci.c+';font-weight:700">'+ci.l+'</span>　'+(r.detailed?'<span style="color:var(--br);font-weight:700">✨'+(r.tier==='flagship'?'旗艦版':'標準版')+'・</span>':'')+(r.userName?splitEsc(r.userName)+'・':'')+(r.groupName?'👥'+splitEsc(r.groupName)+'・':'')+dstr+'</div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0">'
+      +'<div style="font-size:16px;font-weight:900;color:var(--bd);margin-bottom:6px">$'+(Number(r.amount)||0)+'</div>'
+      +importBtn
+      +'</div>'
+      +'</div>';
+  });
+  body.innerHTML=html;
+}
+// ts(毫秒) → 表單用的 date/time 字串
+function lineTsToDateTime(ts){
+  const d=new Date(ts||Date.now());
+  return {date:d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()),time:p2(d.getHours())+':'+p2(d.getMinutes())};
+}
+// 匯入後通知後端把這幾筆從 line:log 移除（避免兩邊都算、變兩倍）
+async function lineLogRemoveRemote(ids){
+  try{
+    await fetch('/api/line-log-remove',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+  }catch(e){ /* 移除失敗不影響已經匯入成功的資料；殘留在line:log的紀錄下次還會看到，重新匯入即可 */ }
+}
+// 沒有groupId（1對1）的LINE記錄 → 依分類直接搬進飲料/美食/交通
+// LINE顯示名稱 → App內部使用者名稱對照（drinker/payer/recorder要跟App一致，統計才不會把同一個人拆成兩筆）
+const APP_USER_NAME_MAP={'洪小格':'XiaoGe','yann':'XiaoYan'};
+function toAppUserName(n){ return APP_USER_NAME_MAP[n]||n||''; }
+async function lineImportSimple(id,targetModule){
+  const r=lineLogCache.find(x=>String(x.id)===String(id));
+  if(!r){toast('⚠️ 找不到這筆紀錄，請重新整理');return;}
+  const dt=lineTsToDateTime(r.ts);
+  if(targetModule==='drink'){
+    recs.unshift({
+      id:uid(),panel:'1',sn:'',snp:'',
+      date:dt.date,time:dt.time,country:'',area:'',
+      brand:r.brand||'',drink:r.item||'',category:'',size:r.size||'',topping:r.topping||'',
+      sugar:r.sugar||'',ice:r.ice||'',payment:r.payment||'',currency:'NT$',amount:Number(r.amount)||0,
+      drinker:toAppUserName(r.userName),payer:toAppUserName(r.userName),recorder:toAppUserName(r.userName),
+      note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':''),ainote:'',rating:Number(r.rating)||0,
+      source:'LINE',
+    });
+    recs.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
+    if(!saveRecords())return;
+  }else if(targetModule==='food'){
+    meals.unshift({
+      id:uid(),panel:'1',sn:'',snp:'',
+      date:dt.date,time:dt.time,category:'',
+      brand:r.brand||'',dish:r.item||'',cuisine:r.cuisine||'',portion:r.portion||'中份',spicy:'',diningType:r.diningType||'',
+      satiety:'',revisit:'',rating:Number(r.rating)||0,payment:r.payment||'',currency:'NT$',amount:Number(r.amount)||0,
+      eater:toAppUserName(r.userName),payer:toAppUserName(r.userName),recorder:toAppUserName(r.userName),
+      note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':''),ainote:'',
+      source:'LINE',
+    });
+    meals.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
+    if(!saveMeals())return;
+  }else if(targetModule==='travel'){
+    travels.unshift({
+      id:uid(),panel:'a',type:r.transportType||'taxi',
+      date:dt.date,no:'',company:'',
+      depPort:r.depPort||'',arrPort:r.arrPort||'',transitPort:'',
+      depTime:dt.time,arrTime:'',duration:'',ticketPrice:Number(r.amount)||0,
+      vehicleType:'',regNo:'',seat:'',plateNo:'',
+      note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':'')+(r.item?' · '+r.item:''),
+      recorder:toAppUserName(r.userName),payment:r.payment||'',
+      source:'LINE',
+    });
+    travels.sort((a,b)=>(b.date||'')<(a.date||'')?-1:1);
+    if(!saveTravels())return;
+  }else{
+    toast('⚠️ 不支援的分類');return;
+  }
+  await lineLogRemoveRemote([r.id]);
+  toast('✅ 已匯入'+({drink:'🧋飲料',food:'🍱美食',travel:'🚆交通'}[targetModule]||''));
+  openLineLog();
+}
+// 有groupId（LINE群組）的記錄 → 選要匯入哪個分帳群組、對應成員是誰
+function lineOpenSplitImport(id){
+  const r=lineLogCache.find(x=>String(x.id)===String(id));
+  if(!r){toast('⚠️ 找不到這筆紀錄，請重新整理');return;}
+  if(!splitGroups||!splitGroups.length){
+    toast('⚠️ 還沒有任何分帳群組，請先到🧾分帳建立一個');
+    return;
+  }
+  const ov=document.createElement('div');
+  ov.id='line-split-ov';
+  ov.dataset.rid=String(r.id);
+  ov.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  const groupOpts=splitGroups.map(g=>'<option value="'+splitEsc(String(g.id))+'">'+splitEsc(g.emoji||'🧾')+' '+splitEsc(g.name||'未命名群組')+'</option>').join('');
+  ov.innerHTML='<div style="background:var(--sur);border-radius:16px;padding:20px;max-width:360px;width:100%">'
+    +'<div style="font-size:15px;font-weight:900;color:var(--bd);margin-bottom:4px">📥 匯入到分帳</div>'
+    +'<div style="font-size:12px;color:var(--t5);margin-bottom:14px">'+splitEsc(r.item||'')+'　$'+(Number(r.amount)||0)+'　（'+splitEsc(r.userName||'')+'）</div>'
+    +'<label style="font-size:11px;color:var(--t5);font-weight:700">匯入到哪個分帳群組</label>'
+    +'<select id="line-split-group" onchange="lineSplitGroupChanged()" style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;margin:6px 0 14px;font-family:inherit;background:var(--bg);color:var(--bd)">'+groupOpts+'</select>'
+    +'<label style="font-size:11px;color:var(--t5);font-weight:700">這筆是誰付的</label>'
+    +'<select id="line-split-payer" style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;margin:6px 0 8px;font-family:inherit;background:var(--bg);color:var(--bd)"></select>'
+    +'<div style="font-size:10px;color:var(--t5);margin-bottom:14px">預設均分該群組所有成員，之後可以到🧾分帳裡再調整分攤方式</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="document.getElementById(\'line-split-ov\').remove()" style="flex:1;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-weight:900;cursor:pointer;touch-action:manipulation">取消</button>'
+    +'<button onclick="lineConfirmSplitImport(\''+splitEsc(String(r.id))+'\')" style="flex:1;padding:12px;border:none;border-radius:10px;background:var(--br);color:#fff;font-family:inherit;font-weight:900;cursor:pointer;touch-action:manipulation">確認匯入</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(ov);
+  lineSplitGroupChanged();
+}
+function lineSplitGroupChanged(){
+  const ov=document.getElementById('line-split-ov');
+  const gid=document.getElementById('line-split-group')?.value;
+  const g=splitGroups.find(x=>String(x.id)===String(gid));
+  const sel=document.getElementById('line-split-payer');
+  if(!sel)return;
+  if(!g||!g.members||!g.members.length){
+    sel.innerHTML='<option value="">（這個群組還沒有成員，請先到🧾分帳新增）</option>';
+    return;
+  }
+  sel.innerHTML=g.members.map(m=>'<option value="'+splitEsc(String(m.id))+'">'+splitEsc(m.name||'')+'</option>').join('');
+  const rid=ov&&ov.dataset?ov.dataset.rid:null;
+  const r=rid?lineLogCache.find(x=>String(x.id)===String(rid)):null;
+  if(r&&r.userName){
+    const mapped=toAppUserName(r.userName);
+    const match=g.members.find(m=>m.name===r.userName||m.name===mapped);
+    if(match)sel.value=String(match.id);
+  }
+}
+async function lineConfirmSplitImport(id){
+  const r=lineLogCache.find(x=>String(x.id)===String(id));
+  const gid=document.getElementById('line-split-group')?.value;
+  const payerId=document.getElementById('line-split-payer')?.value;
+  const g=splitGroups.find(x=>String(x.id)===String(gid));
+  if(!r||!g){toast('⚠️ 發生錯誤，請重新整理再試');return;}
+  if(!payerId){toast('⚠️ 這個群組還沒有成員，請先到🧾分帳新增成員');return;}
+  const dt=lineTsToDateTime(r.ts);
+  const catMap={drink:'drink',food:'food',travel:'travel',other:'other'};
+  g.expenses=g.expenses||[];
+  g.expenses.unshift({
+    id:uid(),kind:'expense',
+    desc:r.item||'',cat:catMap[r.category]||'other',
+    amount:Number(r.amount)||0,currency:g.currency||'NT$',
+    payerId:payerId,payment:'',
+    date:dt.date,time:dt.time,
+    splitType:'equal',participantIds:g.members.map(m=>m.id),
+    customShares:{},note:'📱 LINE記帳匯入（'+(r.userName||'')+'）',image:'',
+  });
+  if(!saveSplitGroups())return;
+  await lineLogRemoveRemote([r.id]);
+  const ov=document.getElementById('line-split-ov');if(ov)ov.remove();
+  toast('✅ 已匯入到「'+(g.name||'分帳群組')+'」');
+  openLineLog();
+}
 // ===== 全館收支整合檢視 =====
-let ledgerFilter={module:'all',q:''};
+let ledgerFilter={module:'all',source:'all',q:''};
 function ledgerTypeLabel(t){return t==='income'?'收入':'支出';}
 function ledgerFmt(n){n=Number(n)||0;return n.toLocaleString('en-US',{maximumFractionDigits:2});}
 function collectAllLedger(){
@@ -2870,26 +3084,26 @@ function collectAllLedger(){
   (typeof recs!=='undefined'?recs:[]).forEach(r=>out.push({date:r.date||'',time:r.time||'',module:'drink',label:'飲料',icon:'🧋',
     detail:[r.brand,r.drink].filter(Boolean).join(' ')||'飲料',
     sub:join([r.size,r.sugar,r.ice,r.payment]),
-    payer:r.payer||r.drinker||'',amount:Number(r.amount)||0,currency:r.currency||'NT$',type:'expense',note:r.note||''}));
+    payer:r.payer||r.drinker||'',amount:Number(r.amount)||0,currency:r.currency||'NT$',type:'expense',note:r.note||'',source:r.source||'APP'}));
   (typeof meals!=='undefined'?meals:[]).forEach(m=>out.push({date:m.date||'',time:m.time||'',module:'food',label:'美食',icon:'🍱',
     detail:[m.brand,m.dish].filter(Boolean).join(' ')||'美食',
     sub:join([m.cuisine,m.portion,m.diningType,m.payment]),
-    payer:m.payer||m.eater||'',amount:Number(m.amount)||0,currency:m.currency||'NT$',type:'expense',note:m.note||''}));
+    payer:m.payer||m.eater||'',amount:Number(m.amount)||0,currency:m.currency||'NT$',type:'expense',note:m.note||'',source:m.source||'APP'}));
   (typeof travels!=='undefined'?travels:[]).forEach(t=>{const route=[t.depPort,t.arrPort].filter(Boolean).join('→');
     out.push({date:t.date||'',time:t.depTime||'',module:'travel',label:'交通',icon:travelIcon(t.type),
       detail:[t.company,route,travelName(t.type)].filter(Boolean).join(' ')||'交通',
       sub:join([t.no,t.seat]),
-      payer:'',amount:Number(t.ticketPrice)||0,currency:'NT$',type:'expense',note:''});});
+      payer:'',amount:Number(t.ticketPrice)||0,currency:'NT$',type:'expense',note:'',source:t.source||'APP'});});
   (typeof splitGroups!=='undefined'?splitGroups:[]).forEach(g=>(g.expenses||[]).forEach(e=>out.push({
     date:e.date||'',time:e.time||'',module:'split',label:'分帳',icon:catIcon(e.cat),
     detail:`${e.desc||'(未命名)'}（${g.name}）`,
     sub:`${catMeta(e.cat).name}・分 ${(e.participantIds||[]).length} 人`,
-    payer:memberName(g,e.payerId),amount:Number(e.amount)||0,currency:e.currency||g.currency||'NT$',type:e.kind==='income'?'income':'expense',note:e.note||''})));
+    payer:memberName(g,e.payerId),amount:Number(e.amount)||0,currency:e.currency||g.currency||'NT$',type:e.kind==='income'?'income':'expense',note:e.note||'',source:e.source||'APP'})));
   out.sort((a,b)=>(a.date<b.date?1:a.date>b.date?-1:0));
   return out;
 }
 function openAllLedger(){
-  ledgerFilter={module:'all',q:''};
+  ledgerFilter={module:'all',source:'all',q:''};
   const ov=document.createElement('div');
   ov.id='allledger-ov';
   ov.style.cssText='position:fixed;inset:0;z-index:350;background:var(--bg);display:flex;flex-direction:column';
@@ -2909,19 +3123,26 @@ function openAllLedger(){
 }
 function closeAllLedger(){const o=document.getElementById('allledger-ov');if(o)o.remove();}
 function ledgerFilterSet(m){ledgerFilter.module=m;renderLedgerFilters();renderLedgerBody();}
+function ledgerSourceFilterSet(s){ledgerFilter.source=s;renderLedgerFilters();renderLedgerBody();}
 function ledgerSearch(v){ledgerFilter.q=v;renderLedgerBody();}
 function renderLedgerFilters(){
   const el=document.getElementById('ledger-filters');if(!el)return;
   const tabs=[['all','全部'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳']];
-  el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px">${tabs.map(([k,lb])=>{
+  const srcTabs=[['all','全部來源'],['LINE','📱 LINE'],['APP','💻 App']];
+  el.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${tabs.map(([k,lb])=>{
     const on=ledgerFilter.module===k;
     return `<button onclick="ledgerFilterSet('${k}')" style="padding:7px 12px;border-radius:9px;border:1px solid ${on?'var(--amb)':'var(--bdr)'};background:${on?'var(--crm)':'var(--bg)'};color:${on?'var(--br)':'var(--t5)'};font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;touch-action:manipulation">${lb}</button>`;
+  }).join('')}</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px">${srcTabs.map(([k,lb])=>{
+    const on=(ledgerFilter.source||'all')===k;
+    return `<button onclick="ledgerSourceFilterSet('${k}')" style="padding:5px 10px;border-radius:8px;border:1px solid ${on?'var(--br)':'var(--bdr)'};background:${on?'var(--br)':'var(--bg)'};color:${on?'#fff':'var(--t5)'};font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;touch-action:manipulation">${lb}</button>`;
   }).join('')}</div>`;
 }
 function renderLedgerBody(){
   const el=document.getElementById('ledger-body');if(!el)return;
   let rows=collectAllLedger();
   if(ledgerFilter.module!=='all')rows=rows.filter(r=>r.module===ledgerFilter.module);
+  if(ledgerFilter.source&&ledgerFilter.source!=='all')rows=rows.filter(r=>r.source===ledgerFilter.source);
   const qRaw=(ledgerFilter.q||'').trim();const q=qRaw.toLowerCase();
   if(q)rows=rows.filter(r=>r.detail.toLowerCase().includes(q)||(r.payer||'').toLowerCase().includes(q)||(r.note||'').toLowerCase().includes(q)||(r.sub||'').toLowerCase().includes(q)||r.label.includes(qRaw));
   const sumEl=document.getElementById('ledger-summary');
@@ -2950,7 +3171,7 @@ function renderLedgerBody(){
         <div style="display:flex;align-items:center;gap:10px;min-width:0">
           <div style="font-size:20px;flex-shrink:0;line-height:1">${r.icon}</div>
           <div style="min-width:0">
-            <div class="rc-br">${splitEsc(r.detail)} <span style="font-size:9px;font-weight:900;color:var(--br);background:var(--crm);padding:1px 6px;border-radius:6px;margin-left:2px;white-space:nowrap">${r.label}</span></div>
+            <div class="rc-br">${splitEsc(r.detail)} <span style="font-size:9px;font-weight:900;color:var(--br);background:var(--crm);padding:1px 6px;border-radius:6px;margin-left:2px;white-space:nowrap">${r.label}</span> <span style="font-size:9px;font-weight:700;color:var(--t5);border:1px solid var(--bdr);padding:1px 6px;border-radius:6px;white-space:nowrap">${r.source==='LINE'?'📱 LINE':'💻 App'}</span></div>
             <div class="rc-nm" style="white-space:normal;line-height:1.5">${r.payer?'付款：'+splitEsc(r.payer):'付款：—'}${r.time?' ・ '+splitEsc(r.time):''}${r.sub?' ・ '+splitEsc(r.sub):''}${r.note?' ・ 📝'+splitEsc(r.note):''}</div>
           </div>
         </div>
@@ -3465,6 +3686,7 @@ function collectPanel(p){
     recorder:getCustom(p+'-recorder',p+'-recorder-c'),note:document.getElementById(p+'-note').value,
     ainote:document.getElementById(p+'-ainote').value,
     rating:Number(document.getElementById(p+'-rating').value)||0,
+    source:'APP',
   };
 }
 
@@ -3866,6 +4088,7 @@ function collectMealPanel(p){
     recorder:getCustom(p+'-m-recorder',p+'-m-recorder-c'),
     note:document.getElementById(p+'-m-note').value,
     ainote:document.getElementById(p+'-m-ainote').value,
+    source:'APP',
   };
 }
 
@@ -4145,7 +4368,7 @@ function collectTravelPanel(p){
       gate:get(`${p}-t-flight-gate`),
       depTime:get(`${p}-t-flight-dep-time`),arrTime:get(`${p}-t-flight-arr-time`),duration:get(`${p}-t-flight-duration`),ticketPrice:Number(get(`${p}-t-flight-price`))||0,
       vehicleType:get(`${p}-t-flight-aircraft`),regNo:get(`${p}-t-flight-reg`),seat:get(`${p}-t-flight-seat`),gateNo:get(`${p}-t-flight-gateno`),note:get(`${p}-t-flight-note`),
-      recorder,payment,
+      recorder,payment,source:'APP',
     };
   } else if(travelTemplate==='ship'){
     return{
@@ -4154,7 +4377,7 @@ function collectTravelPanel(p){
       depPort:get(`${p}-t-ship-dep`),arrPort:get(`${p}-t-ship-arr`),transitPort:get(`${p}-t-ship-transit`),
       depTime:get(`${p}-t-ship-dep-time`),arrTime:get(`${p}-t-ship-arr-time`),duration:get(`${p}-t-ship-duration`),ticketPrice:Number(get(`${p}-t-ship-price`))||0,
       vehicleType:get(`${p}-t-ship-vessel-type`),regNo:get(`${p}-t-ship-reg`),seat:get(`${p}-t-ship-cabin`),note:get(`${p}-t-ship-note`),
-      recorder,payment,
+      recorder,payment,source:'APP',
     };
   } else {
     return{
@@ -4163,7 +4386,7 @@ function collectTravelPanel(p){
       depPort:get(`${p}-t-gen-dep`),arrPort:get(`${p}-t-gen-arr`),transitPort:get(`${p}-t-gen-transit`),
       depTime:get(`${p}-t-gen-dep-time`),arrTime:get(`${p}-t-gen-arr-time`),duration:get(`${p}-t-gen-duration`),ticketPrice:Number(get(`${p}-t-gen-price`))||0,
       vehicleType:get(`${p}-t-gen-vtype`),regNo:'',seat:get(`${p}-t-gen-seat`),plateNo:get(`${p}-t-gen-plate`),note:get(`${p}-t-gen-note`),
-      recorder,payment,
+      recorder,payment,source:'APP',
     };
   }
 }
