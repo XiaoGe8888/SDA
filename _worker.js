@@ -230,7 +230,8 @@ async function parseExpense(text, env) {
     '"cuisine":菜系或null,"portion":份量或null,"diningType":早餐/午餐/晚餐/宵夜/下午茶或null,' +
     '"transportType":flight/ship/hsr/train/metro/taxi或null,"depPort":出發地或null,"arrPort":到達地或null,' +
     '"payment":付款方式或null}\n' +
-    '分類只能是這四種之一：drink（手搖飲料、咖啡、飲品）、food（餐點、食物、小吃）、travel（交通、車票、油錢、停車、計程車）、other（其他）。\n' +
+    '分類只能是這五種之一：drink（手搖飲料、咖啡、飲品）、food（餐點、食物、小吃）、travel（交通、車票、油錢、停車、計程車）、split（訊息裡明確提到AA、分帳、幫付、代墊、每人多少這類分攤金錢的說法）、other（其他，包含收入/支出/薪水/轉帳等一般記帳）。\n' +
+    '重要：分類完全只看訊息「內容」本身判斷，不能因為這則訊息是在LINE群組裡傳的就判斷為split，群組跟1對1的判斷方式要一樣。\n' +
     '如果句子裡沒有可辨識的金額，amount回傳null。\n' +
     '詳細欄位規則（非常重要，沒提到就填null，絕對不要自己猜測腦補）：\n' +
     '- brand/size/topping/sugar/ice：只有分類是drink才需要判斷\n' +
@@ -364,13 +365,14 @@ function flagshipCurrentField(session) {
   return list[session.stepIndex] || null;
 }
 
-function flagshipBuildRecord(session, userId, userName, groupId, groupName) {
+function flagshipBuildRecord(session, userId, userName, groupId, groupName, msgId) {
   const a = session.answers || {};
   const now = new Date();
   return {
     id: 'L' + now.getTime(),
     item: a.drink || '', amount: Math.round(Number(a.amount) || 0), category: 'drink',
     userId, userName, groupId: groupId || '', groupName: groupName || '', ts: now.getTime(),
+    msgId: msgId || '',
     detailed: true, tier: 'flagship',
     brand: a.brand || '', drink: a.drink || '', size: a.size || '',
     topping: a.topping && a.topping !== '無' ? a.topping : '',
@@ -400,7 +402,7 @@ const TRAVEL_TYPE_LABELS = { flight: '✈️ 航班', ship: '🚢 船班', hsr: 
 
 // 把 parseExpense() 解析出的結果組成一筆記錄 —— 直接訊息、標準版雙表單最後都靠這個組資料，邏輯統一
 const DETAIL_KEYS = ['brand', 'size', 'topping', 'sugar', 'ice', 'cuisine', 'portion', 'diningType', 'transportType', 'depPort', 'arrPort', 'payment'];
-function buildRecordFromParsed(parsed, fallbackText, userId, userName, groupId, groupName, tierOverride) {
+function buildRecordFromParsed(parsed, fallbackText, userId, userName, groupId, groupName, tierOverride, msgId) {
   const now = new Date();
   const hasDetail = DETAIL_KEYS.some((k) => parsed[k] != null && String(parsed[k]).trim() !== '');
   const record = {
@@ -413,6 +415,7 @@ function buildRecordFromParsed(parsed, fallbackText, userId, userName, groupId, 
     groupId: groupId || '',
     groupName: groupName || '',
     ts: now.getTime(),
+    msgId: msgId || '',
   };
   if (tierOverride) {
     record.detailed = true;
@@ -425,7 +428,7 @@ function buildRecordFromParsed(parsed, fallbackText, userId, userName, groupId, 
   }
   return record;
 }
-function buildSimpleRecord(session, userId, userName, groupId, groupName) {
+function buildSimpleRecord(session, userId, userName, groupId, groupName, msgId) {
   const a = session.answers || {};
   const now = new Date();
   const catMap = { drink: 'drink', food: 'food', travel: 'travel', split: 'other' };
@@ -433,6 +436,7 @@ function buildSimpleRecord(session, userId, userName, groupId, groupName) {
     id: 'L' + now.getTime(),
     item: a.item || '', amount: Math.round(Number(a.amount) || 0), category: catMap[session.module] || 'other',
     userId, userName, groupId: groupId || '', groupName: groupName || '', ts: now.getTime(),
+    msgId: msgId || '',
   };
   if (session.travelType) record.transportType = session.travelType;
   return record;
@@ -721,7 +725,7 @@ async function handleFlagshipMessage(ev, token, env) {
       userName = (isGroup ? await lineGroupMemberProfile(token, groupId, userId) : await lineProfile(token, userId)) || '';
     } catch (e) {}
     if (isGroup) { try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {} }
-    const record = buildRecordFromParsed(session.answers, text, userId, userName, groupId, groupName, 'standard');
+    const record = buildRecordFromParsed(session.answers, text, userId, userName, groupId, groupName, 'standard', ev.message.id);
     let synced = false;
     try {
       synced = await saveLineLogRecord(record, env);
@@ -779,8 +783,8 @@ async function handleFlagshipMessage(ev, token, env) {
     } catch (e) {}
     if (isGroup) { try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {} }
     const record = session.flow === 'drink'
-      ? flagshipBuildRecord(session, userId, userName, groupId, groupName)
-      : buildSimpleRecord(session, userId, userName, groupId, groupName);
+      ? flagshipBuildRecord(session, userId, userName, groupId, groupName, ev.message.id)
+      : buildSimpleRecord(session, userId, userName, groupId, groupName, ev.message.id);
     let synced = false;
     try {
       synced = await saveLineLogRecord(record, env);
@@ -895,7 +899,7 @@ async function handleExpenseMessage(ev, token, env) {
     try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {}
   }
 
-  const record = buildRecordFromParsed(parsed, text, userId, userName, groupId, groupName);
+  const record = buildRecordFromParsed(parsed, text, userId, userName, groupId, groupName, undefined, ev.message.id);
 
   let synced = false;
   try {

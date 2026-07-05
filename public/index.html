@@ -1415,7 +1415,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-07-05c';
+const BUILD_ID='2026-07-05f';
 // --- Anthropic API Helper ---
 // ============ AI 連線設定（上線用）============
 // 上線到你自己的網域時：把 App 與「代理函式」放在同一個專案，這裡保持 '/api/gemini' 不用改。
@@ -2900,26 +2900,29 @@ function renderLineLogBody(records){
     return;
   }
   const sorted=records.slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);});
-  const catInfo={drink:{l:'🧋 飲料',c:'#d4a373'},food:{l:'🍱 美食',c:'#ea7e3a'},travel:{l:'🚆 交通',c:'#3b82f6'},other:{l:'📝 其他',c:'#64748b'}};
+  const catInfo={drink:{l:'🧋 飲料',c:'#d4a373'},food:{l:'🍱 美食',c:'#ea7e3a'},travel:{l:'🚆 交通',c:'#3b82f6'},split:{l:'💸 分帳',c:'#a855f7'},other:{l:'📝 其他',c:'#64748b'}};
+  const travelTypeInfo={flight:'✈️ 航班',ship:'🚢 船班',hsr:'🚄 高鐵',train:'🚆 火車',metro:'🚇 地鐵',taxi:'🚖 打車'};
   const total=sorted.reduce(function(s,r){return s+(Number(r.amount)||0);},0);
   let html='<div style="background:var(--crm);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">'
     +'<span style="font-size:12px;color:var(--t5)">共 '+sorted.length+' 筆</span>'
     +'<span style="font-size:16px;font-weight:900;color:var(--bd)">合計 NT$ '+total.toLocaleString('en-US')+'</span></div>';
   sorted.forEach(function(r){
     const ci=catInfo[r.category]||catInfo.other;
+    const ciLabel=(r.category==='travel'&&r.transportType&&travelTypeInfo[r.transportType])?travelTypeInfo[r.transportType]:ci.l;
     const d=new Date(r.ts||0);
     const dstr=(d.getMonth()+1)+'/'+d.getDate()+' '+p2(d.getHours())+':'+p2(d.getMinutes());
     const rid=splitEsc(String(r.id||''));
     let importBtn;
     if(r.synced){
       importBtn='<span style="padding:6px 10px;border-radius:8px;background:var(--crm);color:var(--br);font-family:inherit;font-size:11px;font-weight:900;white-space:nowrap">✅ 已自動同步</span>';
-    } else if(r.groupId){
+    } else if(r.category==='split'){
       importBtn='<button onclick="lineOpenSplitImport(\''+rid+'\')" style="padding:6px 10px;border:1px solid var(--amb);border-radius:8px;background:var(--crm);color:var(--br);font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;touch-action:manipulation">📥 匯入分帳</button>';
     } else if(r.category==='other'){
       importBtn='<div style="display:flex;gap:4px">'
         +'<button onclick="lineImportSimple(\''+rid+'\',\'drink\')" title="匯入飲料" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);cursor:pointer;font-size:12px;touch-action:manipulation">🧋</button>'
         +'<button onclick="lineImportSimple(\''+rid+'\',\'food\')" title="匯入美食" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);cursor:pointer;font-size:12px;touch-action:manipulation">🍱</button>'
         +'<button onclick="lineImportSimple(\''+rid+'\',\'travel\')" title="匯入交通" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);cursor:pointer;font-size:12px;touch-action:manipulation">🚆</button>'
+        +(r.groupId?'<button onclick="lineOpenSplitImport(\''+rid+'\')" title="匯入分帳" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);cursor:pointer;font-size:12px;touch-action:manipulation">💸</button>':'')
         +'</div>';
     } else {
       importBtn='<button onclick="lineImportSimple(\''+rid+'\',\''+r.category+'\')" style="padding:6px 10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;touch-action:manipulation">📥 匯入</button>';
@@ -2927,7 +2930,7 @@ function renderLineLogBody(records){
     html+='<div id="linelog-row-'+rid+'" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--bdr);gap:10px">'
       +'<div style="flex:1;min-width:0">'
       +'<div style="font-size:14px;font-weight:700;color:var(--bd)">'+splitEsc(r.item||'')+'</div>'
-      +'<div style="font-size:11px;color:var(--t5);margin-top:3px"><span style="color:'+ci.c+';font-weight:700">'+ci.l+'</span>　'+(r.detailed?'<span style="color:var(--br);font-weight:700">✨'+(r.tier==='flagship'?'旗艦版':'標準版')+'・</span>':'')+(r.userName?splitEsc(r.userName)+'・':'')+(r.groupName?'👥'+splitEsc(r.groupName)+'・':'')+dstr+'</div>'
+      +'<div style="font-size:11px;color:var(--t5);margin-top:3px"><span style="color:'+ci.c+';font-weight:700">'+ciLabel+'</span>　'+(r.detailed?'<span style="color:var(--br);font-weight:700">✨'+(r.tier==='flagship'?'旗艦版':'標準版')+'・</span>':'')+(r.userName?splitEsc(r.userName)+'・':'')+(r.groupName?'👥'+splitEsc(r.groupName)+'・':'')+dstr+'</div>'
       +'</div>'
       +'<div style="text-align:right;flex-shrink:0">'
       +'<div style="font-size:16px;font-weight:900;color:var(--bd);margin-bottom:6px">$'+(Number(r.amount)||0)+'</div>'
@@ -2956,40 +2959,41 @@ async function lineImportSimple(id,targetModule){
   const r=lineLogCache.find(x=>String(x.id)===String(id));
   if(!r){toast('⚠️ 找不到這筆紀錄，請重新整理');return;}
   const dt=lineTsToDateTime(r.ts);
+  const newId=uid();
   if(targetModule==='drink'){
     recs.unshift({
-      id:uid(),panel:'1',sn:'',snp:'',
+      id:newId,panel:'1',sn:'',snp:'',
       date:dt.date,time:dt.time,country:'',area:'',
       brand:r.brand||'',drink:r.item||'',category:'',size:r.size||'',topping:r.topping||'',
       sugar:r.sugar||'',ice:r.ice||'',payment:r.payment||'',currency:'NT$',amount:Number(r.amount)||0,
       drinker:toAppUserName(r.userName),payer:toAppUserName(r.userName),recorder:toAppUserName(r.userName),
       note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':''),ainote:'',rating:Number(r.rating)||0,
-      source:'LINE',
+      source:'LINE',importedAt:Date.now(),lineMsgId:r.msgId||'',
     });
     recs.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
     if(!saveRecords())return;
   }else if(targetModule==='food'){
     meals.unshift({
-      id:uid(),panel:'1',sn:'',snp:'',
+      id:newId,panel:'1',sn:'',snp:'',
       date:dt.date,time:dt.time,category:'',
       brand:r.brand||'',dish:r.item||'',cuisine:r.cuisine||'',portion:r.portion||'中份',spicy:'',diningType:r.diningType||'',
       satiety:'',revisit:'',rating:Number(r.rating)||0,payment:r.payment||'',currency:'NT$',amount:Number(r.amount)||0,
       eater:toAppUserName(r.userName),payer:toAppUserName(r.userName),recorder:toAppUserName(r.userName),
       note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':''),ainote:'',
-      source:'LINE',
+      source:'LINE',importedAt:Date.now(),lineMsgId:r.msgId||'',
     });
     meals.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
     if(!saveMeals())return;
   }else if(targetModule==='travel'){
     travels.unshift({
-      id:uid(),panel:'a',type:r.transportType||'taxi',
+      id:newId,panel:'a',type:r.transportType||'taxi',
       date:dt.date,no:'',company:'',
       depPort:r.depPort||'',arrPort:r.arrPort||'',transitPort:'',
       depTime:dt.time,arrTime:'',duration:'',ticketPrice:Number(r.amount)||0,
       vehicleType:'',regNo:'',seat:'',plateNo:'',
       note:(r.note?r.note+' · ':'')+'📱 LINE記帳匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':'')+(r.item?' · '+r.item:''),
       recorder:toAppUserName(r.userName),payment:r.payment||'',
-      source:'LINE',
+      source:'LINE',importedAt:Date.now(),lineMsgId:r.msgId||'',
     });
     travels.sort((a,b)=>(b.date||'')<(a.date||'')?-1:1);
     if(!saveTravels())return;
@@ -2997,8 +3001,12 @@ async function lineImportSimple(id,targetModule){
     toast('⚠️ 不支援的分類');return;
   }
   await lineLogRemoveRemote([r.id]);
-  toast('✅ 已匯入'+({drink:'🧋飲料',food:'🍱美食',travel:'🚆交通'}[targetModule]||''));
-  openLineLog();
+  toast('✅ 已匯入'+({drink:'🧋飲料',food:'🍱美食',travel:'🚆交通'}[targetModule]||'')+'，請確認/補充內容');
+  closeLineLog();
+  // 匯入後直接開啟該模組的編輯畫面，讓使用者確認或補充資料，不再是靜默建立
+  if(targetModule==='drink')openForm(dt.date,newId);
+  else if(targetModule==='food')openMealForm(dt.date,newId);
+  else if(targetModule==='travel')openTravelForm(newId);
 }
 // 有groupId（LINE群組）的記錄 → 選要匯入哪個分帳群組、對應成員是誰
 function lineOpenSplitImport(id){
@@ -3066,7 +3074,7 @@ async function lineConfirmSplitImport(id){
     payerId:payerId,payment:'',
     date:dt.date,time:dt.time,
     splitType:'equal',participantIds:g.members.map(m=>m.id),
-    customShares:{},note:'📱 LINE記帳匯入（'+(r.userName||'')+'）',image:'',
+    customShares:{},note:'📱 LINE記帳匯入（'+(r.userName||'')+'）',image:'',source:'LINE',importedAt:Date.now(),lineMsgId:r.msgId||'',
   });
   if(!saveSplitGroups())return;
   await lineLogRemoveRemote([r.id]);
