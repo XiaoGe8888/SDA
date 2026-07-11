@@ -519,6 +519,128 @@ async function autoSyncRecord(userId, record, env) {
 }
 
 // 存進line:log（清單/紀錄）之外，同時試著自動同步進App；回傳這筆有沒有自動同步成功
+// ===== 🌟乖寶寶集點卡：LINE輸入 =====
+// 讀取使用者已綁定同步碼底下，某個localStorage key的陣列內容（例如孩子清單、行為清單）；沒綁定回傳null，key不存在回傳[]
+async function fetchSyncedArray(userId, lsKey, env) {
+  const kv = env.SYNC_KV;
+  if (!kv || !userId) return null;
+  const code = await kv.get('line:usersync:' + userId);
+  if (!code) return null;
+  const raw = await kv.get(keyOf(code));
+  if (!raw) return null;
+  let rec;
+  try { rec = JSON.parse(raw); } catch (e) { return null; }
+  const data = rec.data || {};
+  try { return data[lsKey] ? JSON.parse(data[lsKey]) : []; } catch (e) { return []; }
+}
+// 把一筆集點事件寫進使用者同步資料的 sticker_events 裡（跟autoSyncRecord同一套安全讀取-修改-寫回做法）
+async function writeStickerEvent(userId, entry, env) {
+  const kv = env.SYNC_KV;
+  if (!kv || !userId) return false;
+  const code = await kv.get('line:usersync:' + userId);
+  if (!code) return false;
+  const raw = await kv.get(keyOf(code));
+  if (!raw) return false;
+  let rec;
+  try { rec = JSON.parse(raw); } catch (e) { return false; }
+  const data = rec.data || {};
+  let arr;
+  try { arr = data.sticker_events ? JSON.parse(data.sticker_events) : []; } catch (e) { arr = []; }
+  arr.unshift(entry);
+  data.sticker_events = JSON.stringify(arr);
+  await kv.put(keyOf(code), JSON.stringify({ data, updated_at: Date.now() }));
+  return true;
+}
+// 處理「集點卡」的LINE對話流程：打「集點卡」→選孩子→選行為→自動記點。只做1對1、只支援乖寶寶集點卡（互助集點卡目前還沒接LINE）。
+async function handleStickerCardMessage(ev, token, env) {
+  const text = (ev.message.text || '').trim();
+  const userId = (ev.source && ev.source.userId) || '';
+  const isGroup = !!(ev.source && ev.source.type === 'group');
+  if (isGroup || !userId) return false;
+
+  let session = await getFlagshipSession(userId, env);
+  if (session && session.flow !== 'stickerkid') return false; // 不是集點卡的session，交給別的handler
+
+  if (!session) {
+    if (text !== '集點卡') return false;
+    const kids = await fetchSyncedArray(userId, 'sticker_kids', env);
+    if (kids === null) {
+      await lineReply(token, ev.replyToken, '你還沒綁定同步碼喔，先傳「同步碼 你的碼」綁定（App設定→雲端同步可以看到），才能用LINE記集點卡。');
+      return true;
+    }
+    if (!kids.length) {
+      await lineReply(token, ev.replyToken, '你的集點卡裡還沒有任何孩子，先到App「🌟集點卡→👶乖寶寶集點卡」新增一位孩子吧。');
+      return true;
+    }
+    session = { flow: 'stickerkid', stage: 'pickKid', kids, kidId: null };
+    await setFlagshipSession(userId, session, env);
+    await lineReplyAsk(token, ev.replyToken, '🌟 要幫哪個孩子集點？', kids.map((k) => k.name));
+    return true;
+  }
+
+  if (/^(取消|cancel|結束|結束此次對話|離開|退出|quit|exit)$/i.test(text)) {
+    await clearFlagshipSession(userId, env);
+    await lineReplyQuick(token, ev.replyToken, '已取消這次集點。', null);
+    return true;
+  }
+
+  if (session.stage === 'pickKid') {
+    const kid = session.kids.find((k) => k.name === text);
+    if (!kid) {
+      await lineReplyAsk(token, ev.replyToken, '請從清單裡選一個孩子：', session.kids.map((k) => k.name));
+      return true;
+    }
+    const behaviors = await fetchSyncedArray(userId, 'sticker_behaviors', env);
+    if (!behaviors || !behaviors.length) {
+      await clearFlagshipSession(userId, env);
+      await lineReply(token, ev.replyToken, '還沒有設定任何行為，先到App「🌟集點卡→👶乖寶寶集點卡→⚙️管理行為/獎勵」新增幾個行為吧。');
+      return true;
+    }
+    session.stage = 'pickBehavior';
+    session.kidId = kid.id;
+    session.kidName = kid.name;
+    session.behaviors = behaviors;
+    await setFlagshipSession(userId, session, env);
+    await lineReplyAsk(token, ev.replyToken, kid.name + ' 做了什麼？', behaviors.map((b) => b.name + ' +' + b.points).concat(['↩️ 返回']));
+    return true;
+  }
+
+  if (session.stage === 'pickBehavior') {
+    if (/^↩️?\s*返回$/.test(text)) {
+      session.stage = 'pickKid';
+      await setFlagshipSession(userId, session, env);
+      await lineReplyAsk(token, ev.replyToken, '🌟 要幫哪個孩子集點？', session.kids.map((k) => k.name));
+      return true;
+    }
+    const behavior = session.behaviors.find((b) => (b.name + ' +' + b.points) === text || b.name === text);
+    if (!behavior) {
+      await lineReplyAsk(token, ev.replyToken, '請從清單裡選一個行為：', session.behaviors.map((b) => b.name + ' +' + b.points));
+      return true;
+    }
+    let userName = '';
+    try { userName = (await lineProfile(token, userId)) || ''; } catch (e) {}
+    const now = new Date();
+    const p2b = (n) => String(n).padStart(2, '0');
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      kidId: session.kidId, behaviorId: behavior.id, behaviorName: behavior.name, points: Number(behavior.points) || 0,
+      date: now.getFullYear() + '-' + p2b(now.getMonth() + 1) + '-' + p2b(now.getDate()),
+      time: p2b(now.getHours()) + ':' + p2b(now.getMinutes()),
+      recorder: toAppUserName(userName), note: '📱 LINE記錄',
+    };
+    const ok = await writeStickerEvent(userId, entry, env);
+    const kidName = session.kidName;
+    await clearFlagshipSession(userId, env);
+    if (ok) {
+      await lineReplyQuick(token, ev.replyToken, '✅ 已幫「' + kidName + '」記錄「' + behavior.name + '」+' + behavior.points + ' 點！', null);
+    } else {
+      await lineReplyQuick(token, ev.replyToken, '存檔時發生問題，請稍後再試 🙏', null);
+    }
+    return true;
+  }
+  return false;
+}
+
 async function saveLineLogRecord(record, env) {
   const kv = env.SYNC_KV;
   if (!kv) throw new Error('no kv');
@@ -580,12 +702,27 @@ async function flagshipProceedAfterModule(session, userId, env, token, replyToke
   await lineReplyAsk(
     token, replyToken,
     flow.label + '：要用哪種模式？\n單表單：一次問完（或一句話講完）\n雙表單：分兩段問，中間會停一下\n\n要用哪一種？',
-    ['單表單模式', '雙表單模式']
+    ['單表單模式', '雙表單模式', '↩️ 返回']
   );
 }
 
 // 處理旗艦版／簡易版／標準版的多輪問答訊息（三種tier共用同一套引擎，用session.flow分辨）。
 // 回傳 true 代表這則訊息已經處理完畢；回傳 false 代表跟這套機制無關，交給 handleExpenseMessage 處理。
+// 「主選單」是萬用重來鍵：不管現在卡在哪個流程（旗艦版問到一半、集點卡選到一半），打這個都直接清空、重新顯示可用功能
+async function handleMainMenu(ev, token, env) {
+  const text = (ev.message.text || '').trim();
+  const userId = (ev.source && ev.source.userId) || '';
+  const isGroup = !!(ev.source && ev.source.type === 'group');
+  if (isGroup || !userId) return false;
+  if (!/^(主選單|回主選單|menu|home)$/i.test(text)) return false;
+  await clearFlagshipSession(userId, env);
+  await lineReplyButtons(token, ev.replyToken, '主選單', '嗨！想用哪個功能呢？', [
+    { label: '📋 日常小秘書', text: '日常小秘書' },
+    { label: '🎁 集點卡', text: '集點卡' },
+  ]);
+  return true;
+}
+
 async function handleFlagshipMessage(ev, token, env) {
   const text = (ev.message.text || '').trim();
   const userId = (ev.source && ev.source.userId) || '';
@@ -594,6 +731,7 @@ async function handleFlagshipMessage(ev, token, env) {
   if (!userId) return false; // session用userId分辨，群組裡不同人各自有各自的流程，不會互相干擾
 
   let session = await getFlagshipSession(userId, env);
+  if (session && session.flow === 'stickerkid') return false; // 這是集點卡流程的session，交給handleStickerCardMessage處理
 
   if (!session) {
     const tier = TIER_TRIGGERS[text];
@@ -671,6 +809,18 @@ async function handleFlagshipMessage(ev, token, env) {
 
   // ---- 選模式 ----
   if (!session.mode) {
+    if (/^↩️?\s*返回$/.test(text)) {
+      session.module = null;
+      session.travelType = null;
+      await setFlagshipSession(userId, session, env);
+      await lineReplyButtons(token, ev.replyToken, '請選擇模組', '要記錄哪個模組呢？', [
+        { label: '🧋 飲料', text: '飲料' },
+        { label: '🍱 美食', text: '美食' },
+        { label: '🚆 交通', text: '交通' },
+        { label: '💰 記帳', text: '記帳' },
+      ]);
+      return true;
+    }
     if (/^單/.test(text)) session.mode = 'single';
     else if (/^雙/.test(text)) session.mode = 'dual';
     else {
@@ -940,7 +1090,7 @@ async function handleLine(request, env) {
   for (const ev of events) {
     if (ev.type === 'message' && ev.message && ev.message.type === 'text' && ev.replyToken) {
       try {
-        const handled = await handleFlagshipMessage(ev, token, env);
+        const handled = (await handleMainMenu(ev, token, env)) || (await handleFlagshipMessage(ev, token, env)) || (await handleStickerCardMessage(ev, token, env));
         if (!handled) await handleExpenseMessage(ev, token, env);
       } catch (e) {
         try { await lineReply(token, ev.replyToken, '發生了一點問題 🙏 請再試一次'); } catch (e2) {}
