@@ -1415,7 +1415,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-07-05f';
+const BUILD_ID='2026-07-12h';
 // --- Anthropic API Helper ---
 // ============ AI 連線設定（上線用）============
 // 上線到你自己的網域時：把 App 與「代理函式」放在同一個專案，這裡保持 '/api/gemini' 不用改。
@@ -1456,7 +1456,7 @@ async function callClaude(messages, system, maxTokens=1000) {
 
 // ============ 雲端同步（同步碼模式）============
 const SYNC_URL = '/api/sync';
-const SYNC_KEYS = ['boba_recs','meal_recs','travel_recs','boba_favs','meal_favs','travel_favs','boba_budget','meal_budget','travel_budget','boba_trash','split_groups','split_group_cats','boba_tool_prob','auth_users','super_password_hash'];
+const SYNC_KEYS = ['boba_recs','meal_recs','travel_recs','boba_favs','meal_favs','travel_favs','boba_budget','meal_budget','travel_budget','boba_trash','split_groups','split_group_cats','boba_tool_prob','auth_users','super_password_hash','sticker_kids','sticker_behaviors','sticker_rewards','sticker_events','sticker_redemptions','mutual_events','mutual_rewards','mutual_redemptions'];
 let syncCode = localStorage.getItem('sync_code') || '';
 let syncEnabled = localStorage.getItem('sync_enabled') === '1';
 let applyingRemote = false;
@@ -2185,6 +2185,8 @@ const DRINK_VERSION = '22.5.0'; // 🧋 飲料模組獨立版本：沿用原全�
 const FOOD_VERSION = '6.2.0'; // 🍱 美食模組獨立版本：僅美食專屬功能變動計入，下次美食更新即為 V6 系列
 const TRAVEL_VERSION = '1.1.0'; // ✈️🚢 航班/船班模組獨立版本：全新模組，從 V1.0.0 起算
 const SPLIT_VERSION = '1.0.0'; // 🧾 分帳模組獨立版本
+const STICKER_VERSION = '1.0.0'; // 🌟 集點卡模組獨立版本（含乖寶寶、互助兩張卡）
+const LINE_VERSION = '5.0.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5起為本次session新增的所有LINE整合功能
 
 // 版本治理規範（僅供未來判定版本號／更新提示策略參考，本身不觸發版本變更）：
 // 1. Major：重大架構改版或不向下相容的 Breaking Change（如資料結構不相容、核心引擎重寫）。
@@ -2213,7 +2215,58 @@ const DEV_ORDER_POLICY = ['紀錄日常','數據統計','生活工具','設定']
 
 const CHANGELOG = [
   {
-    version:'26.1.0', type:'Minor', date:'2026/06/28',
+    version:'⚙️ LINE整合 V5.0.0', type:'Minor', date:'2026/07/12',
+    items:[
+      'LINE整合：LINE記帳支援群組聊天室（不只1對1），自動判斷發言者是否來自群組、抓取群組成員顯示名稱與群組名稱',
+      'LINE整合：提供三種記帳方式——🟢簡易版（一句「品項 金額」）、🟡標準版（一句話講詳細，Gemini自動抓品牌/SIZE/甜度等欄位，沒提到的不會亂猜）、🔴旗艦版（一題一題問，支援單表單／雙表單兩種模式，目前飲料模組已完整、其餘8個模組待續）',
+      'LINE整合：App新增「📱LINE記帳」清單頁面，可將LINE記錄依分類一鍵匯入飲料／美食／交通模組，或匯入指定分帳群組；匯入時同步標記資料來源（LINE／App）',
+      'LINE整合：綁定「同步碼」後，🧋飲料／🍱美食／🚆交通可完全自動同步進App正式資料，不需手動匯入；並建立LINE顯示名稱與App使用者名稱的對照表，統計時不會拆成兩個人',
+      'LINE整合：新增「日常小秘書」「集點卡」按鈕卡片入口，以及「主選單」萬用重來鍵，任何時候輸入皆可重新開始；部分多步驟流程支援「↩️返回」上一步',
+      'LINE整合：任何進行中的問答流程輸入「取消／結束／離開／退出」皆會先跳出確認卡片，避免不小心中斷紀錄',
+      'LINE整合：集點卡（👶乖寶寶）支援透過LINE輸入——打「集點卡」→選孩子→選行為→自動記點並同步進App',
+    ],
+    reason:'本則接續V4.0.0（LINE Bot階段4）之後的所有LINE整合功能，是分散在多次調整中陸續完成的，先前未統一納入版本與更新紀錄追蹤，本次一併回補；日期為「回補當下」的日期，不代表每項功能實際完成的確切日期（過程中沒有逐項記錄精確時間點，不編造）。',
+  },
+  {
+    version:'⚙️ LINE整合 V4.0.0', type:'Minor', date:'2026/06/28',
+    items:[
+      'LINE整合：App新增「📱 LINE記帳」入口，讀取並顯示LINE記帳的資料（可在瀏覽器直接查看/api/line-log的JSON方便測試）',
+    ],
+    reason:'LINE Bot開發階段4：讓App端能讀到LINE記的帳。此筆為回補紀錄，日期依交接文件記載的build日期（2026-06-28d）標示，非逐項記錄的精確完成時間。',
+  },
+  {
+    version:'⚙️ LINE整合 V3.0.0', type:'Minor', date:'未記錄',
+    items:[
+      'LINE整合：導入Gemini解析記帳訊息（拆出品項／金額／分類），解析結果寫入KV（line:log），記帳完成後回覆使用者「已記錄」，並標記是哪位使用者記的（例如實測「午餐120」→洪小格、food，成功）',
+    ],
+    reason:'LINE Bot開發階段3：從「收得到訊息」進展到「看得懂訊息、真的存起來」。此筆為回補紀錄，交接文件未記載本階段的確切完成日期，如實標示為未記錄。',
+  },
+  {
+    version:'⚙️ LINE整合 V2.0.0', type:'Minor', date:'未記錄',
+    items:[
+      'LINE整合：Worker新增 /api/line 路由，並完成LINE後台Webhook設定與簽章驗證，通過echo測試（機器人能收到並回覆LINE訊息）',
+    ],
+    reason:'LINE Bot開發階段2：讓機器人「聽得到、回得了」。此筆為回補紀錄，交接文件未記載本階段的確切完成日期，如實標示為未記錄。',
+  },
+  {
+    version:'⚙️ LINE整合 V1.0.0', type:'Minor', date:'未記錄',
+    items:[
+      'LINE整合：申請LINE官方帳號與Messaging API頻道「日常小助理」，取得Channel Secret、Channel Access Token，並確認使用者本人的LINE User ID',
+    ],
+    reason:'LINE Bot開發階段1：申請帳號與金鑰，是LINE整合最初的起點。此筆為回補紀錄，交接文件未記載本階段的確切完成日期，如實標示為未記錄。',
+  },
+  {
+    version:'🌟 集點卡 V1.0.0', type:'Minor', date:'2026/07/12',
+    items:[
+      '集點卡：新增「集點卡」功能，採二層選單設計（先選卡片類型，再進對應功能），目前開放👶乖寶寶集點卡與💑互助集點卡兩種模板',
+      '集點卡：乖寶寶集點卡支援新增多位孩子、各自獨立累計點數，可自訂「行為→點數」與「獎勵→所需點數」清單，並記錄完整加點/兌換歷史',
+      '集點卡：互助集點卡讓兩人互相加減點數，不論是誰記的、加給誰，全部併入同一個總數計算，同樣支援自訂獎勵兌換',
+      '集點卡：乖寶寶集點卡支援透過LINE輸入（打「集點卡」→選孩子→選行為→自動記點，需先綁定同步碼），並已納入雲端同步與版本資訊模組卡片',
+    ],
+    reason:'集點卡是全新模組，先前未納入版本與更新紀錄追蹤，本次比照分帳模組做法，建立集點卡分類的更新紀錄與獨立版本號（V1.0.0起算），方便日後依模組檢視。',
+  },
+  {
+    version:'🧾 分帳 V1.0.0', type:'Minor', date:'2026/06/28',
     items:[
       '分帳：將「分帳」模組正式納入版本資訊與更新紀錄篩選，分帳模組獨立版本自 V1.0.0 起算',
       '分帳：支援建立群組、新增成員、登記每筆支出與分攤方式，並計算成員之間的應收應付',
@@ -2308,7 +2361,7 @@ const CHANGELOG = [
     reason:'修復既有版面排版錯誤並統一視覺風格，不涉及新增功能，故列為航班/船班模組 Patch，由 V1.0.0 升至 V1.0.1。'
   },
   {
-    version:'24.0.0', type:'Major',
+    version:'✈️🚢 航班船班 V1.0.0', type:'Major',
     items:[
       '新增：「航班／船班紀錄」全新第三主模組，與「飲料紀錄」「美食紀錄」並列首頁三入口，資料結構完全獨立',
       '新增：航班／船班表單採 A／B 雙人面板架構（與飲料/美食模組一致），可選擇 ✈️航班 或 🚢船班 紀錄模板，各面板皆含完整基本資料（日期、編號、公司、出發/到達地、時間、票價）與收藏紀錄細節（機型/船型、機身/船舶編號、座位/艙位、紀錄者）',
@@ -2843,6 +2896,11 @@ function renderHome(){
       <div class="dc-title" style="justify-content:center;font-size:13px">分帳</div>
       <div class="dc-sub" style="margin-top:4px;font-size:10px">${splitGroups.length} 個群組</div>
     </div>
+    <div onclick="openStickerCard()" class="dc-card" style="text-align:center;padding:20px 8px;touch-action:manipulation">
+      <div style="margin-bottom:8px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg></div>
+      <div class="dc-title" style="justify-content:center;font-size:13px">集點卡</div>
+      <div class="dc-sub" style="margin-top:4px;font-size:10px">${stickerKids.length} 個孩子・${mutualBalance()} 互助點</div>
+    </div>
   </div>
   <div class="chart-card" style="margin:0 16px">
     <div class="ct"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M20 20H3"/></svg>全館總覽（本月）</div>
@@ -2861,7 +2919,359 @@ function renderHome(){
   <button onclick="openLineLog()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid var(--bdr);border-radius:14px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-size:16px">📱</span>LINE 記帳</button>
   <div style="text-align:center;color:var(--t5);font-size:10px;margin:18px 0 8px;opacity:.7">日常小秘書</div>`;
 }
-// ===== LINE 記帳檢視（讀取 /api/line-log）=====
+// ===== 🌟乖寶寶集點卡 =====
+let stickerView={screen:'main',kidId:null}; // screen: main / kid / record / redeem / history / manage
+async function openStickerCard(){
+  let m=document.getElementById('sticker-modal');
+  if(!m){
+    m=document.createElement('div');
+    m.id='sticker-modal';
+    m.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+    m.addEventListener('click',function(e){if(e.target===m)closeStickerCard();});
+    document.body.appendChild(m);
+  }
+  stickerView={screen:'type',kidId:null};
+  m.innerHTML='<div style="background:var(--sur);width:100%;max-width:520px;max-height:85vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden">'
+    +'<div style="padding:16px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between">'
+    +'<div id="sticker-header-title" style="font-size:16px;font-weight:900;color:var(--bd);font-family:\'Noto Serif TC\',serif">🌟 集點卡</div>'
+    +'<button onclick="closeStickerCard()" style="border:none;background:var(--crm);width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;color:var(--t5)">✕</button>'
+    +'</div>'
+    +'<div id="sticker-body" style="padding:14px 18px 20px;overflow-y:auto;flex:1"></div>'
+    +'</div>';
+  m.style.display='flex';
+  renderStickerCard();
+}
+function closeStickerCard(){const m=document.getElementById('sticker-modal');if(m)m.style.display='none';}
+function stickerGoto(screen,kidId){stickerView={screen,kidId:kidId!==undefined?kidId:stickerView.kidId};renderStickerCard();}
+function renderStickerCard(){
+  const body=document.getElementById('sticker-body');const title=document.getElementById('sticker-header-title');
+  if(!body)return;
+  if(stickerView.screen==='type'){title.textContent='🌟 集點卡';renderStickerType(body);}
+  else if(stickerView.screen==='main'){title.textContent='👶 乖寶寶集點卡';renderStickerMain(body);}
+  else if(stickerView.screen==='kid'){renderStickerKid(body,title);}
+  else if(stickerView.screen==='record'){renderStickerRecord(body,title);}
+  else if(stickerView.screen==='redeem'){renderStickerRedeem(body,title);}
+  else if(stickerView.screen==='history'){renderStickerHistory(body,title);}
+  else if(stickerView.screen==='manage'){title.textContent='⚙️ 管理行為／獎勵';renderStickerManage(body);}
+  else if(stickerView.screen==='mutual'){title.textContent='💑 互助集點卡';renderMutualMain(body);}
+  else if(stickerView.screen==='mutualRecord'){title.textContent='➕➖ 記一筆';renderMutualRecord(body);}
+  else if(stickerView.screen==='mutualRedeem'){title.textContent='🎁 兌換獎勵';renderMutualRedeem(body);}
+  else if(stickerView.screen==='mutualHistory'){title.textContent='📜 點數紀錄';renderMutualHistory(body);}
+  else if(stickerView.screen==='mutualManage'){title.textContent='⚙️ 管理獎勵';renderMutualManage(body);}
+}
+function renderStickerType(body){
+  body.innerHTML='<div style="font-size:12px;color:var(--t5);margin-bottom:14px">選擇要用哪一種集點卡：</div>'
+    +'<div onclick="stickerGoto(\'main\')" class="dc-card" style="text-align:center;padding:20px 8px;touch-action:manipulation;margin-bottom:10px">'
+    +'<div style="font-size:30px;margin-bottom:6px">👶</div><div class="dc-title" style="justify-content:center;font-size:14px">乖寶寶集點卡</div>'
+    +'<div class="dc-sub" style="margin-top:4px;font-size:11px">'+stickerKids.length+' 個孩子，各自累計點數</div></div>'
+    +'<div onclick="stickerGoto(\'mutual\')" class="dc-card" style="text-align:center;padding:20px 8px;touch-action:manipulation">'
+    +'<div style="font-size:30px;margin-bottom:6px">💑</div><div class="dc-title" style="justify-content:center;font-size:14px">互助集點卡</div>'
+    +'<div class="dc-sub" style="margin-top:4px;font-size:11px">'+mutualBalance()+' 點・兩人共用一張卡</div></div>';
+}
+function stickerBackBtn(target){return '<button onclick="stickerGoto(\''+target+'\')" style="border:none;background:none;color:var(--br);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer;padding:0 0 12px;display:block">← 返回</button>';}
+
+function renderStickerMain(body){
+  let html=stickerBackBtn('type');
+  html+='<button onclick="stickerGoto(\'manage\')" style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;margin-bottom:14px">⚙️ 管理行為／獎勵清單</button>';
+  html+='<div style="display:flex;gap:8px;margin-bottom:14px">'
+    +'<input id="sticker-new-kid" placeholder="新孩子的名字" style="flex:1;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--bd)">'
+    +'<button onclick="stickerAddKid()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--br);color:#fff;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">新增</button>'
+    +'</div>';
+  if(!stickerKids.length){
+    html+='<div style="text-align:center;color:var(--t5);padding:30px 10px">還沒有孩子的集點卡<br><span style="font-size:12px">先在上面新增一位孩子的名字吧</span></div>';
+  } else {
+    stickerKids.forEach(k=>{
+      const bal=stickerBalance(k.id);
+      html+='<div style="border:1px solid var(--bdr);border-radius:14px;padding:14px;margin-bottom:10px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        +'<div style="font-size:15px;font-weight:900;color:var(--bd)">👤 '+splitEsc(k.name)+'</div>'
+        +'<div style="font-size:18px;font-weight:900;color:var(--br)">'+bal+' 點</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px">'
+        +'<button onclick="stickerGoto(\'record\',\''+k.id+'\')" style="flex:1;padding:8px;border:1px solid var(--amb);border-radius:8px;background:var(--crm);color:var(--br);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">🎯 記一筆</button>'
+        +'<button onclick="stickerGoto(\'redeem\',\''+k.id+'\')" style="flex:1;padding:8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">🎁 兌換</button>'
+        +'<button onclick="stickerGoto(\'history\',\''+k.id+'\')" style="flex:1;padding:8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">📜 紀錄</button>'
+        +'<button onclick="stickerRemoveKid(\''+k.id+'\')" style="padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;cursor:pointer">🗑️</button>'
+        +'</div></div>';
+    });
+  }
+  body.innerHTML=html;
+}
+function stickerAddKid(){
+  const inp=document.getElementById('sticker-new-kid');const name=(inp.value||'').trim();
+  if(!name){toast('⚠️ 請輸入孩子的名字');return;}
+  stickerKids.push({id:uid(),name});
+  if(!saveStickerKids())return;
+  toast('✅ 已新增「'+name+'」的集點卡');
+  renderStickerCard();
+}
+function stickerRemoveKid(id){
+  const k=stickerKids.find(x=>x.id===id);if(!k)return;
+  if(!confirm('確定要刪除「'+k.name+'」的集點卡嗎？這會一併刪除他的所有紀錄。'))return;
+  stickerKids=stickerKids.filter(x=>x.id!==id);
+  stickerEvents=stickerEvents.filter(x=>x.kidId!==id);
+  stickerRedemptions=stickerRedemptions.filter(x=>x.kidId!==id);
+  saveStickerKids();saveStickerEvents();saveStickerRedemptions();
+  renderStickerCard();
+}
+
+function renderStickerKid(body,title){
+  const k=stickerKids.find(x=>x.id===stickerView.kidId);
+  if(!k){stickerGoto('main');return;}
+  title.textContent='👤 '+k.name;
+  body.innerHTML=stickerBackBtn('main')
+    +'<div style="text-align:center;padding:16px 0;font-size:32px;font-weight:900;color:var(--br)">'+stickerBalance(k.id)+' 點</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="stickerGoto(\'record\',\''+k.id+'\')" style="flex:1;padding:12px;border:1px solid var(--amb);border-radius:10px;background:var(--crm);color:var(--br);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">🎯 記一筆</button>'
+    +'<button onclick="stickerGoto(\'redeem\',\''+k.id+'\')" style="flex:1;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">🎁 兌換</button>'
+    +'</div>';
+}
+
+function renderStickerRecord(body,title){
+  const k=stickerKids.find(x=>x.id===stickerView.kidId);
+  if(!k){stickerGoto('main');return;}
+  title.textContent='🎯 '+k.name+' 記一筆';
+  let html=stickerBackBtn('main');
+  if(!stickerBehaviors.length){
+    html+='<div style="text-align:center;color:var(--t5);padding:20px 10px;font-size:13px">還沒有設定任何行為，先到「⚙️管理」新增，例如「刷牙 1點」</div>';
+  } else {
+    html+='<div style="font-size:12px;color:var(--t5);margin-bottom:8px">點一下行為就會直接記錄：</div>';
+    stickerBehaviors.forEach(b=>{
+      html+='<button onclick="stickerRecordEvent(\''+k.id+'\',\''+b.id+'\')" style="width:100%;text-align:left;padding:12px 14px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--bd);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;display:flex;justify-content:space-between">'
+        +'<span>'+splitEsc(b.name)+'</span><span style="color:var(--br);font-weight:900">+'+b.points+'</span></button>';
+    });
+  }
+  html+='<button onclick="stickerGoto(\'manage\')" style="width:100%;padding:10px;border:1px dashed var(--bdr);border-radius:10px;background:none;color:var(--t5);font-family:inherit;font-size:12px;cursor:pointer;margin-top:6px">+ 新增行為</button>';
+  body.innerHTML=html;
+}
+function stickerRecordEvent(kidId,behaviorId){
+  const b=stickerBehaviors.find(x=>x.id===behaviorId);if(!b)return;
+  const now=new Date();
+  stickerEvents.unshift({id:uid(),kidId,behaviorId,behaviorName:b.name,points:Number(b.points)||0,
+    date:now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate()),time:p2(now.getHours())+':'+p2(now.getMinutes()),
+    recorder:currentUser||'',note:''});
+  if(!saveStickerEvents())return;
+  toast('✅ 已記錄「'+b.name+'」+'+b.points+'點');
+  stickerGoto('kid');
+}
+
+function renderStickerRedeem(body,title){
+  const k=stickerKids.find(x=>x.id===stickerView.kidId);
+  if(!k){stickerGoto('main');return;}
+  const bal=stickerBalance(k.id);
+  title.textContent='🎁 '+k.name+' 兌換獎勵';
+  let html=stickerBackBtn('main')+'<div style="font-size:12px;color:var(--t5);margin-bottom:8px">目前點數：<b style="color:var(--br)">'+bal+'</b></div>';
+  if(!stickerRewards.length){
+    html+='<div style="text-align:center;color:var(--t5);padding:20px 10px;font-size:13px">還沒有設定任何獎勵，先到「⚙️管理」新增，例如「選晚餐菜色 50點」</div>';
+  } else {
+    stickerRewards.forEach(rw=>{
+      const enough=bal>=Number(rw.cost);
+      html+='<button '+(enough?('onclick="stickerRedeem(\''+k.id+'\',\''+rw.id+'\')"'):'disabled')+' style="width:100%;text-align:left;padding:12px 14px;border:1px solid var(--bdr);border-radius:10px;background:'+(enough?'var(--bg)':'var(--crm)')+';color:'+(enough?'var(--bd)':'var(--t5)')+';font-family:inherit;font-size:13px;font-weight:700;cursor:'+(enough?'pointer':'not-allowed')+';margin-bottom:8px;display:flex;justify-content:space-between;opacity:'+(enough?'1':'.6')+'">'
+        +'<span>'+splitEsc(rw.name)+'</span><span style="font-weight:900">-'+rw.cost+'</span></button>';
+    });
+  }
+  html+='<button onclick="stickerGoto(\'manage\')" style="width:100%;padding:10px;border:1px dashed var(--bdr);border-radius:10px;background:none;color:var(--t5);font-family:inherit;font-size:12px;cursor:pointer;margin-top:6px">+ 新增獎勵</button>';
+  body.innerHTML=html;
+}
+function stickerRedeem(kidId,rewardId){
+  const rw=stickerRewards.find(x=>x.id===rewardId);if(!rw)return;
+  if(stickerBalance(kidId)<Number(rw.cost)){toast('⚠️ 點數不夠喔');return;}
+  const now=new Date();
+  stickerRedemptions.unshift({id:uid(),kidId,rewardId,rewardName:rw.name,points:Number(rw.cost)||0,
+    date:now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate()),time:p2(now.getHours())+':'+p2(now.getMinutes()),
+    recorder:currentUser||'',note:''});
+  if(!saveStickerRedemptions())return;
+  toast('🎉 已兌換「'+rw.name+'」');
+  stickerGoto('kid');
+}
+
+function renderStickerHistory(body,title){
+  const k=stickerKids.find(x=>x.id===stickerView.kidId);
+  if(!k){stickerGoto('main');return;}
+  title.textContent='📜 '+k.name+' 紀錄';
+  const events=stickerEvents.filter(e=>e.kidId===k.id).map(e=>({...e,kind:'event'}));
+  const redemptions=stickerRedemptions.filter(r=>r.kidId===k.id).map(r=>({...r,kind:'redeem'}));
+  const all=events.concat(redemptions).sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
+  let html=stickerBackBtn('main');
+  if(!all.length){html+='<div style="text-align:center;color:var(--t5);padding:20px 10px;font-size:13px">還沒有任何紀錄</div>';}
+  else{
+    all.forEach(x=>{
+      const isEvent=x.kind==='event';
+      html+='<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr);font-size:13px">'
+        +'<div><span style="color:var(--t5);font-size:11px">'+(x.date||'').slice(5)+' '+(x.time||'')+'</span><br>'+(isEvent?'🎯 ':'🎁 ')+splitEsc(x.behaviorName||x.rewardName||'')+'</div>'
+        +'<div style="font-weight:900;color:'+(isEvent?'#16a34a':'#dc2626')+'">'+(isEvent?'+':'-')+x.points+'</div>'
+        +'</div>';
+    });
+  }
+  body.innerHTML=html;
+}
+
+function renderStickerManage(body){
+  let html='<div style="font-size:13px;font-weight:900;color:var(--bd);margin-bottom:8px">🎯 行為與點數</div>';
+  stickerBehaviors.forEach(b=>{
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:13px">'
+      +'<span>'+splitEsc(b.name)+'　<b style="color:var(--br)">+'+b.points+'</b></span>'
+      +'<button onclick="stickerRemoveBehavior(\''+b.id+'\')" style="border:none;background:none;color:var(--t5);cursor:pointer;font-size:12px">🗑️</button></div>';
+  });
+  html+='<div style="display:flex;gap:6px;margin:10px 0 20px">'
+    +'<input id="sticker-new-beh-name" placeholder="行為名稱" style="flex:2;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--bd)">'
+    +'<input id="sticker-new-beh-pts" type="number" placeholder="點數" style="flex:1;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--bd)">'
+    +'<button onclick="stickerAddBehavior()" style="padding:8px 12px;border:none;border-radius:8px;background:var(--br);color:#fff;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">新增</button>'
+    +'</div>';
+  html+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin-bottom:8px">🎁 獎勵與點數</div>';
+  stickerRewards.forEach(rw=>{
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:13px">'
+      +'<span>'+splitEsc(rw.name)+'　<b style="color:var(--br)">-'+rw.cost+'</b></span>'
+      +'<button onclick="stickerRemoveReward(\''+rw.id+'\')" style="border:none;background:none;color:var(--t5);cursor:pointer;font-size:12px">🗑️</button></div>';
+  });
+  html+='<div style="display:flex;gap:6px;margin-top:10px">'
+    +'<input id="sticker-new-rw-name" placeholder="獎勵名稱" style="flex:2;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--bd)">'
+    +'<input id="sticker-new-rw-cost" type="number" placeholder="所需點數" style="flex:1;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--bd)">'
+    +'<button onclick="stickerAddReward()" style="padding:8px 12px;border:none;border-radius:8px;background:var(--br);color:#fff;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">新增</button>'
+    +'</div>'
+    +'<button onclick="stickerGoto(\'main\')" style="width:100%;margin-top:20px;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--br);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">← 返回集點卡</button>';
+  body.innerHTML=html;
+}
+function stickerAddBehavior(){
+  const name=(document.getElementById('sticker-new-beh-name').value||'').trim();
+  const pts=Number(document.getElementById('sticker-new-beh-pts').value);
+  if(!name||!pts||pts<=0){toast('⚠️ 請填行為名稱和大於0的點數');return;}
+  stickerBehaviors.push({id:uid(),name,points:pts});
+  if(!saveStickerBehaviors())return;
+  renderStickerCard();
+}
+function stickerRemoveBehavior(id){stickerBehaviors=stickerBehaviors.filter(x=>x.id!==id);saveStickerBehaviors();renderStickerCard();}
+function stickerAddReward(){
+  const name=(document.getElementById('sticker-new-rw-name').value||'').trim();
+  const cost=Number(document.getElementById('sticker-new-rw-cost').value);
+  if(!name||!cost||cost<=0){toast('⚠️ 請填獎勵名稱和大於0的所需點數');return;}
+  stickerRewards.push({id:uid(),name,cost});
+  if(!saveStickerRewards())return;
+  renderStickerCard();
+}
+function stickerRemoveReward(id){stickerRewards=stickerRewards.filter(x=>x.id!==id);saveStickerRewards();renderStickerCard();}
+
+// ===== 💑互助集點卡 UI =====
+function renderMutualMain(body){
+  let html=stickerBackBtn('type');
+  html+='<div style="text-align:center;padding:16px 0;font-size:32px;font-weight:900;color:var(--br)">'+mutualBalance()+' 點</div>'
+    +'<div style="text-align:center;font-size:11px;color:var(--t5);margin-top:-14px;margin-bottom:16px">兩人的加減點會併成同一個總數</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:10px">'
+    +'<button onclick="stickerGoto(\'mutualRecord\')" style="flex:1;padding:12px;border:1px solid var(--amb);border-radius:10px;background:var(--crm);color:var(--br);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">➕➖ 記一筆</button>'
+    +'<button onclick="stickerGoto(\'mutualRedeem\')" style="flex:1;padding:12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">🎁 兌換</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="stickerGoto(\'mutualHistory\')" style="flex:1;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">📜 紀錄</button>'
+    +'<button onclick="stickerGoto(\'mutualManage\')" style="flex:1;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">⚙️ 管理獎勵</button>'
+    +'</div>';
+  body.innerHTML=html;
+}
+function renderMutualRecord(body){
+  const accounts=Object.keys(AUTH_USERS);
+  let html=stickerBackBtn('mutual');
+  html+='<label style="font-size:11px;color:var(--t5);font-weight:700">誰記的？</label>'
+    +'<select id="mutual-actor" style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;margin:6px 0 12px;font-family:inherit;background:var(--bg);color:var(--bd)">'
+    +accounts.map(a=>'<option value="'+splitEsc(a)+'"'+(a===currentUser?' selected':'')+'>'+splitEsc(a)+'</option>').join('')+'</select>'
+    +'<label style="font-size:11px;color:var(--t5);font-weight:700">加點還是扣點？</label>'
+    +'<div style="display:flex;gap:8px;margin:6px 0 12px">'
+    +'<button id="mutual-dir-plus" onclick="mutualSetDir(1)" class="mutual-dir-btn" style="flex:1;padding:10px;border:1px solid var(--amb);border-radius:10px;background:var(--crm);color:var(--br);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">➕ 加點</button>'
+    +'<button id="mutual-dir-minus" onclick="mutualSetDir(-1)" class="mutual-dir-btn" style="flex:1;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">➖ 扣點</button>'
+    +'</div>'
+    +'<label style="font-size:11px;color:var(--t5);font-weight:700">點數</label>'
+    +'<input id="mutual-amount" type="number" placeholder="例如：2" style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;margin:6px 0 12px;font-family:inherit;background:var(--bg);color:var(--bd)">'
+    +'<label style="font-size:11px;color:var(--t5);font-weight:700">原因（選填）</label>'
+    +'<input id="mutual-note" placeholder="例如：幫忙洗碗" style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;margin:6px 0 18px;font-family:inherit;background:var(--bg);color:var(--bd)">'
+    +'<button onclick="mutualConfirmRecord()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--br);color:#fff;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">確認送出</button>';
+  body.innerHTML=html;
+  mutualDir=1;
+}
+let mutualDir=1;
+function mutualSetDir(d){
+  mutualDir=d;
+  const p=document.getElementById('mutual-dir-plus'),mBtn=document.getElementById('mutual-dir-minus');
+  if(!p||!mBtn)return;
+  p.style.background=d===1?'var(--crm)':'var(--bg)';p.style.color=d===1?'var(--br)':'var(--t5)';p.style.borderColor=d===1?'var(--amb)':'var(--bdr)';
+  mBtn.style.background=d===-1?'var(--crm)':'var(--bg)';mBtn.style.color=d===-1?'var(--br)':'var(--t5)';mBtn.style.borderColor=d===-1?'var(--amb)':'var(--bdr)';
+}
+function mutualConfirmRecord(){
+  const actor=document.getElementById('mutual-actor').value;
+  const raw=Number(document.getElementById('mutual-amount').value);
+  const note=(document.getElementById('mutual-note').value||'').trim();
+  if(!raw||raw<=0){toast('⚠️ 請輸入大於0的點數');return;}
+  const now=new Date();
+  mutualEvents.unshift({id:uid(),actor,forWhom:'',amount:raw*mutualDir,note,
+    date:now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate()),time:p2(now.getHours())+':'+p2(now.getMinutes())});
+  if(!saveMutualEvents())return;
+  toast((mutualDir===1?'✅ 已加':'✅ 已扣')+raw+'點');
+  stickerGoto('mutual');
+}
+function renderMutualRedeem(body){
+  const bal=mutualBalance();
+  let html=stickerBackBtn('mutual')+'<div style="font-size:12px;color:var(--t5);margin-bottom:8px">目前共同點數：<b style="color:var(--br)">'+bal+'</b></div>';
+  if(!mutualRewards.length){
+    html+='<div style="text-align:center;color:var(--t5);padding:20px 10px;font-size:13px">還沒有設定任何獎勵，先到「⚙️管理獎勵」新增</div>';
+  } else {
+    mutualRewards.forEach(rw=>{
+      const enough=bal>=Number(rw.cost);
+      html+='<button '+(enough?('onclick="mutualRedeem(\''+rw.id+'\')"'):'disabled')+' style="width:100%;text-align:left;padding:12px 14px;border:1px solid var(--bdr);border-radius:10px;background:'+(enough?'var(--bg)':'var(--crm)')+';color:'+(enough?'var(--bd)':'var(--t5)')+';font-family:inherit;font-size:13px;font-weight:700;cursor:'+(enough?'pointer':'not-allowed')+';margin-bottom:8px;display:flex;justify-content:space-between;opacity:'+(enough?'1':'.6')+'">'
+        +'<span>'+splitEsc(rw.name)+'</span><span style="font-weight:900">-'+rw.cost+'</span></button>';
+    });
+  }
+  body.innerHTML=html;
+}
+function mutualRedeem(rewardId){
+  const rw=mutualRewards.find(x=>x.id===rewardId);if(!rw)return;
+  if(mutualBalance()<Number(rw.cost)){toast('⚠️ 點數不夠喔');return;}
+  const now=new Date();
+  mutualRedemptions.unshift({id:uid(),rewardId,rewardName:rw.name,points:Number(rw.cost)||0,redeemer:currentUser||'',
+    date:now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate()),time:p2(now.getHours())+':'+p2(now.getMinutes())});
+  if(!saveMutualRedemptions())return;
+  toast('🎉 已兌換「'+rw.name+'」');
+  stickerGoto('mutual');
+}
+function renderMutualHistory(body){
+  const events=mutualEvents.map(e=>({...e,kind:'event'}));
+  const redemptions=mutualRedemptions.map(r=>({...r,kind:'redeem'}));
+  const all=events.concat(redemptions).sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
+  let html=stickerBackBtn('mutual');
+  if(!all.length){html+='<div style="text-align:center;color:var(--t5);padding:20px 10px;font-size:13px">還沒有任何紀錄</div>';}
+  else{
+    all.forEach(x=>{
+      const isEvent=x.kind==='event';
+      const posLabel=isEvent?(x.amount>=0?'#16a34a':'#dc2626'):'#dc2626';
+      const desc=isEvent?(splitEsc(x.actor||'')+(x.note?'・'+splitEsc(x.note):'')):('🎁 '+splitEsc(x.rewardName||'')+'（'+splitEsc(x.redeemer||'')+'兌換）');
+      html+='<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr);font-size:13px">'
+        +'<div><span style="color:var(--t5);font-size:11px">'+(x.date||'').slice(5)+' '+(x.time||'')+'</span><br>'+desc+'</div>'
+        +'<div style="font-weight:900;color:'+posLabel+'">'+(isEvent?(x.amount>=0?'+':'')+x.amount:'-'+x.points)+'</div>'
+        +'</div>';
+    });
+  }
+  body.innerHTML=html;
+}
+function renderMutualManage(body){
+  let html=stickerBackBtn('mutual')+'<div style="font-size:13px;font-weight:900;color:var(--bd);margin-bottom:8px">🎁 獎勵與所需點數</div>';
+  mutualRewards.forEach(rw=>{
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:13px">'
+      +'<span>'+splitEsc(rw.name)+'　<b style="color:var(--br)">-'+rw.cost+'</b></span>'
+      +'<button onclick="mutualRemoveReward(\''+rw.id+'\')" style="border:none;background:none;color:var(--t5);cursor:pointer;font-size:12px">🗑️</button></div>';
+  });
+  html+='<div style="display:flex;gap:6px;margin-top:10px">'
+    +'<input id="mutual-new-rw-name" placeholder="獎勵名稱" style="flex:2;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--bd)">'
+    +'<input id="mutual-new-rw-cost" type="number" placeholder="所需點數" style="flex:1;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:12px;background:var(--bg);color:var(--bd)">'
+    +'<button onclick="mutualAddReward()" style="padding:8px 12px;border:none;border-radius:8px;background:var(--br);color:#fff;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">新增</button>'
+    +'</div>';
+  body.innerHTML=html;
+}
+function mutualAddReward(){
+  const name=(document.getElementById('mutual-new-rw-name').value||'').trim();
+  const cost=Number(document.getElementById('mutual-new-rw-cost').value);
+  if(!name||!cost||cost<=0){toast('⚠️ 請填獎勵名稱和大於0的所需點數');return;}
+  mutualRewards.push({id:uid(),name,cost});
+  if(!saveMutualRewards())return;
+  renderStickerCard();
+}
+function mutualRemoveReward(id){mutualRewards=mutualRewards.filter(x=>x.id!==id);saveMutualRewards();renderStickerCard();}
+
 async function openLineLog(){
   let m=document.getElementById('linelog-modal');
   if(!m){
@@ -6663,6 +7073,18 @@ function renderSettings(){
       <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">分帳模組</div>
       <div style="font-size:17px;font-weight:900;color:#7c3aed;font-family:'Noto Serif TC',serif">V${SPLIT_VERSION}</div>
     </div>
+    <div style="padding:12px;background:#fefce8;border-radius:12px;border:1px solid #fde68a;margin-bottom:8px">
+      <div style="font-size:22px;margin-bottom:4px">🌟</div>
+      <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">集點卡模組</div>
+      <div style="font-size:17px;font-weight:900;color:#ca8a04;font-family:'Noto Serif TC',serif">V${STICKER_VERSION}</div>
+      <div style="font-size:10px;color:var(--t5);margin-top:4px">👶 ${stickerKids.length}個孩子・💑 ${mutualBalance()}互助點</div>
+    </div>
+    <div style="padding:12px;background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0;margin-bottom:8px">
+      <div style="font-size:22px;margin-bottom:4px">⚙️</div>
+      <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">LINE整合</div>
+      <div style="font-size:17px;font-weight:900;color:#16a34a;font-family:'Noto Serif TC',serif">V${LINE_VERSION}</div>
+      <div style="font-size:10px;color:var(--t5);margin-top:4px">串接LINE Bot的功能總稱，非單一App模組</div>
+    </div>
     <div style="padding:12px 14px;background:var(--crm);border-radius:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
       <div>
         <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">⚙️ 系統層版本</div>
@@ -6843,12 +7265,15 @@ function toggleChangelog(){
 
 // 依項目文字內容自動判斷所屬模組標籤（飲料／美食／系統共用），無需逐條手動標註
 function detectChangeTag(text){
+  if(/^LINE整合|LINE Bot|LINE機器人/.test(text))return'line';
   const drinkKw=/飲料|飲品|飲用者|手搖|加料|甜度|冰塊/;
   const foodKw=/美食|餐點|用餐|菜系|辣度|飽足感|回訪意願|店家.*餐|食用/;
   const travelKw=/航班|船班|高鐵|火車|地鐵|捷運|打車|交通|班機|車次|登機|艙位|車廂|乘車|航空/;
   const splitKw=/分帳|拆帳|攤分|分攤|帳單|群組成員/;
+  const stickerKw=/集點卡|乖寶寶|互助集點|集點|兌換獎勵/;
   const hasDrink=drinkKw.test(text);
   const hasFood=foodKw.test(text);
+  if(!hasDrink&&!hasFood&&stickerKw.test(text))return'sticker';
   if(!hasDrink&&!hasFood&&travelKw.test(text))return'travel';
   if(!hasDrink&&!hasFood&&splitKw.test(text))return'split';
   if(hasDrink&&!hasFood)return'drink';
@@ -6867,23 +7292,28 @@ function renderChangelog(){
     food:{label:'🍱 美食',color:'#ea7e3a',bg:'#fef1e8'},
     travel:{label:'🚆 交通',color:'#2563eb',bg:'#eff6ff'},
     split:{label:'🧾 分帳',color:'#7c3aed',bg:'#f5f3ff'},
+    sticker:{label:'🌟 集點卡',color:'#ca8a04',bg:'#fefce8'},
+    line:{label:'⚙️ LINE整合',color:'#16a34a',bg:'#f0fdf4'},
     both:{label:'🧋🍱 共用',color:'#9333ea',bg:'#f5eefd'},
     system:{label:'⚙️ 系統',color:'#64748b',bg:'#eff1f4'},
   };
   const filterBtns=[
-    ['all','全部'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳'],['system','⚙️ 系統'],
+    ['all','全部'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳'],['sticker','🌟 集點卡'],['line','⚙️ LINE整合'],['system','⚙️ 系統'],
   ];
   const filterBar=`<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
     ${filterBtns.map(([f,label])=>`<button onclick="setChangelogFilter('${f}')" class="fmt-toggle-btn${changelogFilter===f?' active':''}" style="padding:7px 13px;border-radius:9px;font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;touch-action:manipulation">${label}</button>`).join('')}
   </div>`;
 
   // 篩選特定模組時，顯示該模組目前的獨立版本號（與下方紀錄裡的全域版本號是兩套不同計算方式）
+  const bannerStyle='font-size:12px;color:var(--br);background:var(--crm);padding:9px 12px;border-radius:10px;margin-bottom:12px;border:1px solid var(--bdr)';
   const moduleVersionBanner={
-    drink:`<div style="font-size:12px;color:#a8693f;background:#faf3ea;padding:9px 12px;border-radius:10px;margin-bottom:12px;border:1px solid #ecd9c4">🧋 飲料模組目前獨立版本：<strong>V${DRINK_VERSION}</strong>　飲料模組沿用原全域版本號接續計算，往後僅飲料專屬更新會推進此版本號</div>`,
-    food:`<div style="font-size:12px;color:#c2611b;background:#fef1e8;padding:9px 12px;border-radius:10px;margin-bottom:12px;border:1px solid #f6d9c2">🍱 美食模組目前獨立版本：<strong>V${FOOD_VERSION}</strong>　下方列出歷史紀錄中標記為美食的項目（紀錄上標示的 v 號為當時的全域系統版本，與美食獨立版本號分開計算）</div>`,
-    system:`<div style="font-size:12px;color:var(--t5);background:var(--crm);padding:9px 12px;border-radius:10px;margin-bottom:12px">⚙️ 系統層目前版本：<strong>v${APP_VERSION}</strong>　以下為系統層級（跨模組、無法歸入單一模組）的更新紀錄</div>`,
-    travel:`<div style="font-size:12px;color:#2563eb;background:#eff6ff;padding:9px 12px;border-radius:10px;margin-bottom:12px;border:1px solid #bfdbfe">🚆 交通模組目前獨立版本：<strong>V${TRAVEL_VERSION}</strong>　以下列出與交通（航班／船班／高鐵／火車／地鐵／打車）相關的項目</div>`,
-    split:`<div style="font-size:12px;color:#7c3aed;background:#f5f3ff;padding:9px 12px;border-radius:10px;margin-bottom:12px;border:1px solid #ddd6fe">🧾 分帳模組目前獨立版本：<strong>V${SPLIT_VERSION}</strong>　以下列出與分帳相關的項目</div>`,
+    drink:`<div style="${bannerStyle}">🧋 飲料模組目前獨立版本：<strong>V${DRINK_VERSION}</strong>　飲料模組沿用原全域版本號接續計算，往後僅飲料專屬更新會推進此版本號</div>`,
+    food:`<div style="${bannerStyle}">🍱 美食模組目前獨立版本：<strong>V${FOOD_VERSION}</strong>　下方列出歷史紀錄中標記為美食的項目（紀錄上標示的 v 號為當時的全域系統版本，與美食獨立版本號分開計算）</div>`,
+    system:`<div style="${bannerStyle}">⚙️ 系統層目前版本：<strong>v${APP_VERSION}</strong>　以下為系統層級（跨模組、無法歸入單一模組）的更新紀錄</div>`,
+    travel:`<div style="${bannerStyle}">🚆 交通模組目前獨立版本：<strong>V${TRAVEL_VERSION}</strong>　以下列出與交通（航班／船班／高鐵／火車／地鐵／打車）相關的項目</div>`,
+    split:`<div style="${bannerStyle}">🧾 分帳模組目前獨立版本：<strong>V${SPLIT_VERSION}</strong>　以下列出與分帳相關的項目</div>`,
+    sticker:`<div style="${bannerStyle}">🌟 集點卡模組目前獨立版本：<strong>V${STICKER_VERSION}</strong>　以下列出與集點卡（乖寶寶／互助）相關的項目</div>`,
+    line:`<div style="${bannerStyle}">⚙️ LINE整合目前獨立版本：<strong>V${LINE_VERSION}</strong>　LINE整合不是單一App模組，是串接LINE Bot的功能總稱，以下列出相關項目</div>`,
   }[changelogFilter]||'';
 
   const entries=CHANGELOG.map((log,i)=>{
@@ -6892,19 +7322,27 @@ function renderChangelog(){
       ?taggedItems
       :taggedItems.filter(it=>it.tag===changelogFilter||it.tag==='both');
     if(changelogFilter!=='all'&&!visibleItems.length)return''; // 此版本沒有符合篩選的項目，整條隱藏
+    const isCleanForFilter=changelogFilter==='all'||visibleItems.length===taggedItems.length; // 這筆記錄的項目是否「全部」都屬於目前篩選的模組（沒有混雜其他模組）
+    const isGlobalVersion=/^[\d.]+$/.test(log.version);
+    const versionHeaderHtml=(changelogFilter==='all'||!isGlobalVersion)
+      ?`<span style="font-size:14px;font-weight:900;color:var(--bd);font-family:'Noto Serif TC',serif">${isGlobalVersion?'v'+log.version:log.version}</span>`
+      :`<span style="font-size:11px;font-weight:700;color:var(--t5)">（全域版本 v${log.version}，非本模組專屬版號）</span>`;
+    const reasonHtml=isCleanForFilter
+      ?`<div style="font-size:11px;color:var(--t5);line-height:1.6;background:var(--bg);padding:8px 10px;border-radius:8px">
+        <strong style="color:var(--br)">升版原因：</strong>${log.reason}
+      </div>`
+      :`<div style="font-size:10px;color:var(--t5);opacity:.7">（這筆記錄同時包含其他模組內容，升版原因不在本模組篩選下顯示，避免混入其他模組資訊；可切到「全部」查看完整原因）</div>`;
     return `
     <div style="border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:10px;background:var(--sur)${i===0?';border-color:var(--amb)':''}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:14px;font-weight:900;color:var(--bd);font-family:'Noto Serif TC',serif">${/^[\d.]+$/.test(log.version)?'v'+log.version:log.version}</span>
+        ${versionHeaderHtml}
         <span style="font-size:10px;font-weight:900;color:#fff;background:${typeColor[log.type]};padding:3px 9px;border-radius:8px">${typeLabel[log.type]}</span>
       </div>
       <div style="font-size:10px;color:var(--t5);margin-bottom:8px">${log.date?`📅 ${log.date}${log.time?`　🕒 ${log.time}`:''}`:'<span style="opacity:.55">📅 日期未記錄</span>'}</div>
       <ul style="margin:0 0 8px;padding-left:0;list-style:none;font-size:12px;color:var(--t);line-height:1.7">
         ${visibleItems.map(it=>{const tg=tagInfo[it.tag];return`<li style="margin-bottom:6px;padding-left:0"><span style="display:inline-block;font-size:9px;font-weight:900;color:${tg.color};background:${tg.bg};padding:2px 7px;border-radius:6px;margin-right:6px;vertical-align:middle">${tg.label}</span>${it.text}</li>`;}).join('')}
       </ul>
-      <div style="font-size:11px;color:var(--t5);line-height:1.6;background:var(--bg);padding:8px 10px;border-radius:8px">
-        <strong style="color:var(--br)">升版原因：</strong>${log.reason}
-      </div>
+      ${reasonHtml}
     </div>`;
   }).filter(Boolean).join('');
 
@@ -7379,6 +7817,34 @@ function renderMaintainPanel(body){
 
 // ============================ 🧾 分帳模組 Split-bill ============================
 let splitGroups = JSON.parse(localStorage.getItem('split_groups')||'[]');
+// ===== 🌟乖寶寶集點卡 =====
+let stickerKids = JSON.parse(localStorage.getItem('sticker_kids')||'[]'); // [{id,name}]
+let stickerBehaviors = JSON.parse(localStorage.getItem('sticker_behaviors')||'[]'); // [{id,name,points}]
+let stickerRewards = JSON.parse(localStorage.getItem('sticker_rewards')||'[]'); // [{id,name,cost}]
+let stickerEvents = JSON.parse(localStorage.getItem('sticker_events')||'[]'); // [{id,kidId,behaviorId,behaviorName,points,date,time,recorder,note}]
+let stickerRedemptions = JSON.parse(localStorage.getItem('sticker_redemptions')||'[]'); // [{id,kidId,rewardId,rewardName,points,date,time,recorder,note}]
+function saveStickerKids(){const e=lsSet('sticker_kids',stickerKids);if(e){saveFail(e);return false;}return true;}
+function saveStickerBehaviors(){const e=lsSet('sticker_behaviors',stickerBehaviors);if(e){saveFail(e);return false;}return true;}
+function saveStickerRewards(){const e=lsSet('sticker_rewards',stickerRewards);if(e){saveFail(e);return false;}return true;}
+function saveStickerEvents(){const e=lsSet('sticker_events',stickerEvents);if(e){saveFail(e);return false;}return true;}
+function saveStickerRedemptions(){const e=lsSet('sticker_redemptions',stickerRedemptions);if(e){saveFail(e);return false;}return true;}
+function stickerBalance(kidId){
+  const earned=stickerEvents.filter(e=>e.kidId===kidId).reduce((s,e)=>s+(Number(e.points)||0),0);
+  const spent=stickerRedemptions.filter(r=>r.kidId===kidId).reduce((s,r)=>s+(Number(r.points)||0),0);
+  return earned-spent;
+}
+// ===== 💑互助集點卡（兩人互相加點，全部併成同一個總數）=====
+let mutualEvents=JSON.parse(localStorage.getItem('mutual_events')||'[]'); // [{id,actor,forWhom,amount,note,date,time}]
+let mutualRewards=JSON.parse(localStorage.getItem('mutual_rewards')||'[]'); // [{id,name,cost}]
+let mutualRedemptions=JSON.parse(localStorage.getItem('mutual_redemptions')||'[]'); // [{id,rewardId,rewardName,points,redeemer,date,time}]
+function saveMutualEvents(){const e=lsSet('mutual_events',mutualEvents);if(e){saveFail(e);return false;}return true;}
+function saveMutualRewards(){const e=lsSet('mutual_rewards',mutualRewards);if(e){saveFail(e);return false;}return true;}
+function saveMutualRedemptions(){const e=lsSet('mutual_redemptions',mutualRedemptions);if(e){saveFail(e);return false;}return true;}
+function mutualBalance(){
+  const earned=mutualEvents.reduce((s,e)=>s+(Number(e.amount)||0),0);
+  const spent=mutualRedemptions.reduce((s,r)=>s+(Number(r.points)||0),0);
+  return earned-spent;
+}
 function saveSplitGroups(){const e=lsSet('split_groups',splitGroups);if(e){saveFail(e);return false;}return true;}
 let splitView={name:'list'};
 let splitTmpEmoji='🧾';
