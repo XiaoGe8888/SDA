@@ -1415,7 +1415,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-07-12h';
+const BUILD_ID='2026-10-11a';
 // --- Anthropic API Helper ---
 // ============ AI 連線設定（上線用）============
 // 上線到你自己的網域時：把 App 與「代理函式」放在同一個專案，這裡保持 '/api/gemini' 不用改。
@@ -1456,7 +1456,7 @@ async function callClaude(messages, system, maxTokens=1000) {
 
 // ============ 雲端同步（同步碼模式）============
 const SYNC_URL = '/api/sync';
-const SYNC_KEYS = ['boba_recs','meal_recs','travel_recs','boba_favs','meal_favs','travel_favs','boba_budget','meal_budget','travel_budget','boba_trash','split_groups','split_group_cats','boba_tool_prob','auth_users','super_password_hash','sticker_kids','sticker_behaviors','sticker_rewards','sticker_events','sticker_redemptions','mutual_events','mutual_rewards','mutual_redemptions'];
+const SYNC_KEYS = ['boba_recs','meal_recs','travel_recs','boba_favs','meal_favs','travel_favs','boba_budget','meal_budget','travel_budget','boba_trash','split_groups','split_group_cats','boba_tool_prob','auth_users','super_password_hash','sticker_kids','sticker_behaviors','sticker_rewards','sticker_events','sticker_redemptions','mutual_events','mutual_rewards','mutual_redemptions','wishlist_data_v2','wishlist_mgmt_v2','wishlist_menu_v1'];
 let syncCode = localStorage.getItem('sync_code') || '';
 let syncEnabled = localStorage.getItem('sync_enabled') === '1';
 let applyingRemote = false;
@@ -1507,6 +1507,9 @@ async function syncPush(){
   const _set = localStorage.setItem.bind(localStorage);
   localStorage.setItem = function(k,v){ _set(k,v); if(syncEnabled && !applyingRemote && SYNC_KEYS.indexOf(k)>=0) schedulePush(); };
 })();
+// 待去清單是用 iframe 嵌入的獨立頁面（wishlist.html），它寫入資料時不會經過上面的攔截；
+// 同網域的其他視窗寫入 localStorage 時，這個視窗會收到 storage 事件，藉此一樣排程上傳，避免回到主頁後被舊的雲端資料覆蓋
+window.addEventListener('storage', function(e){ if(e.key && SYNC_KEYS.indexOf(e.key)>=0 && syncEnabled && !applyingRemote) schedulePush(); });
 async function enableSyncWithCode(code){
   code=(code||'').trim().toUpperCase();
   if(!code){ toast('請先輸入或產生同步碼'); return; }
@@ -2186,6 +2189,7 @@ const FOOD_VERSION = '6.2.0'; // 🍱 美食模組獨立版本：僅美食專屬
 const TRAVEL_VERSION = '1.1.0'; // ✈️🚢 航班/船班模組獨立版本：全新模組，從 V1.0.0 起算
 const SPLIT_VERSION = '1.0.0'; // 🧾 分帳模組獨立版本
 const STICKER_VERSION = '1.0.0'; // 🌟 集點卡模組獨立版本（含乖寶寶、互助兩張卡）
+const WISHLIST_VERSION = '1.0.0'; // 🗺️ 待去清單模組獨立版本：全新模組，從 V1.0.0 起算
 const LINE_VERSION = '5.0.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5起為本次session新增的所有LINE整合功能
 
 // 版本治理規範（僅供未來判定版本號／更新提示策略參考，本身不觸發版本變更）：
@@ -2214,6 +2218,18 @@ const UPDATE_POLICY = {
 const DEV_ORDER_POLICY = ['紀錄日常','數據統計','生活工具','設定'];
 
 const CHANGELOG = [
+  {
+    version:'🗺️ 待去清單 V1.0.0', type:'Minor', date:'2026/10/11',
+    items:[
+      '待去清單：新增「待去清單」模組，從首頁卡片進入（以全螢幕視窗開啟，也可選擇在新分頁開啟），用來記錄想去的景點、餐廳與店家',
+      '待去清單：提供表格、看板、地圖三種檢視方式；看板中把項目拖到不同狀態欄位，會直接改變該項目的狀態；地圖可標示各地點位置並一鍵縮放到所有地標',
+      '待去清單：每個項目可記錄分類、名稱、國家／地區、城市／地區、詳細地點／商家、營業資訊（營業時間、休息日、最後入場、聯絡電話、官網社群、預約資訊等）、推薦原因、來源、推薦指數、備註、提議者、提議日期、預計時間與完成日期，並自動產生永久流水號',
+      '待去清單：支援兩層篩選（主要分類；國家／城市、項目狀態與日期條件）與排序；項目狀態分為待去、已安排、已完成、暫不去、取消',
+      '待去清單：支援貼上社群文字自動解析填入表單、依地點抓取座標；管理面板可調整分類與選單，並支援 JSON／Excel／CSV 匯入與匯出',
+      '待去清單：地點資料與分類、選單設定已納入雲端同步，在待去清單裡新增或修改後會自動上傳，其他裝置同步後即可看到',
+    ],
+    reason:'待去清單原本是獨立的單檔網頁，本次整合進日常小秘書：首頁新增入口卡片、資料納入雲端同步，並建立本模組的獨立版本號與更新紀錄分類（V1.0.0 起算）。因待去清單是獨立頁面，寫入資料時不會經過主頁面原本的同步攔截，所以另外加了偵測機制，避免回到主頁後被舊的雲端資料覆蓋。',
+  },
   {
     version:'⚙️ LINE整合 V5.0.0', type:'Minor', date:'2026/07/12',
     items:[
@@ -2901,6 +2917,11 @@ function renderHome(){
       <div class="dc-title" style="justify-content:center;font-size:13px">集點卡</div>
       <div class="dc-sub" style="margin-top:4px;font-size:10px">${stickerKids.length} 個孩子・${mutualBalance()} 互助點</div>
     </div>
+    <div onclick="openWishlist()" class="dc-card" style="text-align:center;padding:20px 8px;touch-action:manipulation">
+      <div style="margin-bottom:8px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div>
+      <div class="dc-title" style="justify-content:center;font-size:13px">待去清單</div>
+      <div class="dc-sub" style="margin-top:4px;font-size:10px">${wishlistCount()} 個地點</div>
+    </div>
   </div>
   <div class="chart-card" style="margin:0 16px">
     <div class="ct"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M20 20H3"/></svg>全館總覽（本月）</div>
@@ -3271,6 +3292,36 @@ function mutualAddReward(){
   renderStickerCard();
 }
 function mutualRemoveReward(id){mutualRewards=mutualRewards.filter(x=>x.id!==id);saveMutualRewards();renderStickerCard();}
+
+
+// ===== 🗺️ 待去清單（獨立頁面 wishlist.html，用全螢幕 iframe 嵌入）=====
+// 資料由 wishlist.html 自己存在 localStorage：wishlist_data_v2（地點資料）、wishlist_mgmt_v2／wishlist_menu_v1（分類與選單設定），三個都已加入雲端同步
+function wishlistCount(){
+  try{
+    const d=JSON.parse(localStorage.getItem('wishlist_data_v2')||'{}');
+    return Array.isArray(d.wishItems)?d.wishItems.length:0;
+  }catch(e){return 0;}
+}
+function openWishlist(){
+  const old=document.getElementById('wishlist-modal');
+  if(old)old.remove();
+  const m=document.createElement('div');
+  m.id='wishlist-modal';
+  m.style.cssText='position:fixed;inset:0;z-index:9000;background:var(--bg);display:flex;flex-direction:column';
+  m.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top,0px));background:var(--sur);border-bottom:1px solid var(--bdr)">'
+    +'<button onclick="closeWishlist()" style="border:1px solid var(--bdr);background:var(--bg);color:var(--br);font-family:inherit;font-size:13px;font-weight:900;padding:7px 12px;border-radius:10px;cursor:pointer;touch-action:manipulation">← 日常小秘書</button>'
+    +'<a href="/wishlist.html" target="_blank" rel="noopener" style="font-size:11px;color:var(--t5);text-decoration:none">↗ 新分頁開啟</a>'
+    +'</div>'
+    +'<iframe id="wishlist-frame" src="/wishlist.html" title="待去清單" style="flex:1;width:100%;border:0;background:var(--bg)"></iframe>';
+  document.body.appendChild(m);
+  document.body.style.overflow='hidden';
+}
+function closeWishlist(){
+  const m=document.getElementById('wishlist-modal');
+  if(m)m.remove();
+  document.body.style.overflow='';
+  if(currentModule===null&&typeof renderHome==='function')renderHome();
+}
 
 async function openLineLog(){
   let m=document.getElementById('linelog-modal');
@@ -7079,6 +7130,12 @@ function renderSettings(){
       <div style="font-size:17px;font-weight:900;color:#ca8a04;font-family:'Noto Serif TC',serif">V${STICKER_VERSION}</div>
       <div style="font-size:10px;color:var(--t5);margin-top:4px">👶 ${stickerKids.length}個孩子・💑 ${mutualBalance()}互助點</div>
     </div>
+    <div style="padding:12px;background:#ecfdf5;border-radius:12px;border:1px solid #a7f3d0;margin-bottom:8px">
+      <div style="font-size:22px;margin-bottom:4px">🗺️</div>
+      <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">待去清單模組</div>
+      <div style="font-size:17px;font-weight:900;color:#059669;font-family:'Noto Serif TC',serif">V${WISHLIST_VERSION}</div>
+      <div style="font-size:10px;color:var(--t5);margin-top:4px">🗺️ ${wishlistCount()}個地點</div>
+    </div>
     <div style="padding:12px;background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0;margin-bottom:8px">
       <div style="font-size:22px;margin-bottom:4px">⚙️</div>
       <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">LINE整合</div>
@@ -7265,6 +7322,7 @@ function toggleChangelog(){
 
 // 依項目文字內容自動判斷所屬模組標籤（飲料／美食／系統共用），無需逐條手動標註
 function detectChangeTag(text){
+  if(/^待去清單/.test(text))return'wishlist';
   if(/^LINE整合|LINE Bot|LINE機器人/.test(text))return'line';
   const drinkKw=/飲料|飲品|飲用者|手搖|加料|甜度|冰塊/;
   const foodKw=/美食|餐點|用餐|菜系|辣度|飽足感|回訪意願|店家.*餐|食用/;
@@ -7293,12 +7351,13 @@ function renderChangelog(){
     travel:{label:'🚆 交通',color:'#2563eb',bg:'#eff6ff'},
     split:{label:'🧾 分帳',color:'#7c3aed',bg:'#f5f3ff'},
     sticker:{label:'🌟 集點卡',color:'#ca8a04',bg:'#fefce8'},
+    wishlist:{label:'🗺️ 待去清單',color:'#059669',bg:'#ecfdf5'},
     line:{label:'⚙️ LINE整合',color:'#16a34a',bg:'#f0fdf4'},
     both:{label:'🧋🍱 共用',color:'#9333ea',bg:'#f5eefd'},
     system:{label:'⚙️ 系統',color:'#64748b',bg:'#eff1f4'},
   };
   const filterBtns=[
-    ['all','全部'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳'],['sticker','🌟 集點卡'],['line','⚙️ LINE整合'],['system','⚙️ 系統'],
+    ['all','全部'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳'],['sticker','🌟 集點卡'],['wishlist','🗺️ 待去清單'],['line','⚙️ LINE整合'],['system','⚙️ 系統'],
   ];
   const filterBar=`<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
     ${filterBtns.map(([f,label])=>`<button onclick="setChangelogFilter('${f}')" class="fmt-toggle-btn${changelogFilter===f?' active':''}" style="padding:7px 13px;border-radius:9px;font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;touch-action:manipulation">${label}</button>`).join('')}
@@ -7313,6 +7372,7 @@ function renderChangelog(){
     travel:`<div style="${bannerStyle}">🚆 交通模組目前獨立版本：<strong>V${TRAVEL_VERSION}</strong>　以下列出與交通（航班／船班／高鐵／火車／地鐵／打車）相關的項目</div>`,
     split:`<div style="${bannerStyle}">🧾 分帳模組目前獨立版本：<strong>V${SPLIT_VERSION}</strong>　以下列出與分帳相關的項目</div>`,
     sticker:`<div style="${bannerStyle}">🌟 集點卡模組目前獨立版本：<strong>V${STICKER_VERSION}</strong>　以下列出與集點卡（乖寶寶／互助）相關的項目</div>`,
+    wishlist:`<div style="${bannerStyle}">🗺️ 待去清單模組目前獨立版本：<strong>V${WISHLIST_VERSION}</strong>　以下列出與待去清單相關的項目</div>`,
     line:`<div style="${bannerStyle}">⚙️ LINE整合目前獨立版本：<strong>V${LINE_VERSION}</strong>　LINE整合不是單一App模組，是串接LINE Bot的功能總稱，以下列出相關項目</div>`,
   }[changelogFilter]||'';
 
