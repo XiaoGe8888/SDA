@@ -1415,7 +1415,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-10-11a';
+const BUILD_ID='2026-10-11b';
 // --- Anthropic API Helper ---
 // ============ AI 連線設定（上線用）============
 // 上線到你自己的網域時：把 App 與「代理函式」放在同一個專案，這裡保持 '/api/gemini' 不用改。
@@ -1483,7 +1483,7 @@ async function syncPull(){
     if(data && remoteDiffersFromLocal(data)){
       writeRemoteData(data);
       localStorage.setItem('last_sync', String(Date.now()));
-      location.reload(); return;
+      location.reload(); return 'reload'; // 回傳 'reload'：讓呼叫端知道頁面即將重新載入
     }
     localStorage.setItem('last_sync', String(Date.now()));
     setSyncStatus('已同步 · '+fmtSyncTime(Date.now()));
@@ -2047,7 +2047,18 @@ function showApp(){
   document.getElementById('app').style.display='';
   document.getElementById('logout-btn').textContent=`👤 ${currentUser}${superModeUnlocked?' 🔓':''}・登出`;
   goHome();
-  if(syncEnabled && syncCode){ setTimeout(syncPull, 300); }
+  // 從LINE按鈕開啟App時，網址會帶 ?open=...；等雲端同步完成（資料更新後才開啟，免得看到舊資料）再開啟對應功能
+  if(syncEnabled && syncCode){ setTimeout(async function(){ const r=await syncPull(); if(r!=='reload') runDeepLink(); }, 300); }
+  else { runDeepLink(); }
+}
+// 網址帶 ?open=wishlist（待去清單）／split（分帳）／sticker（集點卡）時，直接開啟對應功能；開啟後把參數從網址拿掉，避免之後重新整理又重複開啟
+function runDeepLink(){
+  let target='';
+  try{ target=new URLSearchParams(location.search).get('open')||''; }catch(e){}
+  if(!target) return;
+  const actions={ wishlist:function(){ openWishlist(); }, split:function(){ enterSplit(); }, sticker:function(){ openStickerCard(); } };
+  try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
+  if(actions[target]) actions[target]();
 }
 function showLogin(){
   document.getElementById('login-screen').style.display='flex';
@@ -2190,7 +2201,7 @@ const TRAVEL_VERSION = '1.1.0'; // ✈️🚢 航班/船班模組獨立版本：
 const SPLIT_VERSION = '1.0.0'; // 🧾 分帳模組獨立版本
 const STICKER_VERSION = '1.0.0'; // 🌟 集點卡模組獨立版本（含乖寶寶、互助兩張卡）
 const WISHLIST_VERSION = '1.0.0'; // 🗺️ 待去清單模組獨立版本：全新模組，從 V1.0.0 起算
-const LINE_VERSION = '5.0.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5起為本次session新增的所有LINE整合功能
+const LINE_VERSION = '6.0.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉
 
 // 版本治理規範（僅供未來判定版本號／更新提示策略參考，本身不觸發版本變更）：
 // 1. Major：重大架構改版或不向下相容的 Breaking Change（如資料結構不相容、核心引擎重寫）。
@@ -2218,6 +2229,17 @@ const UPDATE_POLICY = {
 const DEV_ORDER_POLICY = ['紀錄日常','數據統計','生活工具','設定'];
 
 const CHANGELOG = [
+  {
+    version:'⚙️ LINE整合 V6.0.0', type:'Minor', date:'2026/10/11',
+    items:[
+      'LINE整合：新增「紀錄」功能選單——在LINE輸入「紀錄」，會顯示整合選單（飲食與交通紀錄、帳務管理、集點卡、待去清單）；點選單按鈕與直接輸入功能名稱，會進入同一個功能',
+      'LINE整合：可直接輸入功能名稱快速進入，不必先叫出選單：飲料紀錄、美食紀錄、交通紀錄、記帳、分帳管理、集點卡、待去清單；關鍵字需整則訊息完全相符才會觸發，避免誤判（例如單打「分帳」不會被當成「分帳管理」）',
+      'LINE整合：飲料紀錄直接進入飲料旗艦版問答；美食紀錄、交通紀錄、記帳、記一筆分帳為「輸入一句話＋金額」的快速記錄，分類依選擇的功能固定（交通可先選航班／船班／高鐵／火車／地鐵／打車）；美食與交通在綁定同步碼後會自動同步進App',
+      'LINE整合：分帳管理與待去清單提供「開啟App」按鈕，從LINE直接開啟App裡對應的功能（App支援網址參數 ?open=wishlist／split／sticker，登入並完成雲端同步後自動開啟）；待去清單在綁定同步碼後，會在LINE顯示清單摘要',
+      'LINE整合：無法辨識的訊息（不是功能名稱，也沒有品項與金額）會提示可用的功能名稱並附「紀錄」按鈕；集點卡與待去清單因為會讀取個人資料，僅限1對1聊天室使用；「主選單」「menu」改為顯示同一個整合選單',
+    ],
+    reason:'整理LINE機器人的入口：統一以「紀錄」選單與功能關鍵字進入各功能，並讓每個入口都連到實際可用的功能。美食、交通、記帳目前是快速記錄（輸入一句話），逐題問答的旗艦版仍只有飲料。',
+  },
   {
     version:'🗺️ 待去清單 V1.0.0', type:'Minor', date:'2026/10/11',
     items:[
