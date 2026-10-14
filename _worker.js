@@ -219,7 +219,7 @@ async function lineGroupSummary(token, groupId) {
 }
 
 // 用 Gemini 解析「珍奶 60」→ { item, amount, category }
-async function parseExpense(text, env) {
+async function parseExpense(text, env, hintCategory) {
   const apiKey = env.SmartDailyAssistant_GEMINI_API_KEY;
   if (!apiKey) return null;
   const model = env.GEMINI_MODEL || DEFAULT_MODEL;
@@ -239,6 +239,7 @@ async function parseExpense(text, env) {
     '- transportType/depPort/arrPort：只有分類是travel才需要判斷\n' +
     '- payment：任何分類都可以判斷，只要訊息裡有明確講到付款方式\n' +
     '- 不屬於該分類的欄位一律填null\n' +
+    (hintCategory ? '提示：使用者已經指定這則訊息的分類是「' + hintCategory + '」，category請直接回傳「' + hintCategory + '」，並依這個分類填寫對應的詳細欄位。\n' : '') +
     '使用者訊息：' + text;
   const geminiBody = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -708,19 +709,313 @@ async function flagshipProceedAfterModule(session, userId, env, token, replyToke
 
 // 處理旗艦版／簡易版／標準版的多輪問答訊息（三種tier共用同一套引擎，用session.flow分辨）。
 // 回傳 true 代表這則訊息已經處理完畢；回傳 false 代表跟這套機制無關，交給 handleExpenseMessage 處理。
-// 「主選單」是萬用重來鍵：不管現在卡在哪個流程（旗艦版問到一半、集點卡選到一半），打這個都直接清空、重新顯示可用功能
-async function handleMainMenu(ev, token, env) {
+// ============================================================
+// 📋 「紀錄」功能選單與關鍵字跳轉
+//   ・輸入「紀錄」→ 顯示整合選單；也可以不經選單，直接輸入功能名稱快速進入。
+//   ・選單按鈕送出的文字 = 關鍵字本身，所以「點按鈕」跟「直接打字」一定走同一條路、進到同一個功能。
+//   ・關鍵字只有在「整則訊息完全相符」時才會觸發（避免誤判，例如單打「分帳」不會被當成「分帳管理」）。
+//   ・集點卡、待去清單會讀取個人資料，只開放 1對1 聊天室；其餘功能群組也能用。
+// ============================================================
+const DEFAULT_APP_URL = 'https://sda.hongxiaoge0615.workers.dev';
+const RECORD_MENU_KEYWORDS = ['紀錄', '主選單', '回主選單', 'menu', 'home'];
+const FUNCTION_KEYWORDS = ['飲料紀錄', '美食紀錄', '交通紀錄', '記帳', '分帳管理', '記一筆分帳', '集點卡', '待去清單'];
+const ALL_KEYWORDS = new Set(RECORD_MENU_KEYWORDS.concat(FUNCTION_KEYWORDS));
+// 群組裡只認「紀錄」跟中文功能名稱；主選單／menu／home 這種平常聊天容易誤打到的，群組裡不處理
+const GROUP_KEYWORDS = new Set(['紀錄'].concat(FUNCTION_KEYWORDS));
+const BACK_LABEL = '\u21A9\uFE0F 返回';
+const BACK_RE = /^\u21A9\uFE0F?\s*返回$/;
+const QUICK_CANCEL_RE = /^(取消|cancel|結束|結束此次對話|離開|退出|quit|exit)$/i;
+// 「輸入一句話＋金額」的快速記錄：依使用者選的功能固定分類，不讓AI自己猜
+const QUICK_KINDS = {
+  food: { keyword: '美食紀錄', label: '🍽️ 美食紀錄', category: 'food', examples: ['拉麵 180', '鼎泰豐小籠包中份現金380'] },
+  travel: { keyword: '交通紀錄', label: '🚗 交通紀錄', category: 'travel', examples: ['台北到台中 1490', '計程車 250'] },
+  other: { keyword: '記帳', label: '🧾 記帳', category: 'other', examples: ['薪水 30000', '房租 12000'] },
+  split: { keyword: '記一筆分帳', label: '💰 分帳', category: 'split', examples: ['晚餐 1200 AA', '唱歌 3000 我先付'] },
+};
+
+function normalizeKeyword(text) {
+  return String(text || '').replace(/\s+/g, '').replace(/[。.!！?？~～]+$/, '').toLowerCase();
+}
+
+async function lineReplyMessages(token, replyToken, messages) {
+  return fetch('https://api.line.me/v2/bot/message/reply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ replyToken, messages }),
+  });
+}
+// 送「卡片類」訊息；萬一LINE拒絕（例如卡片格式有問題），改用純文字備援，確保使用者一定看得到東西
+async function lineReplyCards(token, replyToken, messages, fallbackText) {
+  let res = null;
+  try { res = await lineReplyMessages(token, replyToken, messages); } catch (e) { res = null; }
+  if (!res || !res.ok) {
+    try { console.log('LINE reply failed', res ? res.status : 'no response', res ? await res.text() : ''); } catch (e) {}
+    try { await lineReply(token, replyToken, fallbackText); } catch (e) {}
+  }
+}
+function quickReplyItems(list) {
+  return {
+    items: list.slice(0, 13).map((x) => {
+      const label = typeof x === 'string' ? x : x.label;
+      const text = typeof x === 'string' ? x : x.text;
+      return { type: 'action', action: { type: 'message', label: String(label).slice(0, 20), text: String(text) } };
+    }),
+  };
+}
+
+const RECORD_MENU_FALLBACK = '📋 紀錄\n請直接輸入想用的功能名稱：\n・飲料紀錄／美食紀錄／交通紀錄\n・記帳／分帳管理\n・集點卡\n・待去清單';
+function recordMenuMessage() {
+  const btn = (label, text) => ({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'message', label, text } });
+  const section = (title, buttons) => ({
+    type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg',
+    contents: [{ type: 'text', text: title, weight: 'bold', size: 'sm', color: '#8b7355' }].concat(buttons),
+  });
+  return {
+    type: 'flex',
+    altText: '紀錄選單：飲料紀錄／美食紀錄／交通紀錄／記帳／分帳管理／集點卡／待去清單',
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box', layout: 'vertical',
+        contents: [
+          { type: 'text', text: '📋 紀錄', weight: 'bold', size: 'xl', color: '#5c4b37' },
+          { type: 'text', text: '請選擇要使用的功能，也可以直接輸入功能名稱', size: 'xs', color: '#8b8b8b', wrap: true, margin: 'sm' },
+          section('飲食與交通紀錄', [btn('🥤 飲料紀錄', '飲料紀錄'), btn('🍽️ 美食紀錄', '美食紀錄'), btn('🚗 交通紀錄', '交通紀錄')]),
+          section('帳務管理', [btn('🧾 記帳', '記帳'), btn('💰 分帳管理', '分帳管理')]),
+          section('集點卡', [btn('🎁 集點卡', '集點卡')]),
+          section('待去清單', [btn('🗺️ 待去清單', '待去清單')]),
+          { type: 'text', text: '集點卡、待去清單會讀取你的個人資料，需在與我的1對1聊天室使用', size: 'xxs', color: '#aaaaaa', wrap: true, margin: 'lg' },
+        ],
+      },
+    },
+  };
+}
+async function sendRecordMenu(token, replyToken) {
+  await lineReplyCards(token, replyToken, [recordMenuMessage()], RECORD_MENU_FALLBACK);
+}
+
+// ----- 快速記錄（美食紀錄／交通紀錄／記帳／記一筆分帳）-----
+function quickPromptText(kind, travelType) {
+  const k = QUICK_KINDS[kind];
+  const head = kind === 'travel' && travelType ? TRAVEL_TYPE_LABELS[travelType] + ' 交通紀錄' : k.label;
+  return head + '：請輸入內容與金額，例如：\n・' + k.examples.join('\n・');
+}
+async function startQuickRecord(kind, userId, env, token, replyToken) {
+  if (kind === 'travel') {
+    await setFlagshipSession(userId, { flow: 'quick', kind, stage: 'pickType', travelType: null }, env);
+    await lineReplyAsk(token, replyToken, '🚗 交通紀錄：要記錄哪一種交通呢？', TRAVEL_TYPE_OPTIONS.concat([BACK_LABEL]));
+    return;
+  }
+  await setFlagshipSession(userId, { flow: 'quick', kind, stage: 'await' }, env);
+  await lineReplyAsk(token, replyToken, quickPromptText(kind, null), [BACK_LABEL]);
+}
+async function handleQuickMessage(ev, token, env) {
   const text = (ev.message.text || '').trim();
   const userId = (ev.source && ev.source.userId) || '';
   const isGroup = !!(ev.source && ev.source.type === 'group');
-  if (isGroup || !userId) return false;
-  if (!/^(主選單|回主選單|menu|home)$/i.test(text)) return false;
+  const groupId = isGroup ? ((ev.source && ev.source.groupId) || '') : '';
+  if (!userId) return false;
+  const session = await getFlagshipSession(userId, env);
+  if (!session || session.flow !== 'quick') return false;
+  const k = QUICK_KINDS[session.kind];
+  if (!k) { await clearFlagshipSession(userId, env); return false; }
+
+  if (QUICK_CANCEL_RE.test(text)) {
+    await clearFlagshipSession(userId, env);
+    await lineReplyQuick(token, ev.replyToken, '已取消。', ['紀錄']);
+    return true;
+  }
+  if (BACK_RE.test(text)) {
+    if (session.kind === 'travel' && session.stage === 'await') {
+      session.stage = 'pickType';
+      session.travelType = null;
+      await setFlagshipSession(userId, session, env);
+      await lineReplyAsk(token, ev.replyToken, '🚗 交通紀錄：要記錄哪一種交通呢？', TRAVEL_TYPE_OPTIONS.concat([BACK_LABEL]));
+      return true;
+    }
+    await clearFlagshipSession(userId, env);
+    await sendRecordMenu(token, ev.replyToken);
+    return true;
+  }
+  if (session.stage === 'pickType') {
+    const tt = TRAVEL_TYPE_TRIGGERS[text];
+    if (!tt) {
+      await lineReplyAsk(token, ev.replyToken, '請從清單裡選一種交通：', TRAVEL_TYPE_OPTIONS.concat([BACK_LABEL]));
+      return true;
+    }
+    session.travelType = tt;
+    session.stage = 'await';
+    await setFlagshipSession(userId, session, env);
+    await lineReplyAsk(token, ev.replyToken, quickPromptText('travel', tt), [BACK_LABEL]);
+    return true;
+  }
+
+  // stage === 'await'：這句話就是紀錄內容
+  let parsed = null;
+  try { parsed = await parseExpense(text, env, k.category); } catch (e) { parsed = null; }
+  if (!parsed || parsed.amount == null || isNaN(Number(parsed.amount))) {
+    await lineReplyAsk(token, ev.replyToken, '沒有抓到金額 😅 請再輸入一次，要包含內容跟金額，例如：\n・' + k.examples.join('\n・'), [BACK_LABEL]);
+    return true; // 保留流程，讓使用者直接重打
+  }
+  let userName = '';
+  let groupName = '';
+  try {
+    userName = (isGroup ? await lineGroupMemberProfile(token, groupId, userId) : await lineProfile(token, userId)) || '';
+  } catch (e) {}
+  if (isGroup) { try { groupName = (await lineGroupSummary(token, groupId)) || ''; } catch (e) {} }
+  const record = buildRecordFromParsed(parsed, text, userId, userName, groupId, groupName, undefined, ev.message.id);
+  record.category = k.category; // 依選的功能固定分類
+  if (session.kind === 'travel' && session.travelType) record.transportType = session.travelType;
+  let synced = false;
+  try {
+    synced = await saveLineLogRecord(record, env);
+  } catch (e) {
+    await clearFlagshipSession(userId, env);
+    await lineReplyQuick(token, ev.replyToken, '存檔時發生問題，請稍後再試一次 🙏', null);
+    return true;
+  }
   await clearFlagshipSession(userId, env);
-  await lineReplyButtons(token, ev.replyToken, '主選單', '嗨！想用哪個功能呢？', [
-    { label: '📋 日常小秘書', text: '日常小秘書' },
-    { label: '🎁 集點卡', text: '集點卡' },
-  ]);
+  const tail = synced ? '✅ 已自動同步到App'
+    : (k.category === 'food' || k.category === 'travel') ? '之後可以到App的「📱LINE記帳」匯入（綁定同步碼後會自動同步）'
+      : k.category === 'split' ? '到App的「📱LINE記帳」按「📥匯入分帳」選群組'
+        : '到App的「📱LINE記帳」手動匯入';
+  const typeLine = session.kind === 'travel' && session.travelType ? TRAVEL_TYPE_LABELS[session.travelType] + '　' : '';
+  const doneText = '✅ ' + k.label + ' 已記錄' + (userName ? '（' + userName + '）' : '') + '\n' + typeLine + record.item + '　$' + record.amount + '\n' + tail;
+  await lineReplyCards(token, ev.replyToken, [{
+    type: 'text', text: doneText,
+    quickReply: quickReplyItems([{ label: '再記一筆', text: k.keyword }, { label: '📋 紀錄選單', text: '紀錄' }]),
+  }], doneText);
   return true;
+}
+
+// ----- 分帳管理／待去清單：LINE裡能做的事＋「開啟App」按鈕（App支援 ?open=split／wishlist 直接開啟）-----
+async function sendSplitCard(token, ev) {
+  const url = (ev.appOrigin || DEFAULT_APP_URL) + '/?open=split&openExternalBrowser=1';
+  await lineReplyCards(token, ev.replyToken, [{
+    type: 'template', altText: '分帳管理',
+    template: {
+      type: 'buttons',
+      text: '💰 分帳管理\n記一筆分帳：先記在這裡，之後到App匯入分帳群組。完整的群組與結算在App裡。',
+      actions: [
+        { type: 'message', label: '✍️ 記一筆分帳', text: '記一筆分帳' },
+        { type: 'uri', label: '📱 開啟App分帳管理', uri: url },
+        { type: 'message', label: '↩️ 返回選單', text: '紀錄' },
+      ],
+    },
+  }], '💰 分帳管理\n・記一筆分帳：輸入「記一筆分帳」\n・完整的群組與結算：' + url);
+}
+async function fetchSyncedObject(userId, lsKey, env) {
+  const kv = env.SYNC_KV;
+  if (!kv || !userId) return null;
+  const code = await kv.get('line:usersync:' + userId);
+  if (!code) return null;
+  const raw = await kv.get(keyOf(code));
+  if (!raw) return null;
+  let rec;
+  try { rec = JSON.parse(raw); } catch (e) { return null; }
+  const data = rec.data || {};
+  try { return data[lsKey] ? JSON.parse(data[lsKey]) : {}; } catch (e) { return {}; }
+}
+function wishlistSummaryText(obj) {
+  const items = obj && Array.isArray(obj.wishItems) ? obj.wishItems : [];
+  if (!items.length) return '🗺️ 待去清單\n目前還沒有任何地點，按下面的按鈕到App新增第一個吧！';
+  const count = {};
+  items.forEach((it) => { const s = (it && it.status) || '待去'; count[s] = (count[s] || 0) + 1; });
+  const order = ['待去', '已安排', '已完成', '暫不去', '取消'];
+  const parts = order.filter((s) => count[s]).map((s) => s + ' ' + count[s]);
+  Object.keys(count).filter((s) => order.indexOf(s) < 0).forEach((s) => parts.push(s + ' ' + count[s]));
+  const pending = items.filter((it) => it && ((it.status || '待去') === '待去')).slice(0, 5); // App新增的項目放在最前面，所以前5個就是最近新增的
+  let text = '🗺️ 待去清單\n共 ' + items.length + ' 個地點：' + parts.join('・');
+  if (pending.length) {
+    text += '\n\n最近新增的待去地點：\n' + pending.map((it) => '・' + (it.name || '（未命名）') + (it.city ? '（' + it.city + '）' : '')).join('\n');
+  }
+  return text;
+}
+async function sendWishlistCard(token, ev, userId, env) {
+  const url = (ev.appOrigin || DEFAULT_APP_URL) + '/?open=wishlist&openExternalBrowser=1';
+  let code = null;
+  try { code = env.SYNC_KV ? await env.SYNC_KV.get('line:usersync:' + userId) : null; } catch (e) {}
+  let summary;
+  if (!code) {
+    summary = '🗺️ 待去清單\n你還沒綁定同步碼，所以這裡看不到清單摘要。傳「同步碼 你的碼」綁定後就會顯示（App「設定→雲端同步」可以看到同步碼）。\n\n完整的待去清單（表格／看板／地圖）在App裡，按下面的按鈕開啟。';
+  } else {
+    let obj = null;
+    try { obj = await fetchSyncedObject(userId, 'wishlist_data_v2', env); } catch (e) {}
+    summary = wishlistSummaryText(obj);
+  }
+  await lineReplyCards(token, ev.replyToken, [
+    { type: 'text', text: summary },
+    {
+      type: 'template', altText: '待去清單',
+      template: {
+        type: 'buttons',
+        text: '要開啟完整的待去清單嗎？',
+        actions: [
+          { type: 'uri', label: '📱 開啟待去清單', uri: url },
+          { type: 'message', label: '↩️ 返回選單', text: '紀錄' },
+        ],
+      },
+    },
+  ], summary + '\n\n開啟待去清單：' + url);
+}
+
+// ----- 路由：關鍵字 → 功能 -----
+async function handleKeywordRouter(ev, token, env) {
+  const key = normalizeKeyword(ev.message.text);
+  if (!ALL_KEYWORDS.has(key)) return false;
+  const userId = (ev.source && ev.source.userId) || '';
+  const isGroup = !!(ev.source && ev.source.type === 'group');
+  if (!userId) return false;
+  if (isGroup && !GROUP_KEYWORDS.has(key)) return false;
+
+  // 「記帳」跟簡易版／標準版／旗艦版「選模組」按鈕的文字一樣：正在選模組時，這個字是在回答問題，不是要開新功能
+  const session = await getFlagshipSession(userId, env);
+  if (key === '記帳' && session && session.flow !== 'quick' && session.flow !== 'stickerkid' && !session.module) return false;
+
+  await clearFlagshipSession(userId, env); // 切換功能 → 結束手上正在進行的流程
+
+  if (RECORD_MENU_KEYWORDS.indexOf(key) >= 0) {
+    await sendRecordMenu(token, ev.replyToken);
+    return true;
+  }
+  switch (key) {
+    case '飲料紀錄': {
+      // 直接進飲料旗艦版問答（跳過選版本、選模組）
+      const s = { flow: 'drink', module: 'drink', mode: null, stage: 'core', stepIndex: 0, answers: {}, direct: true };
+      await flagshipProceedAfterModule(s, userId, env, token, ev.replyToken);
+      return true;
+    }
+    case '美食紀錄':
+      await startQuickRecord('food', userId, env, token, ev.replyToken);
+      return true;
+    case '交通紀錄':
+      await startQuickRecord('travel', userId, env, token, ev.replyToken);
+      return true;
+    case '記帳':
+      await startQuickRecord('other', userId, env, token, ev.replyToken);
+      return true;
+    case '記一筆分帳':
+      await startQuickRecord('split', userId, env, token, ev.replyToken);
+      return true;
+    case '分帳管理':
+      await sendSplitCard(token, ev);
+      return true;
+    case '待去清單':
+      if (isGroup) {
+        await lineReply(token, ev.replyToken, '🗺️ 待去清單會讀取你的個人資料，請在與我的1對1聊天室輸入「待去清單」使用喔。');
+        return true;
+      }
+      await sendWishlistCard(token, ev, userId, env);
+      return true;
+    case '集點卡':
+      if (isGroup) {
+        await lineReply(token, ev.replyToken, '🎁 集點卡會讀取你的個人資料，請在與我的1對1聊天室輸入「集點卡」使用喔。');
+        return true;
+      }
+      return false; // 交給 handleStickerCardMessage（流程剛清掉，會從頭開始）
+    default:
+      return false;
+  }
 }
 
 async function handleFlagshipMessage(ev, token, env) {
@@ -731,7 +1026,7 @@ async function handleFlagshipMessage(ev, token, env) {
   if (!userId) return false; // session用userId分辨，群組裡不同人各自有各自的流程，不會互相干擾
 
   let session = await getFlagshipSession(userId, env);
-  if (session && session.flow === 'stickerkid') return false; // 這是集點卡流程的session，交給handleStickerCardMessage處理
+  if (session && (session.flow === 'stickerkid' || session.flow === 'quick')) return false; // 集點卡／「紀錄」快速記錄流程的session，交給各自的handler處理
 
   if (!session) {
     const tier = TIER_TRIGGERS[text];
@@ -810,6 +1105,11 @@ async function handleFlagshipMessage(ev, token, env) {
   // ---- 選模式 ----
   if (!session.mode) {
     if (/^↩️?\s*返回$/.test(text)) {
+      if (session.direct) { // 從「紀錄」選單直接進來的：返回就回到選單，不要掉進舊的選模組畫面
+        await clearFlagshipSession(userId, env);
+        await sendRecordMenu(token, ev.replyToken);
+        return true;
+      }
       session.module = null;
       session.travelType = null;
       await setFlagshipSession(userId, session, env);
@@ -1032,7 +1332,9 @@ async function handleExpenseMessage(ev, token, env) {
   if (!parsed || parsed.amount == null || isNaN(Number(parsed.amount))) {
     // 群組裡看不懂就安靜略過（大家可能在聊別的事，不要洗版）；1對1才提示格式
     if (!isGroup) {
-      await lineReply(token, ev.replyToken, '看不懂這筆耶 😅\n請用「品項 金額」的方式記，例如：\n・珍奶 60\n・午餐 120\n・計程車 250');
+      await lineReplyQuick(token, ev.replyToken,
+        '看不懂這則訊息耶 😅\n\n・要記帳：請用「品項 金額」，例如：\n　珍奶 60／午餐 120／計程車 250\n・要用其他功能：輸入「紀錄」看選單，或直接輸入功能名稱：\n　飲料紀錄／美食紀錄／交通紀錄／記帳／分帳管理／集點卡／待去清單',
+        ['紀錄']);
     }
     return;
   }
@@ -1090,7 +1392,8 @@ async function handleLine(request, env) {
   for (const ev of events) {
     if (ev.type === 'message' && ev.message && ev.message.type === 'text' && ev.replyToken) {
       try {
-        const handled = (await handleMainMenu(ev, token, env)) || (await handleFlagshipMessage(ev, token, env)) || (await handleStickerCardMessage(ev, token, env));
+        ev.appOrigin = new URL(request.url).origin; // 給「開啟App」按鈕組網址用
+        const handled = (await handleKeywordRouter(ev, token, env)) || (await handleQuickMessage(ev, token, env)) || (await handleFlagshipMessage(ev, token, env)) || (await handleStickerCardMessage(ev, token, env));
         if (!handled) await handleExpenseMessage(ev, token, env);
       } catch (e) {
         try { await lineReply(token, ev.replyToken, '發生了一點問題 🙏 請再試一次'); } catch (e2) {}
