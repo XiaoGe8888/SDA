@@ -1415,7 +1415,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-10-11b';
+const BUILD_ID='2026-10-22a';
 // --- Anthropic API Helper ---
 // ============ AI 連線設定（上線用）============
 // 上線到你自己的網域時：把 App 與「代理函式」放在同一個專案，這裡保持 '/api/gemini' 不用改。
@@ -1473,6 +1473,7 @@ async function syncFetchRemote(code){
   const res = await fetch(SYNC_URL+'?code='+encodeURIComponent(code), { headers: aiTokenHeader() });
   if(!res.ok) throw new Error('sync GET '+res.status);
   const j = await res.json();
+  if(j && j.updated_at){ try{ localStorage.setItem('sync_base', String(j.updated_at)); }catch(e){} } // 記住這次同步到的伺服器版本
   return (j && j.data) ? j.data : null;
 }
 async function syncPull(){
@@ -1495,9 +1496,12 @@ async function syncPush(){
   if(!syncEnabled || !syncCode) return;
   setSyncStatus('同步中…');
   try{
-    const body=JSON.stringify({ code:syncCode, data:collectAllData(), updated_at:Date.now() });
+    const body=JSON.stringify({ code:syncCode, data:collectAllData(), updated_at:Date.now(), base:Number(localStorage.getItem('sync_base')||0) });
     const res=await fetch(SYNC_URL,{ method:'POST', headers:{ 'Content-Type':'application/json', ...aiTokenHeader() }, body });
     if(!res.ok) throw new Error('sync POST '+res.status);
+    let rj=null; try{ rj=await res.json(); }catch(e){}
+    // 伺服器替我們保留了 LINE 剛寫進來的紀錄（我們這份資料還沒有它們）：先不前進「已同步的版本」，下次拉取才會拿到，期間每次上傳都會繼續保護它們
+    if(rj && rj.updated_at && !(rj.preserved>0)){ try{ localStorage.setItem('sync_base', String(rj.updated_at)); }catch(e){} }
     localStorage.setItem('last_sync', String(Date.now()));
     setSyncStatus('已同步 · '+fmtSyncTime(Date.now()));
   }catch(e){ const net=(e&&e.name==='TypeError')||/Failed to fetch|NetworkError|network/i.test(((e&&e.message)||'')); setSyncStatus(net?'網路連線異常，請稍後再試':'上傳失敗，稍後自動重試'); }
@@ -2201,7 +2205,7 @@ const TRAVEL_VERSION = '1.1.0'; // ✈️🚢 航班/船班模組獨立版本：
 const SPLIT_VERSION = '1.0.0'; // 🧾 分帳模組獨立版本
 const STICKER_VERSION = '1.0.0'; // 🌟 集點卡模組獨立版本（含乖寶寶、互助兩張卡）
 const WISHLIST_VERSION = '1.0.0'; // 🗺️ 待去清單模組獨立版本：全新模組，從 V1.0.0 起算
-const LINE_VERSION = '6.0.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉
+const LINE_VERSION = '8.0.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉，V7為可管理的選單／關鍵字／群組權限，V8為統一的「紀錄／查詢＋三版本」操作與可靠同步
 
 // 版本治理規範（僅供未來判定版本號／更新提示策略參考，本身不觸發版本變更）：
 // 1. Major：重大架構改版或不向下相容的 Breaking Change（如資料結構不相容、核心引擎重寫）。
@@ -2229,6 +2233,28 @@ const UPDATE_POLICY = {
 const DEV_ORDER_POLICY = ['紀錄日常','數據統計','生活工具','設定'];
 
 const CHANGELOG = [
+  {
+    version:'⚙️ LINE整合 V8.0.0', type:'Minor', date:'2026/10/22',
+    items:[
+      'LINE整合：統一操作流程——先選主功能（飲料、美食、交通、待去清單），再選「紀錄」或「查詢」，最後選簡易版／標準版／旗艦版或輸入查詢條件；也可以直接輸入完整指令（例如「查詢飲料 2026年10月 咖啡」「紀錄飲料 簡易版」）。選單按鈕送出的文字就是完整指令，所以逐步點選與直接輸入的結果一致',
+      'LINE整合：新增查詢功能，可用年份、月份、日期、關鍵字單獨或組合查詢；日期不明確（例如「10/18」「26年」）時請使用者確認、不自己猜；只查實際存在的紀錄、只看自己的紀錄，尚未同步到網頁而暫存在 LINE 的紀錄也會查到並標示；結果可分頁；群組內預設以私訊回覆',
+      'LINE整合：紀錄流程填完後新增「確認儲存」步驟，按下確認才寫入；沒同步成功前不會說「已完成」，會明確標示「已暫存」與原因；同一則 LINE 訊息只會儲存一次（LINE 重送、重複按確認都不會重複新增）；同步失敗的紀錄，會在使用者下次傳訊息時自動重試',
+      'LINE整合：LINE 與網頁同時修改時，網頁端用舊資料上傳，不會再蓋掉 LINE 剛寫入的紀錄（伺服器以版本號判斷；網頁端已看過後刪除的紀錄不會復活）。網頁會在開啟或重新整理時取得 LINE 新增的紀錄',
+      'LINE整合：管理頁新增「版本規格」分頁，列出各模組三個版本實際使用的欄位（由程式裡的表單定義產生），規格尚未確認的項目（美食與交通的旗艦版表單、待去清單在 LINE 的新增表單、三版本查詢的內容等）明確標示「待確認」，不自行補造；並可設定查詢的預設版本',
+    ],
+    reason:'依「全模組統一操作架構 × 三版本紀錄查詢 × 網頁同步」需求建立共用框架。規格要求「沒有確認的規格不得自行補造」，所以先完成已有確認規格與資料的飲料、美食、交通（以及待去清單的查詢）；記帳、分帳管理、集點卡納入同一框架，以及透過 LINE 修改、刪除紀錄，列為待確認，等確認後再做。',
+  },
+  {
+    version:'⚙️ LINE整合 V7.0.0', type:'Minor', date:'2026/10/16',
+    items:[
+      'LINE整合：新增「功能選單」關鍵字，與「紀錄」都能叫出完整功能選單；並新增常用別名：飲料、美食、交通、分帳、集點、待去、帳務管理（單字「集」需先按按鈕確認，避免誤判）',
+      'LINE整合：關鍵字辨識改為統一的比對引擎，支援精確、部分、包含、模糊四種方式；衝突時依「完全相同 → 關鍵字越長越具體 → 優先順序」處理，無法確定唯一功能時顯示候選讓使用者選擇；流程進行中或句子含金額時只接受完全相同的關鍵字，避免誤判',
+      'LINE整合：集點卡與待去清單開放在 LINE 群組使用；群組需先由管理員授權，個人資料預設以私訊（Push）回覆本人、群組只顯示通知，也可改為公開顯示；各人的資料依 LINE 使用者身分分開，不會互相顯示或覆寫',
+      'LINE整合：每個功能可設定可用的聊天室（1對1／群組）、群組是否需先授權、群組成員可否新增資料、限制指定使用者；一律由伺服器在功能實際執行時檢查（包含舊版入口與直接輸入「品項 金額」的記帳）',
+      'LINE整合：「設定」頁面新增「LINE官方帳號 × 智慧關鍵字辨識 × LINE群組使用權限」管理模組，可新增、修改、排序、啟用停用、刪除主選單、子選單與關鍵字規則，設定群組授權與各功能權限，並提供測試工具；設定存放在伺服器，重新整理或重新部署後仍保留，修改後 LINE 立即依新規則運作（需先在 Cloudflare 設定管理密碼 LINE_ADMIN_PASSWORD）',
+    ],
+    reason:'依「LINE × 智慧關鍵字辨識 × 群組使用權限」需求，把原本寫死在程式裡的選單與關鍵字，改成可在 App 管理、由伺服器每次執行時檢查的設定。群組內以「私訊」回覆個人資料，需要使用者先把官方帳號加為好友，也會用到官方帳號的每月訊息額度。',
+  },
   {
     version:'⚙️ LINE整合 V6.0.0', type:'Minor', date:'2026/10/11',
     items:[
@@ -3315,6 +3341,379 @@ function mutualAddReward(){
 }
 function mutualRemoveReward(id){mutualRewards=mutualRewards.filter(x=>x.id!==id);saveMutualRewards();renderStickerCard();}
 
+
+// ===== 📡 LINE官方帳號 × 智慧關鍵字辨識 × LINE群組使用權限（管理）=====
+// 設定存在伺服器（Cloudflare KV 的 line:config），LINE機器人每則訊息都會讀取；這裡的每個操作都會「立刻送到伺服器驗證並保存」，
+// 伺服器拒絕（例如關鍵字衝突、資料關聯錯誤）時，畫面上的資料不會被改動。管理密碼只存在這個分頁（sessionStorage），關掉就要重新輸入。
+let lc={cfg:null,functions:[],groups:[],users:[],specs:null,tab:'menus',fnFilter:'',kwSearch:''};
+const LC_SCOPE=[['both','1對1＋群組'],['direct','只有1對1'],['group','只有群組']];
+const LC_TYPE=[['exact','精確（完全相同）'],['partial','部分（輸入前段，2字以上）'],['contains','包含（句子裡有）'],['fuzzy','模糊（相似就提示建議）']];
+const LC_TYPE_SHORT={exact:'精確',partial:'部分',contains:'包含',fuzzy:'模糊'};
+const LC_SCOPE_SHORT={both:'1對1＋群組',direct:'1對1',group:'群組'};
+const LC_TABS=[['menus','📋 選單'],['kw','🔑 關鍵字'],['perm','🛡️ 群組與權限'],['spec','📑 版本規格'],['test','🧪 測試與設定']];
+function lcKey(){try{return sessionStorage.getItem('line_admin_key')||'';}catch(e){return '';}}
+function lcSetKey(v){try{sessionStorage.setItem('line_admin_key',v);}catch(e){}}
+async function lcApi(method,path,body){
+  const res=await fetch(path,{method,headers:{'Content-Type':'application/json','x-admin-key':lcKey()},body:body===undefined?undefined:JSON.stringify(body)});
+  let j=null;try{j=await res.json();}catch(e){}
+  return {status:res.status,json:j};
+}
+function lcNorm(t){return String(t||'').replace(/\s+/g,'').replace(/[。.!！?？~～]+$/,'').toLowerCase();}
+function lcOverlap(a,b){return a==='both'||b==='both'||a===b;}
+function lcFnLabel(id){
+  const f=lc.functions.find(x=>x.id===id);if(f)return f.label;
+  if(String(id).indexOf('menu:')===0){const m=(lc.cfg.mainMenus||[]).find(x=>x.id===String(id).slice(5));return m?'📂 '+m.name:String(id);}
+  return String(id);
+}
+function lcFnOptions(allowEmpty){
+  const o=allowEmpty?[['','（不直接對應功能，只當群組標題）']]:[];
+  lc.functions.forEach(f=>o.push([f.id,f.label]));
+  (lc.cfg.mainMenus||[]).forEach(m=>o.push(['menu:'+m.id,'📂 開啟主選單「'+m.name+'」']));
+  return o;
+}
+function lcId(p){return p+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36);}
+function lcBtn(label,onclick,opt){
+  opt=opt||{};
+  return '<button '+(opt.dis?'disabled ':'')+'onclick="'+onclick+'" style="padding:'+(opt.pad||'5px 9px')+';border:1px solid '+(opt.bd||'var(--bdr)')+';border-radius:8px;background:'+(opt.bg||'var(--bg)')+';color:'+(opt.color||'var(--t5)')+';font-family:inherit;font-size:'+(opt.fs||'11px')+';font-weight:900;cursor:'+(opt.dis?'default':'pointer')+';opacity:'+(opt.dis?'.35':'1')+';touch-action:manipulation">'+label+'</button>';
+}
+const LC_IN='width:100%;padding:9px 10px;border:1px solid var(--bdr);border-radius:9px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--bd)';
+
+// ----- 開啟／關閉 -----
+function openLineCfg(){
+  const old=document.getElementById('linecfg-modal');if(old)old.remove();
+  const m=document.createElement('div');
+  m.id='linecfg-modal';
+  m.style.cssText='position:fixed;inset:0;z-index:9100;background:var(--bg);display:flex;flex-direction:column';
+  m.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--sur);border-bottom:1px solid var(--bdr)">'
+    +lcBtn('← 返回設定','closeLineCfg()',{pad:'7px 12px',fs:'13px',color:'var(--br)'})
+    +'<div style="font-size:12px;font-weight:900;color:var(--bd);line-height:1.4">📡 LINE官方帳號 × 智慧關鍵字辨識 × LINE群組使用權限</div></div>'
+    +'<div id="lc-tabs" style="display:flex;gap:6px;padding:8px 12px;overflow-x:auto;background:var(--sur);border-bottom:1px solid var(--bdr)"></div>'
+    +'<div id="lc-body" style="flex:1;overflow-y:auto;padding:12px 14px 40px"></div>';
+  document.body.appendChild(m);
+  document.body.style.overflow='hidden';
+  lcLoad();
+}
+function closeLineCfg(){
+  const m=document.getElementById('linecfg-modal');if(m)m.remove();
+  const f=document.getElementById('lc-form');if(f)f.remove();
+  document.body.style.overflow='';
+}
+function lcShowLogin(msg){
+  const t=document.getElementById('lc-tabs');if(t)t.innerHTML='';
+  const b=document.getElementById('lc-body');if(!b)return;
+  b.innerHTML='<div style="max-width:360px;margin:30px auto;text-align:center">'
+    +'<div style="font-size:34px;margin-bottom:8px">🔐</div>'
+    +'<div style="font-size:14px;font-weight:900;color:var(--bd);margin-bottom:6px">請輸入 LINE 管理密碼</div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:14px">這是你在 Cloudflare 設定的 <b>LINE_ADMIN_PASSWORD</b>。LINE 機器人的選單、關鍵字與群組權限會影響所有使用者，所以需要密碼才能修改。</div>'
+    +(msg?'<div style="font-size:12px;color:#dc2626;margin-bottom:10px">'+splitEsc(msg)+'</div>':'')
+    +'<input id="lc-pw" type="password" placeholder="管理密碼" onkeydown="if(event.key===\'Enter\')lcLogin()" style="'+LC_IN+';margin-bottom:10px;text-align:center">'
+    +'<button onclick="lcLogin()" style="width:100%;padding:11px;border:none;border-radius:10px;background:var(--br);color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer">登入</button></div>';
+}
+function lcLogin(){
+  const v=(document.getElementById('lc-pw')||{}).value||'';
+  if(!v.trim()){toast('⚠️ 請輸入管理密碼');return;}
+  lcSetKey(v.trim());lcLoad();
+}
+async function lcLoad(){
+  const body=document.getElementById('lc-body');if(!body)return;
+  if(!lcKey()){lcShowLogin('');return;}
+  body.innerHTML='<div style="padding:40px;text-align:center;color:var(--t5);font-size:13px">載入中…</div>';
+  let r;
+  try{r=await lcApi('GET','/api/line-config');}catch(e){body.innerHTML='<div style="padding:40px;text-align:center;color:#dc2626;font-size:13px">連不上伺服器，請確認網路後重試</div>';return;}
+  if(r.status===200){lc.cfg=r.json.config;lc.functions=r.json.functions||[];lc.groups=r.json.groups||[];lc.users=r.json.users||[];lc.specs=r.json.specs||null;lcRender();return;}
+  if(r.status===401){lcSetKey('');lcShowLogin('管理密碼不正確，請再試一次');return;}
+  if(r.status===403){
+    const t=document.getElementById('lc-tabs');if(t)t.innerHTML='';
+    body.innerHTML='<div style="max-width:420px;margin:24px auto;padding:16px;border:1px solid var(--bdr);border-radius:12px;background:var(--sur);font-size:12px;color:var(--t5);line-height:1.8"><div style="font-size:14px;font-weight:900;color:var(--bd);margin-bottom:8px">⚙️ 還需要先設定管理密碼</div>'+splitEsc((r.json&&r.json.message)||'')+'<div style="margin-top:10px">設定完成後，回到這裡重新開啟即可。</div></div>';
+    return;
+  }
+  lcShowLogin('載入失敗（'+r.status+'）');
+}
+// 所有修改都走這裡：複製一份草稿 → 套用修改 → 送伺服器驗證並保存 → 成功才更新畫面
+async function lcCommit(mutator,okMsg){
+  const draft=JSON.parse(JSON.stringify(lc.cfg));
+  mutator(draft);
+  let r;
+  try{r=await lcApi('POST','/api/line-config',{config:draft});}catch(e){toast('⚠️ 連不上伺服器，沒有儲存');return false;}
+  if(r.status===200){
+    lc.cfg=r.json.config;lc.groups=r.json.groups||lc.groups;lc.users=r.json.users||lc.users;
+    lcRender();
+    toast(okMsg||'✅ 已儲存並套用到LINE');
+    if(r.json.warnings&&r.json.warnings.length)toast('⚠️ '+r.json.warnings[0]);
+    return true;
+  }
+  if(r.status===401){lcSetKey('');lcShowLogin('管理密碼已失效，請重新輸入');return false;}
+  toast('⚠️ '+((r.json&&r.json.message)||'儲存失敗')+'（沒有套用）');
+  lcRender();
+  return false;
+}
+function lcGo(tab){lc.tab=tab;lcRender();const b=document.getElementById('lc-body');if(b)b.scrollTop=0;}
+function lcRender(){
+  const t=document.getElementById('lc-tabs'),b=document.getElementById('lc-body');
+  if(!t||!b||!lc.cfg)return;
+  t.innerHTML=LC_TABS.map(x=>'<button onclick="lcGo(\''+x[0]+'\')" style="flex-shrink:0;padding:7px 12px;border:1px solid '+(lc.tab===x[0]?'var(--amb)':'var(--bdr)')+';border-radius:999px;background:'+(lc.tab===x[0]?'var(--amb)':'var(--bg)')+';color:'+(lc.tab===x[0]?'#fff':'var(--t5)')+';font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">'+x[1]+'</button>').join('');
+  const st=b.scrollTop;
+  b.innerHTML=lc.tab==='menus'?lcRenderMenus():lc.tab==='kw'?lcRenderKeywords():lc.tab==='perm'?lcRenderPerms():lc.tab==='spec'?lcRenderSpecs():lcRenderTest();
+  b.scrollTop=st;
+}
+
+// ----- 通用小表單 -----
+function lcForm(title,fields,vals,onSave,hintFn){
+  const old=document.getElementById('lc-form');if(old)old.remove();
+  const o=document.createElement('div');
+  o.id='lc-form';
+  o.style.cssText='position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+  let h='<div style="background:var(--sur);border-radius:16px;padding:16px;width:100%;max-width:400px;max-height:88vh;overflow-y:auto"><div style="font-size:15px;font-weight:900;color:var(--bd);margin-bottom:12px">'+splitEsc(title)+'</div>';
+  fields.forEach(f=>{
+    const v=vals[f.k];
+    h+='<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--t5);display:block;margin-bottom:4px">'+splitEsc(f.label)+'</label>';
+    if(f.type==='select')h+='<select id="lcf_'+f.k+'" onchange="lcFormHint()" style="'+LC_IN+'">'+f.options.map(op=>'<option value="'+splitEsc(op[0])+'"'+(String(op[0])===String(v==null?'':v)?' selected':'')+'>'+splitEsc(op[1])+'</option>').join('')+'</select>';
+    else if(f.type==='checkbox')h+='<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--bd)"><input id="lcf_'+f.k+'" type="checkbox" onchange="lcFormHint()"'+(v?' checked':'')+' style="width:18px;height:18px">'+splitEsc(f.hint||'')+'</label>';
+    else h+='<input id="lcf_'+f.k+'" type="'+(f.type==='number'?'number':'text')+'" value="'+splitEsc(String(v==null?'':v))+'" maxlength="'+(f.max||60)+'" oninput="lcFormHint()" placeholder="'+splitEsc(f.ph||'')+'" style="'+LC_IN+'">';
+    if(f.help)h+='<div style="font-size:10px;color:var(--t5);margin-top:3px;line-height:1.5">'+splitEsc(f.help)+'</div>';
+    h+='</div>';
+  });
+  h+='<div id="lcf_hint" style="font-size:12px;font-weight:700;margin:4px 0 10px;min-height:16px"></div>'
+    +'<div style="display:flex;gap:8px"><button onclick="document.getElementById(\'lc-form\').remove()" style="flex:1;padding:11px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-weight:900;cursor:pointer">取消</button>'
+    +'<button id="lcf_save" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--br);color:#fff;font-family:inherit;font-weight:900;cursor:pointer">儲存並套用</button></div></div>';
+  o.innerHTML=h;
+  document.body.appendChild(o);
+  const collect=()=>{const out={};fields.forEach(f=>{const el=document.getElementById('lcf_'+f.k);out[f.k]=f.type==='checkbox'?el.checked:f.type==='number'?Number(el.value):String(el.value).trim();});return out;};
+  window.lcFormHint=function(){const el=document.getElementById('lcf_hint');if(!el||!hintFn)return;const t=hintFn(collect());el.textContent=t||'';el.style.color=/^⚠️/.test(t||'')?'#dc2626':'#16a34a';};
+  document.getElementById('lcf_save').onclick=async function(){
+    const out=collect();
+    for(const f of fields){if(f.req&&!out[f.k]){toast('⚠️ 請填寫「'+f.label+'」');return;}}
+    if(await onSave(out))o.remove();
+  };
+  window.lcFormHint();
+}
+function lcConfirm(msg){return window.confirm(msg);}
+
+// ----- 分頁一：選單（主選單＋子選單）-----
+function lcCtl(kind,id,first,last,enabled){
+  const k="'"+kind+"','"+id+"'";
+  return '<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">'
+    +lcBtn('▲','lcMove('+k+',-1)',{dis:first})+lcBtn('▼','lcMove('+k+',1)',{dis:last})
+    +lcBtn(enabled?'🟢 啟用中':'⚪ 已停用','lcToggle('+k+')',{color:enabled?'#16a34a':'var(--t5)'})
+    +lcBtn('✏️','lcEdit('+k+')')+lcBtn('🗑','lcDel('+k+')',{color:'#dc2626'})+'</div>';
+}
+function lcRenderMenus(){
+  const c=lc.cfg;
+  const mains=c.mainMenus.slice().sort((a,b)=>a.order-b.order);
+  let h='<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:10px">這裡決定 LINE「功能選單」長什麼樣子。每個操作都會立刻儲存並套用到 LINE。選單按鈕送出的文字＝「子選單名稱」，所以按按鈕和直接輸入名稱，一定進到同一個功能。</div>';
+  mains.forEach((m,i)=>{
+    const subs=c.subMenus.filter(s=>s.mainId===m.id).sort((a,b)=>a.order-b.order);
+    h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--sur);'+(m.enabled?'':'opacity:.65')+'">'
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px"><div style="flex:1;min-width:130px"><div style="font-size:14px;font-weight:900;color:var(--bd)">'+splitEsc((m.emoji||'')+' '+m.name)+'</div><div style="font-size:10px;color:var(--t5);margin-top:2px">主選單・'+LC_SCOPE_SHORT[m.scope]+(m.functionId?'・直接對應：'+splitEsc(lcFnLabel(m.functionId)):'')+'</div></div>'+lcCtl('main',m.id,i===0,i===mains.length-1,m.enabled)+'</div>';
+    subs.forEach((s,j)=>{
+      h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 0 7px 10px;border-top:1px dashed var(--bdr)'+(s.enabled?'':';opacity:.65')+'"><div style="flex:1;min-width:120px"><div style="font-size:13px;font-weight:700;color:var(--bd)">'+splitEsc((s.emoji||'')+' '+s.name)+'</div><div style="font-size:10px;color:var(--t5)">→ '+splitEsc(lcFnLabel(s.functionId))+'</div></div>'+lcCtl('sub',s.id,j===0,j===subs.length-1,s.enabled)+'</div>';
+    });
+    h+='<div style="margin-top:6px">'+lcBtn('＋ 新增子選單','lcAddSub(\''+m.id+'\')',{color:'var(--br)'})+'</div></div>';
+  });
+  h+=lcBtn('＋ 新增主選單','lcAddMain()',{pad:'10px 14px',fs:'13px',color:'var(--br)',bg:'var(--crm)'});
+  return h;
+}
+function lcMainFields(){return [{k:'name',label:'名稱',req:true,max:20},{k:'emoji',label:'圖示（表情符號，可留空）',max:8},{k:'scope',label:'顯示在哪種聊天室',type:'select',options:LC_SCOPE},{k:'functionId',label:'直接對應的功能（沒有子選單時，按鈕會執行這個功能）',type:'select',options:lcFnOptions(true)}];}
+function lcSubFields(){return [{k:'name',label:'名稱（也是按鈕送出的文字）',req:true,max:20},{k:'emoji',label:'圖示（可留空）',max:8},{k:'functionId',label:'對應功能',type:'select',options:lcFnOptions(false)}];}
+function lcAddMain(){
+  lcForm('新增主選單',lcMainFields(),{name:'',emoji:'',scope:'both',functionId:''},v=>lcCommit(c=>{const n=c.mainMenus.reduce((a,x)=>Math.max(a,x.order),0)+1;c.mainMenus.push({id:lcId('m_'),name:v.name,emoji:v.emoji,order:n,enabled:true,scope:v.scope,functionId:v.functionId||null});},'✅ 已新增主選單'));
+}
+function lcAddSub(mainId){
+  lcForm('新增子選單',lcSubFields(),{name:'',emoji:'',functionId:'drink'},v=>lcCommit(c=>{const n=c.subMenus.filter(s=>s.mainId===mainId).reduce((a,x)=>Math.max(a,x.order),0)+1;c.subMenus.push({id:lcId('s_'),mainId,name:v.name,emoji:v.emoji,order:n,enabled:true,functionId:v.functionId});},'✅ 已新增子選單'));
+}
+function lcFind(c,kind,id){return (kind==='main'?c.mainMenus:kind==='sub'?c.subMenus:c.keywords).find(x=>x.id===id);}
+function lcEdit(kind,id){
+  const cur=lcFind(lc.cfg,kind,id);if(!cur)return;
+  if(kind==='main')lcForm('編輯主選單',lcMainFields(),{name:cur.name,emoji:cur.emoji,scope:cur.scope,functionId:cur.functionId||''},v=>lcCommit(c=>{Object.assign(lcFind(c,'main',id),{name:v.name,emoji:v.emoji,scope:v.scope,functionId:v.functionId||null});}));
+  else if(kind==='sub')lcForm('編輯子選單',lcSubFields(),{name:cur.name,emoji:cur.emoji,functionId:cur.functionId},v=>lcCommit(c=>{Object.assign(lcFind(c,'sub',id),{name:v.name,emoji:v.emoji,functionId:v.functionId});}));
+  else lcKwForm(cur);
+}
+function lcToggle(kind,id){
+  const cur=lcFind(lc.cfg,kind,id);if(!cur)return;
+  lcCommit(c=>{const x=lcFind(c,kind,id);x.enabled=!x.enabled;},cur.enabled?'⚪ 已停用（設定保留，不會再觸發）':'🟢 已啟用');
+}
+function lcMove(kind,id,dir){
+  lcCommit(c=>{
+    if(kind==='kw'){
+      const vis=lcVisibleKw(c);const i=vis.findIndex(k=>k.id===id),j=i+dir;if(i<0||j<0||j>=vis.length)return;
+      const a=c.keywords.findIndex(k=>k.id===id),b=c.keywords.findIndex(k=>k.id===vis[j].id);
+      const t=c.keywords[a];c.keywords[a]=c.keywords[b];c.keywords[b]=t;return;
+    }
+    const list=(kind==='main'?c.mainMenus:c.subMenus.filter(s=>s.mainId===lcFind(c,'sub',id).mainId)).slice().sort((a,b)=>a.order-b.order);
+    const i=list.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=list.length)return;
+    const t=list[i];list[i]=list[j];list[j]=t;
+    list.forEach((x,n)=>{x.order=n+1;});
+  },'✅ 已調整順序');
+}
+function lcDel(kind,id){
+  const cur=lcFind(lc.cfg,kind,id);if(!cur)return;
+  const c=lc.cfg;
+  if(kind==='main'){
+    const subs=c.subMenus.filter(s=>s.mainId===id||s.functionId==='menu:'+id);
+    const kws=c.keywords.filter(k=>k.fn==='menu:'+id);
+    if(!lcConfirm('確定刪除主選單「'+cur.name+'」？\n\n會一併刪除底下的 '+subs.length+' 個子選單，以及 '+kws.length+' 條指向它的關鍵字。\n（刪除後 LINE 選單會同步移除；功能本身不受影響）'))return;
+    lcCommit(x=>{x.subMenus=x.subMenus.filter(s=>s.mainId!==id&&s.functionId!=='menu:'+id);x.keywords=x.keywords.filter(k=>k.fn!=='menu:'+id);x.mainMenus=x.mainMenus.filter(m=>m.id!==id);x.mainMenus.forEach(m=>{if(m.functionId==='menu:'+id)m.functionId=null;});},'🗑 已刪除主選單');
+  }else if(kind==='sub'){
+    if(!lcConfirm('確定刪除子選單「'+cur.name+'」？\n\n刪除後 LINE 選單不會再顯示這個按鈕；但「'+lcFnLabel(cur.functionId)+'」仍可用功能名稱或關鍵字使用。'))return;
+    lcCommit(x=>{x.subMenus=x.subMenus.filter(s=>s.id!==id);},'🗑 已刪除子選單');
+  }else{
+    if(!lcConfirm('確定刪除關鍵字「'+cur.keyword+'」？\n\n刪除後，輸入這個詞不會再觸發「'+lcFnLabel(cur.fn)+'」。'))return;
+    lcCommit(x=>{x.keywords=x.keywords.filter(k=>k.id!==id);},'🗑 已刪除關鍵字');
+  }
+}
+
+// ----- 分頁二：關鍵字規則 -----
+function lcVisibleKw(c){
+  const q=lcNorm(lc.kwSearch);
+  return c.keywords.filter(k=>(!lc.fnFilter||k.fn===lc.fnFilter)&&(!q||lcNorm(k.keyword).indexOf(q)>=0));
+}
+function lcCheckConflict(v,selfId){
+  if(v.type!=='exact'||!v.enabled)return v.type==='exact'?'':'';
+  const nk=lcNorm(v.keyword);if(!nk)return '';
+  const others=[];
+  lc.functions.forEach(f=>others.push({k:f.label,fn:f.id,scope:'both',src:'功能名稱'}));
+  lc.cfg.mainMenus.filter(m=>m.enabled).forEach(m=>others.push({k:m.name,fn:m.functionId||('menu:'+m.id),scope:'both',src:'主選單名稱'}));
+  lc.cfg.subMenus.filter(s=>s.enabled).forEach(s=>others.push({k:s.name,fn:s.functionId,scope:'both',src:'子選單名稱'}));
+  lc.cfg.keywords.filter(k=>k.enabled&&k.type==='exact'&&k.id!==selfId).forEach(k=>others.push({k:k.keyword,fn:k.fn,scope:k.scope,src:'關鍵字'}));
+  for(const o of others){if(lcNorm(o.k)===nk&&o.fn!==v.fn&&lcOverlap(o.scope,v.scope))return '⚠️ 與「'+o.k+'」（'+o.src+'，對應「'+lcFnLabel(o.fn)+'」）衝突，無法儲存';}
+  return '✓ 沒有衝突';
+}
+function lcRenderKeywords(){
+  const c=lc.cfg;
+  const vis=lcVisibleKw(c);
+  let h='<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:10px">使用者在 LINE 輸入的文字，會依序比對：<b>① 完全相同 → ② 關鍵字越長越具體 → ③ 優先順序（數字小的先）→ ④ 模糊只用來提示建議</b>；無法確定唯一功能時，會顯示候選讓使用者選。新增關鍵字不需要改程式，儲存後馬上生效。</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px"><select onchange="lc.fnFilter=this.value;lcRender()" style="'+LC_IN+';flex:1.2"><option value="">全部功能</option>'+lcFnOptions(false).map(o=>'<option value="'+splitEsc(o[0])+'"'+(lc.fnFilter===o[0]?' selected':'')+'>'+splitEsc(o[1])+'</option>').join('')+'</select>'
+    +'<input value="'+splitEsc(lc.kwSearch)+'" placeholder="搜尋關鍵字" onchange="lc.kwSearch=this.value;lcRender()" style="'+LC_IN+';flex:1"></div>'
+    +'<div style="margin-bottom:10px">'+lcBtn('＋ 新增關鍵字','lcKwForm()',{pad:'10px 14px',fs:'13px',color:'var(--br)',bg:'var(--crm)'})+'</div>';
+  if(!vis.length)h+='<div style="padding:24px;text-align:center;color:var(--t5);font-size:12px">沒有符合的關鍵字</div>';
+  vis.forEach((k,i)=>{
+    const cf=lcCheckConflict(k,k.id);
+    h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px;margin-bottom:8px;background:var(--sur);'+(k.enabled?'':'opacity:.6')+'">'
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><div style="flex:1;min-width:130px"><div style="font-size:14px;font-weight:900;color:var(--bd)">'+splitEsc(k.keyword)+(k.confirm?' <span style="font-size:10px;color:#ca8a04;font-weight:700">需確認</span>':'')+'</div>'
+      +'<div style="font-size:10px;color:var(--t5);margin-top:2px;line-height:1.6">→ '+splitEsc(lcFnLabel(k.fn))+'・'+LC_TYPE_SHORT[k.type]+'・'+LC_SCOPE_SHORT[k.scope]+'・優先 '+k.priority+(cf?'・<span style="color:'+(/^⚠️/.test(cf)?'#dc2626':'#16a34a')+'">'+splitEsc(cf)+'</span>':'')+'</div>'
+      +(k.note?'<div style="font-size:10px;color:var(--t5);margin-top:2px">📝 '+splitEsc(k.note)+'</div>':'')+'</div>'+lcCtl('kw',k.id,i===0,i===vis.length-1,k.enabled)+'</div></div>';
+  });
+  return h;
+}
+function lcKwForm(cur){
+  const isNew=!cur;
+  const vals=cur?{keyword:cur.keyword,fn:cur.fn,type:cur.type,priority:cur.priority,scope:cur.scope,confirm:cur.confirm,enabled:cur.enabled,note:cur.note}:{keyword:'',fn:lc.fnFilter||'drink',type:'exact',priority:10,scope:'both',confirm:false,enabled:true,note:''};
+  const fields=[
+    {k:'keyword',label:'關鍵字（使用者輸入的文字）',req:true,max:30},
+    {k:'fn',label:'對應功能',type:'select',options:lcFnOptions(false)},
+    {k:'type',label:'關鍵字類型',type:'select',options:LC_TYPE,help:'精確＝整句完全相同；部分＝輸入的是這個詞的前段（至少2字，例如「待去」→「待去清單」）；包含＝句子裡有這個詞（例如「我要查看待去清單」）；模糊＝文字相似時只提示建議，不會直接跳轉。'},
+    {k:'priority',label:'優先順序（1～999，數字越小越優先）',type:'number'},
+    {k:'scope',label:'適用聊天室',type:'select',options:LC_SCOPE},
+    {k:'confirm',label:'容易誤判的詞',type:'checkbox',hint:'觸發前先請使用者按按鈕確認（建議單字詞使用）'},
+    {k:'enabled',label:'狀態',type:'checkbox',hint:'啟用'},
+    {k:'note',label:'備註',max:100},
+  ];
+  lcForm(isNew?'新增關鍵字':'編輯關鍵字',fields,vals,v=>lcCommit(c=>{
+    const row={keyword:v.keyword,fn:v.fn,type:v.type,priority:Math.max(1,Math.min(999,Math.round(v.priority||10))),scope:v.scope,confirm:v.confirm,enabled:v.enabled,note:v.note};
+    if(isNew)c.keywords.push(Object.assign({id:lcId('kw_')},row));else Object.assign(lcFind(c,'kw',cur.id),row);
+  },isNew?'✅ 已新增關鍵字，LINE 馬上生效':'✅ 已儲存'),v=>lcCheckConflict(v,cur&&cur.id));
+}
+
+// ----- 分頁三：群組授權與各功能權限 -----
+function lcRenderPerms(){
+  const c=lc.cfg;
+  let h='<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:10px">這裡的設定由伺服器在「功能真的執行時」檢查，不是只藏按鈕。個人資料（集點卡、待去清單）預設用「私訊」回覆，不會把內容公開在群組。</div>';
+  h+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin:6px 0 8px">👥 群組授權</div>';
+  if(!lc.groups.length)h+='<div style="padding:12px;border:1px dashed var(--bdr);border-radius:10px;font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:12px">目前沒有已知的群組。把 LINE 官方帳號加進群組，並在群組裡輸入一次「功能選單」，這個群組就會出現在這裡。</div>';
+  lc.groups.forEach(g=>{
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--bdr);border-radius:12px;margin-bottom:6px;background:var(--sur)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--bd)">'+splitEsc(g.name||'（未命名群組）')+'</div><div style="font-size:9px;color:var(--t5);word-break:break-all">'+splitEsc(g.groupId)+'</div></div>'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:'+(g.authorized?'#16a34a':'var(--t5)')+'"><input type="checkbox" '+(g.authorized?'checked ':'')+'onchange="lcGroupAuth(\''+splitEsc(g.groupId)+'\',this.checked)" style="width:18px;height:18px">'+(g.authorized?'已授權':'未授權')+'</label></div>';
+  });
+  h+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin:14px 0 8px">🛡️ 各功能的使用權限</div>';
+  lc.functions.filter(f=>f.id!=='menu').forEach(f=>{
+    const p=Object.assign({enabled:true,chat:'both',requireGroupAuth:false,groupWrite:true,groupReply:'private',allowedUsers:[]},(c.permissions||{})[f.id]||{});
+    const sel=(key,opts,val)=>'<select onchange="lcPerm(\''+f.id+'\',\''+key+'\',this.value)" style="'+LC_IN+';padding:7px 8px;font-size:12px">'+opts.map(o=>'<option value="'+o[0]+'"'+(o[0]===val?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>';
+    const chk=(key,label,val)=>'<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--bd);margin-top:7px"><input type="checkbox" '+(val?'checked ':'')+'onchange="lcPerm(\''+f.id+'\',\''+key+'\',this.checked)" style="width:17px;height:17px">'+label+'</label>';
+    h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px;margin-bottom:8px;background:var(--sur);'+(p.enabled?'':'opacity:.65')+'"><div style="font-size:14px;font-weight:900;color:var(--bd);margin-bottom:2px">'+splitEsc(f.label)+(f.personal?' <span style="font-size:10px;color:#ca8a04;font-weight:700">含個人資料</span>':'')+'</div>'
+      +chk('enabled','啟用這個功能',p.enabled)
+      +'<div style="font-size:11px;color:var(--t5);margin:8px 0 3px">可使用的聊天室</div>'+sel('chat',LC_SCOPE,p.chat)
+      +chk('requireGroupAuth','在群組使用前，群組必須先授權',p.requireGroupAuth)
+      +(f.writes?chk('groupWrite','群組成員可以在群組裡新增資料',p.groupWrite):'')
+      +(true?'<div style="font-size:11px;color:var(--t5);margin:8px 0 3px">在群組使用時，個人資料／查詢結果怎麼回覆</div>'+sel('groupReply',[['private','私訊給本人（群組只顯示通知）'],['public','公開顯示在群組']],p.groupReply):'')
+      +'<div style="font-size:11px;color:var(--t5);margin:8px 0 3px">限制只有這些人能使用（都不勾＝所有人）</div>'
+      +(lc.users.length?lc.users.map(u=>'<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--bd);margin:2px 10px 2px 0"><input type="checkbox" '+(p.allowedUsers.indexOf(u.userId)>=0?'checked ':'')+'onchange="lcPermUser(\''+f.id+'\',\''+splitEsc(u.userId)+'\',this.checked)" style="width:16px;height:16px">'+splitEsc(u.name||u.userId.slice(0,8))+'</label>').join(''):'<span style="font-size:11px;color:var(--t5)">還沒有已知的使用者（有人傳訊息給機器人後會出現）</span>')
+      +'</div>';
+  });
+  return h;
+}
+function lcPerm(fn,key,val){lcCommit(c=>{c.permissions[fn]=Object.assign({},c.permissions[fn],{[key]:val});},'✅ 權限已儲存並套用');}
+function lcPermUser(fn,uid,on){lcCommit(c=>{const p=c.permissions[fn];const s=new Set(p.allowedUsers||[]);if(on)s.add(uid);else s.delete(uid);p.allowedUsers=Array.from(s);},'✅ 權限已儲存並套用');}
+function lcGroupAuth(gid,on){
+  const g=lc.groups.find(x=>x.groupId===gid);
+  lcCommit(c=>{c.groups[gid]={name:(g&&g.name)||'',authorized:!!on};},on?'✅ 已授權這個群組':'⚪ 已取消授權');
+}
+
+// ----- 分頁四：測試與設定 -----
+function lcRenderTest(){
+  const fz=lc.cfg.fuzzy;
+  return '<div style="font-size:13px;font-weight:900;color:var(--bd);margin-bottom:6px">🧪 測試：這句話會觸發什麼？</div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:8px">輸入使用者可能傳的文字，看系統會怎麼判斷（不會真的執行任何功能）。</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:8px"><input id="lc-test-text" placeholder="例如：我要查看待去清單" onkeydown="if(event.key===\'Enter\')lcRunTest()" style="'+LC_IN+';flex:1.6"><select id="lc-test-chat" style="'+LC_IN+';flex:1"><option value="direct">1對1</option><option value="group">群組</option></select></div>'
+    +'<button onclick="lcRunTest()" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--br);color:#fff;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer;margin-bottom:8px">測試</button>'
+    +'<div id="lc-test-out" style="min-height:40px;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--sur);font-size:12px;color:var(--t5);line-height:1.7">結果會顯示在這裡</div>'
+    +'<div style="font-size:13px;font-weight:900;color:var(--bd);margin:18px 0 6px">🎯 模糊比對的門檻</div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:8px">相似度（0～1）。達到「提示建議」門檻會問使用者「你是不是想用…」；達到「自動執行」門檻且明顯勝出才會直接執行。數字越高越嚴格。</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:8px"><div style="flex:1"><div style="font-size:10px;color:var(--t5);margin-bottom:3px">提示建議（0.4～0.95）</div><input id="lc-fz-s" type="number" step="0.05" min="0.4" max="0.95" value="'+fz.suggest+'" style="'+LC_IN+'"></div>'
+    +'<div style="flex:1"><div style="font-size:10px;color:var(--t5);margin-bottom:3px">自動執行（0.7～1）</div><input id="lc-fz-a" type="number" step="0.05" min="0.7" max="1" value="'+fz.auto+'" style="'+LC_IN+'"></div></div>'
+    +'<button onclick="lcSaveFuzzy()" style="width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--br);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">儲存門檻</button>'
+    +'<div style="font-size:13px;font-weight:900;color:var(--bd);margin:18px 0 6px">🔎 查詢的預設版本</div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:8px">使用者輸入沒有指定版本的查詢（例如「查詢飲料 2026年10月」）時：選「每次詢問」會先顯示版本選單；選某個版本則直接用該版本。</div>'
+    +'<select id="lc-qd" onchange="lcSaveQueryDefault()" style="'+LC_IN+';margin-bottom:6px">'+[['','每次詢問（顯示簡易／標準／旗艦選單）'],['simple','簡易版'],['standard','標準版'],['flagship','旗艦版']].map(o=>'<option value="'+o[0]+'"'+(((lc.cfg.query||{}).defaultVersion||'')===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>'
+    +'<div style="font-size:13px;font-weight:900;color:var(--bd);margin:18px 0 6px">♻️ 還原預設</div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:8px">把選單、關鍵字、權限全部還原成系統預設值（群組授權也會清空）。</div>'
+    +'<button onclick="lcReset()" style="width:100%;padding:10px;border:1px solid #fecaca;border-radius:10px;background:#fef2f2;color:#dc2626;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">還原預設設定</button>';
+}
+async function lcRunTest(){
+  const text=(document.getElementById('lc-test-text')||{}).value||'';
+  const chat=(document.getElementById('lc-test-chat')||{}).value||'direct';
+  const out=document.getElementById('lc-test-out');if(!out)return;
+  if(!text.trim()){out.textContent='請先輸入要測試的文字';return;}
+  const r=await lcApi('POST','/api/line-config-test',{text,chat});
+  const j=r.json||{};
+  if(r.status!==200){out.textContent='測試失敗：'+((j&&j.message)||r.status);return;}
+  const rankName=['精確（完全相同）','部分／包含','模糊'][j.rank]||'';
+  if(j.kind==='hit')out.innerHTML='✅ 會執行「<b>'+splitEsc(j.fnLabel)+'</b>」<br>比對方式：'+rankName+'・規則：'+splitEsc(j.matched||'')+(j.confirm?'<br>⚠️ 這個詞需要使用者先按按鈕確認':'');
+  else if(j.kind==='suggest')out.innerHTML='💡 不會直接執行，會問：「你是不是想用」<b>'+j.candidates.map(splitEsc).join('、')+'</b>';
+  else if(j.kind==='ambiguous')out.innerHTML='🔀 對應到多個功能，會請使用者選擇：<b>'+j.candidates.map(splitEsc).join('、')+'</b>';
+  else out.innerHTML='— 沒有符合的關鍵字。若句子裡有品項與金額，會當成記帳；否則提示「看不懂」並引導使用功能選單。';
+}
+function lcSaveFuzzy(){
+  const s=Number((document.getElementById('lc-fz-s')||{}).value),a=Number((document.getElementById('lc-fz-a')||{}).value);
+  lcCommit(c=>{c.fuzzy={suggest:s,auto:a};},'✅ 門檻已儲存');
+}
+function lcSaveQueryDefault(){
+  const v=(document.getElementById('lc-qd')||{}).value||'';
+  lcCommit(c=>{c.query={defaultVersion:v};},'✅ 已儲存查詢的預設版本');
+}
+function lcRenderSpecs(){
+  const sp=lc.specs;
+  if(!sp)return '<div style="padding:24px;text-align:center;color:var(--t5);font-size:12px">沒有取得規格資料</div>';
+  const st={confirmed:['✅ 已確認','#16a34a'],pending:['🚧 待確認','#dc2626'],default:['📌 預設（待你確認）','#ca8a04']};
+  const nm={simple:'簡易版',standard:'標準版',flagship:'旗艦版'};
+  const badge=s=>'<span style="font-size:10px;font-weight:900;color:'+st[s][1]+';white-space:nowrap">'+st[s][0]+'</span>';
+  const row=(v,r)=>'<div style="padding:6px 0;border-top:1px dashed var(--bdr)"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:700;color:var(--bd)">'+nm[v]+'</span>'+badge(r.status)+'</div>'
+    +(r.fields&&r.fields.length?'<div style="font-size:11px;color:var(--t5);line-height:1.6;margin-top:3px">欄位：'+r.fields.map(splitEsc).join('、')+'</div>':'')
+    +(r.note?'<div style="font-size:10px;color:var(--t5);margin-top:2px;line-height:1.5">'+splitEsc(r.note)+'</div>':'')+'</div>';
+  let h='<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:10px">LINE「紀錄／查詢」三個版本實際用到的欄位。這份清單是由程式裡真正的表單定義產生的，不是手寫文件；<b>沒有確認的規格標示「待確認」，不會自己補欄位</b>。</div>';
+  sp.modules.forEach(m=>{
+    h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--sur)"><div style="font-size:14px;font-weight:900;color:var(--bd);margin-bottom:6px">'+splitEsc(m.name)+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:var(--t5);margin-bottom:2px">📝 紀錄</div>'+['simple','standard','flagship'].map(v=>row(v,m.record[v])).join('')
+      +'<div style="font-size:11px;font-weight:700;color:var(--t5);margin:10px 0 2px">🔎 查詢（條件：'+m.query.conditions.map(splitEsc).join('、')+'）</div>'+['simple','standard','flagship'].map(v=>row(v,m.query[v])).join('')+'</div>';
+  });
+  h+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin:14px 0 6px">🚧 待確認項目</div><div style="border:1px solid #fecaca;background:#fef2f2;border-radius:12px;padding:10px 12px;font-size:12px;color:#7f1d1d;line-height:1.8">'+sp.pending.map((x,i)=>(i+1)+'. '+splitEsc(x)).join('<br>')+'</div>';
+  return h;
+}
+async function lcReset(){
+  if(!lcConfirm('確定要還原成系統預設值嗎？\n\n你調整過的選單、關鍵字、權限、群組授權都會被清掉，無法復原。'))return;
+  const r=await lcApi('POST','/api/line-config-reset',{});
+  if(r.status===200){lc.cfg=r.json.config;lc.groups=r.json.groups||[];lc.users=r.json.users||[];lcRender();toast('♻️ 已還原預設');}
+  else toast('⚠️ 還原失敗：'+((r.json&&r.json.message)||r.status));
+}
 
 // ===== 🗺️ 待去清單（獨立頁面 wishlist.html，用全螢幕 iframe 嵌入）=====
 // 資料由 wishlist.html 自己存在 localStorage：wishlist_data_v2（地點資料）、wishlist_mgmt_v2／wishlist_menu_v1（分類與選單設定），三個都已加入雲端同步
@@ -7186,6 +7585,11 @@ function renderSettings(){
       <div>記錄每一餐，感受每一刻。</div>
       <div style="margin-top:6px;font-size:11px">使用 Google Gemini API（免費方案）</div>
     </div>
+  </div>
+  <div class="chart-card" style="margin-top:12px">
+    <div class="ct">📡 LINE官方帳號 × 智慧關鍵字辨識 × LINE群組使用權限</div>
+    <div style="font-size:12px;color:var(--t5);line-height:1.7;margin-bottom:12px">管理 LINE 的功能選單、關鍵字辨識規則，以及集點卡、待去清單等功能在「1對1」與「群組」的使用權限。設定存放在伺服器，LINE 機器人每則訊息都會依照這裡的設定執行。</div>
+    <button onclick="openLineCfg()" style="width:100%;padding:13px;border:1px solid var(--amb);border-radius:12px;background:var(--crm);color:var(--br);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation">📡 開啟管理</button>
   </div>`;
   renderSettingsBudget();
   renderAccountList();
