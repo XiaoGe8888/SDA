@@ -307,20 +307,98 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
 .coin-inputs{display:flex;gap:10px;margin-bottom:12px;width:100%;max-width:240px}
 .coin-inputs input{flex:1;padding:8px 12px;border:1px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:12px;outline:none;text-align:center;font-weight:700;color:var(--t)}
 .coin-inputs input:focus{border-color:var(--amb);box-shadow:var(--foc-shadow)}
-/* ===== 開場載入動畫（四模組圖示） ===== */
+/* ===== 開場載入動畫（七個圖示：飲料、美食、交通、日常筆記本、分帳、集點卡、待去清單） ===== */
 #boot{position:fixed;inset:0;z-index:9999;background:#fcfaf7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;transition:opacity .55s ease}
 #boot.hide{opacity:0;pointer-events:none}
-.boot-icons{display:flex;align-items:flex-end;justify-content:center;gap:clamp(18px,5.5vw,38px)}
-.bi{width:clamp(46px,13vw,58px);height:auto;display:block;overflow:visible}
+.boot-icons{display:flex;align-items:flex-end;justify-content:center;gap:clamp(8px,2.6vw,22px);max-width:100%;padding:0 12px;box-sizing:border-box}
+.bi{width:clamp(34px,10.2vw,52px);height:auto;display:block;overflow:visible;flex:0 1 auto;min-width:0}
 .bi path{fill:none;stroke:var(--bc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
 #boot.go .bi{animation:bootWave 1.15s ease-in-out infinite}
 #boot.go .bi.b1{animation-delay:.12s}
 #boot.go .bi.b2{animation-delay:.24s}
 #boot.go .bi.b3{animation-delay:.36s}
+#boot.go .bi.b4{animation-delay:.48s}
+#boot.go .bi.b5{animation-delay:.6s}
+#boot.go .bi.b6{animation-delay:.72s}
 @keyframes bootWave{0%,100%{transform:translateY(0)}42%{transform:translateY(-12px)}}
 .boot-mark{font-family:'Noto Serif TC',serif;font-weight:900;font-size:14px;letter-spacing:.22em;color:#cabba6;opacity:0;transition:opacity .6s ease}
 #boot.go .boot-mark{opacity:1}
 @media (prefers-reduced-motion:reduce){#boot.go .bi{animation:none}}
+/* ===== 📝 LINE 待確認草稿（V9）===== */
+.dr-banner{flex-shrink:0;max-height:34vh;overflow-y:auto;padding:10px 18px 12px;background:#fffbeb;border-bottom:1px solid #fde68a;font-size:12px;line-height:1.65;color:#78350f}
+.dr-b-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.dr-b-top b{font-size:13px;font-weight:900}
+.dr-b-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.dr-b-raw{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all}
+.dr-b-st{font-size:10px;font-weight:900;background:#f59e0b;color:#fff;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+.dr-b-btn{border:1px solid #fcd34d;background:#fff;color:#92400e;border-radius:9px;padding:5px 10px;font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;touch-action:manipulation}
+.dr-b-src{color:#92400e;opacity:.9;margin-top:2px;word-break:break-all}
+.dr-b-sec{margin-top:7px}
+.dr-b-item{display:flex;gap:6px;align-items:flex-start;padding:3px 0;border-top:1px dashed #fde68a}
+.dr-b-item .go{margin-left:auto;flex-shrink:0;border:none;background:none;color:#b45309;font-family:inherit;font-size:11px;font-weight:900;text-decoration:underline;cursor:pointer;touch-action:manipulation}
+.dr-b-item .go + .go{margin-left:4px}
+.dr-b-ok{color:#166534}
+.dr-b-legend{margin-top:8px;font-size:10px;line-height:1.7;color:#92400e}
+.dr-b-hint{margin-top:3px;font-size:10px;line-height:1.6;color:#78350f}
+.dr-tag{display:inline-block;align-self:flex-start;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:0;text-transform:none;vertical-align:middle;line-height:1.5;white-space:nowrap;font-family:inherit}
+.dr-tag.fill{background:#dcfce7;color:#166534}
+.dr-tag.def{background:#f1f5f9;color:#64748b}
+.dr-tag.unc{background:#fef3c7;color:#b45309;cursor:pointer;border:1px solid #fcd34d}
+.dr-tag.ok{background:#dcfce7;color:#166534;cursor:pointer}
+.dr-unc{border-color:#f59e0b!important;box-shadow:0 0 0 2px rgba(245,158,11,.28)!important;background-color:#fffbeb!important}
+.toast.dr-wrap{z-index:10000;white-space:pre-line;width:max-content;max-width:calc(100vw - 32px);text-align:center;line-height:1.55;padding:10px 18px}
+.dr-flash{animation:drFlash 1.1s ease 1}
+@keyframes drFlash{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)}30%{box-shadow:0 0 0 5px rgba(245,158,11,.55)}}
+.dr-card{border:1px solid var(--bdr);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:var(--sur)}
+.dr-card.focus{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.25)}
+.dr-card-hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:12px;color:var(--t5)}
+.dr-card-hd b{font-size:13px;color:var(--bd)}
+.dr-card-brief{margin-top:4px;font-size:14px;font-weight:900;color:var(--bd);word-break:break-all}
+.dr-card-unc{margin-top:4px;font-size:11px;font-weight:700;color:#b45309}
+.dr-card-raw{margin-top:4px;font-size:11px;color:var(--t5);word-break:break-all}
+.dr-card-act{display:flex;gap:8px;margin-top:10px}
+.dr-btn{flex:1;padding:10px;border:1px solid var(--bdr);border-radius:11px;background:var(--bg);color:var(--bd);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation}
+.dr-btn.pri{flex:2;border:none;background:var(--br);color:#fff}
+.dr-done{padding:8px 10px;border-top:1px dashed var(--bdr);font-size:12px;color:var(--t);line-height:1.6;word-break:break-all}
+.dr-done-sub{font-size:10px;color:var(--t5)}
+/* ===== 🪪 LINE 資料卡片（V10）===== */
+#dr-card-modal{position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;touch-action:manipulation}
+.dr-cd{background:var(--bg);width:100%;max-width:520px;max-height:92vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.dr-cd-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.dr-cd-title{font-size:15px;font-weight:900;color:var(--bd);font-family:'Noto Serif TC',serif;line-height:1.4}
+.dr-cd-src{font-size:11px;color:var(--t5);margin-top:2px}
+.dr-cd-x{border:none;background:var(--crm);width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;color:var(--t5);flex-shrink:0;touch-action:manipulation}
+.dr-cd-body{padding:10px 16px 6px;overflow-y:auto;flex:1;min-height:0}
+.dr-cd-raw{font-size:11px;color:var(--t5);line-height:1.6;word-break:break-all;margin-bottom:8px}
+.dr-cd-rows{border:1px solid var(--bdr);border-radius:12px;background:var(--sur);overflow:hidden}
+.dr-cd-row{display:flex;gap:10px;padding:8px 12px;border-top:1px solid var(--bdr);font-size:13px;line-height:1.5}
+.dr-cd-row:first-child{border-top:none}
+.dr-cd-row .k{flex:0 0 76px;color:var(--t5);font-size:12px}
+.dr-cd-row .v{flex:1;min-width:0;color:var(--bd);font-weight:700;word-break:break-all}
+.dr-cd-row.unc{background:#fffbeb}
+.dr-cd-row .w{margin-left:6px;font-size:10px;font-weight:900;color:#b45309;background:#fef3c7;border:1px solid #fcd34d;border-radius:999px;padding:0 7px;white-space:nowrap}
+.dr-cd-empty{padding:14px 12px;font-size:12px;color:var(--t5);line-height:1.7}
+.dr-cd-sec{margin-top:8px;font-size:11px;line-height:1.7;color:var(--t5);word-break:break-all}
+.dr-cd-sec.warn{color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 10px}
+.dr-cd-note{margin-top:3px;font-size:11px}
+.dr-cd-sn{margin-top:10px;padding:9px 12px;border:1px solid var(--bdr);border-radius:12px;background:var(--sur);font-size:12px;font-weight:900;color:var(--bd)}
+.dr-cd-sn span{display:block;font-size:10px;font-weight:400;color:var(--t5);margin-top:1px}
+.dr-cd-sn .chips{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.dr-cd-sn .sn-chip{word-break:break-all;font-size:12px;line-height:1.5;padding:5px 10px;border-radius:10px}
+.dr-cd-act{display:flex;gap:8px;padding:10px 16px 4px;flex-shrink:0}
+.dr-cd-btn{flex:1;padding:13px 6px;border:1px solid var(--bdr);border-radius:12px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation;min-height:48px}
+.dr-cd-btn.pri{flex:1.6;border:none;background:var(--br);color:#fff}
+.dr-cd-btn.danger{color:var(--warn)}
+.dr-cd-hint{padding:2px 16px 14px;font-size:10px;line-height:1.6;color:var(--t5);flex-shrink:0}
+/* ===== 🌟📍 集點卡／待去清單 可編輯資料卡片、分帳草稿橫幅（V10.1）===== */
+#dr-ed-modal{position:fixed;inset:0;z-index:9996;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;touch-action:manipulation}
+.dr-ed{background:var(--bg);width:100%;max-width:520px;max-height:92vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.dr-ed-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;font-size:15px;font-weight:900;color:var(--bd);font-family:'Noto Serif TC',serif}
+.dr-ed-body{padding:12px 16px 6px;overflow-y:auto;flex:1;min-height:0}
+.dr-ed-act{display:flex;gap:8px;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));flex-shrink:0;border-top:1px solid var(--bdr)}
+.dr-ed > .dr-banner{max-height:34vh;border-width:0 0 1px 0}
+#split-exp-sheet .dr-banner{max-height:none;border:1px solid #fde68a;border-radius:12px;margin:0 0 12px}
+
 </style>
 </head>
 <body>
@@ -331,6 +409,10 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
     <svg class="bi b1" style="--bc:#d85048" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M19 3v12h-5c-.023 -3.681 .184 -7.406 5 -12m0 12v6h-1v-3m-10 -14v17m-3 -17v3a3 3 0 1 0 6 0v-3"/></svg>
     <svg class="bi b2" style="--bc:#4880e8" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M14.5 6.5l3 -2.9a2.05 2.05 0 0 1 2.9 2.9l-2.9 3l2.5 7.5l-2.5 2.55l-3.5 -6.55l-3 3v3l-2 2l-1.5 -4.5l-4.5 -1.5l2 -2h3l3 -3l-6.5 -3.5l2.5 -2.5l7.5 2.5"/></svg>
     <svg class="bi b3" style="--bc:#22b378" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-11a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1m3 0v18"/><path pathLength="1" d="M13 8l2 0"/><path pathLength="1" d="M13 12l2 0"/></svg>
+    <!-- V10.2：分帳（收據）、集點卡（星星）、待去清單（地標）——圖形與首頁的模組卡片相同 -->
+    <svg class="bi b4" style="--bc:#8d68e6" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M6 3.5h12V21l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3L6 21V3.5z"/><path pathLength="1" d="M9 8h6"/><path pathLength="1" d="M9 11.5h6"/><path pathLength="1" d="M9 15h4"/></svg>
+    <svg class="bi b5" style="--bc:#e0b11a" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg>
+    <svg class="bi b6" style="--bc:#18b5ad" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><path pathLength="1" d="M12 7a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z"/></svg>
   </div>
   <div class="boot-mark">日常小秘書</div>
 </div>
@@ -1415,7 +1497,9 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-10-22a';
+const BUILD_ID='2026-11-03d';
+// 標語：首頁最上方與「設定 → 關於」都用這一行（改這裡兩處一起變）
+const APP_SLOGAN='記錄每一刻，感受每一種生活';
 // --- Anthropic API Helper ---
 // ============ AI 連線設定（上線用）============
 // 上線到你自己的網域時：把 App 與「代理函式」放在同一個專案，這裡保持 '/api/gemini' 不用改。
@@ -1456,7 +1540,7 @@ async function callClaude(messages, system, maxTokens=1000) {
 
 // ============ 雲端同步（同步碼模式）============
 const SYNC_URL = '/api/sync';
-const SYNC_KEYS = ['boba_recs','meal_recs','travel_recs','boba_favs','meal_favs','travel_favs','boba_budget','meal_budget','travel_budget','boba_trash','split_groups','split_group_cats','boba_tool_prob','auth_users','super_password_hash','sticker_kids','sticker_behaviors','sticker_rewards','sticker_events','sticker_redemptions','mutual_events','mutual_rewards','mutual_redemptions','wishlist_data_v2','wishlist_mgmt_v2','wishlist_menu_v1'];
+const SYNC_KEYS = ['boba_recs','meal_recs','travel_recs','boba_favs','meal_favs','travel_favs','boba_budget','meal_budget','travel_budget','boba_trash','split_groups','split_group_cats','boba_tool_prob','auth_users','super_password_hash','sticker_kids','sticker_behaviors','sticker_rewards','sticker_events','sticker_redemptions','mutual_events','mutual_rewards','mutual_redemptions','wishlist_data_v2','wishlist_mgmt_v2','wishlist_menu_v1','line_drafts'];
 let syncCode = localStorage.getItem('sync_code') || '';
 let syncEnabled = localStorage.getItem('sync_enabled') === '1';
 let applyingRemote = false;
@@ -1967,6 +2051,1646 @@ function saveTravels(){const e=lsSet('travel_recs',travels);if(e){saveFail(e);re
 let travelBudget = Number(localStorage.getItem('travel_budget') || 20000);
 function saveTravelBudget(v){travelBudget=v;localStorage.setItem('travel_budget',v);}
 
+// ============================================================
+// 🔢 流水號引擎（LINE整合 V10；飲料／美食／交通共用）
+//   ・號碼 = 「同一個前綴底下，現有紀錄的最大號碼」+ 1（不是「筆數 + 1」）→ 刪掉舊紀錄再新增，不會撞號。
+//     回收桶裡（30 天內還能還原）的紀錄也算「現有」：刪掉的號碼要等回收桶清掉才會空出來，否則還原時會跟新紀錄撞號。
+//   ・年份取「紀錄日期」的年份：補登去年、預訂明年的紀錄，算在那一年自己的流水裡；日期缺漏時才用儲存當天的年份。
+//   ・編輯已有的紀錄：流水號與草稿標記鎖定、原樣保留，不會因為改備註或內容而變號。
+//   ・LINE 轉入（在網頁按「確認新增」）的紀錄用 LINE- 開頭的新格式；網頁手動新增的維持原格式（但同樣用最大號 + 1）。
+//   ・V10.1：分帳（LINE-SPL）／集點卡（LINE-PTS）／待去清單（LINE-WSH）也啟用；這三種只有 LINE 轉入的紀錄有流水號（手動新增維持原樣、不加流水號）。
+// ============================================================
+const SN_SCHEME={
+  drink:{label:'飲料',list:function(){return recs;},trash:'drink',manual:{tot:'',per:''},line:{tot:'LINE-DRK',per:'LINE-DRK'}},
+  food:{label:'美食',list:function(){return meals;},trash:'meal',manual:{tot:'M',per:'M'},line:{tot:'LINE-FD',per:'LINE-MFD'}},
+  travel:{label:'交通',list:function(){return travels;},trash:'travel',manual:null,line:{tot:'LINE-TRP',per:'LINE-MTRP'}},
+  split:{label:'分帳',list:function(){return splitAllExpenses();},manual:null,line:{tot:'LINE-SPL',per:'LINE-MSPL'}},
+  sticker:{label:'集點卡',list:function(){return stickerAllEvents();},manual:null,line:{tot:'LINE-PTS',per:'LINE-MPTS'}},
+  wish:{label:'待去清單',list:function(){return wishReadItems();},manual:null,dateKey:'suggestDate',line:{tot:'LINE-WSH',per:'LINE-MWSH'}}
+};
+// 個人流水號的「人」：飲料看飲用者、美食看用餐者、交通看紀錄者
+const SN_PERSON_FIELD={drink:'drinker',food:'eater',travel:'recorder',split:'recorder',sticker:'recorder',wish:'recorder'};
+// 編輯舊紀錄時要原樣保留的欄位（表單蓋不到、或不該被表單改掉的）
+const SN_LOCK_KEYS=['sn','snp','panel','lineKey','draftId','source','importedAt','lineMsgId'];
+
+function snYear(date){
+  const m=/^(\d{4})-\d{2}-\d{2}/.exec(String(date||''));
+  return m?m[1]:String(new Date().getFullYear());
+}
+function snPanelNo(r){return (r&&(r.panel==='2'||r.panel==='b'))?'2':'1';}
+// 前綴（不含最後的流水數字），例：手動飲料 '1-2026-'、手動美食 'M1-2026-'、LINE 飲料 'LINE-DRK-1-2026-'
+function snPrefix(kind,fromLine,which,mid,yr){
+  const s=SN_SCHEME[kind];
+  if(!s)return null;
+  const sc=fromLine?s.line:s.manual;
+  if(!sc)return null;
+  return fromLine?(sc[which]+'-'+mid+'-'+yr+'-'):(sc[which]+mid+'-'+yr+'-');
+}
+// 在一串紀錄裡，找出「以這個前綴開頭、後面全是數字」的最大流水數字
+function snMaxSeq(list,field,prefix){
+  let max=0;
+  if(!Array.isArray(list))return 0;
+  for(let i=0;i<list.length;i++){
+    const r=list[i];
+    const v=r&&r[field];
+    if(typeof v!=='string'||v.indexOf(prefix)!==0)continue;
+    const rest=v.slice(prefix.length);
+    if(!/^\d{1,9}$/.test(rest))continue;
+    const n=parseInt(rest,10);
+    if(n>max)max=n;
+  }
+  return max;
+}
+// 回收桶裡這個類型的紀錄（還原時會原樣放回來，所以它們的號碼不能被新紀錄拿走）
+function snTrashed(kind){
+  const s=SN_SCHEME[kind];
+  if(!s||!s.trash)return [];
+  try{
+    if(!Array.isArray(trashBin))return [];
+    return trashBin.filter(function(t){
+      if(!t||!t.record)return false;
+      return s.trash==='drink'?(!t.recordType||t.recordType==='drink'):t.recordType===s.trash;
+    }).map(function(t){return t.record;});
+  }catch(_){return [];}
+}
+// 算出這筆紀錄「會拿到」的流水號（不寫入）。batch = 同一次儲存裡、已經配發過但還沒寫進清單的紀錄
+function snCompute(kind,rec,batch){
+  const s=SN_SCHEME[kind];
+  if(!s||typeof s.list!=='function'||!rec)return null;
+  const fromLine=!!rec.lineKey;
+  const yr=snYear(rec[s.dateKey||'date']),pn=snPanelNo(rec);
+  const code=getDrinkerPrefix(rec[SN_PERSON_FIELD[kind]]||'XX');
+  const pt=snPrefix(kind,fromLine,'tot',pn,yr);
+  if(!pt)return null; // 這個類型、這種來源沒有流水號（例如手動新增的交通）
+  const pp=snPrefix(kind,fromLine,'per',code,yr);
+  const pool=s.list().concat(snTrashed(kind)),b=batch||[];
+  const nt=Math.max(snMaxSeq(pool,'sn',pt),snMaxSeq(b,'sn',pt))+1;
+  const np=Math.max(snMaxSeq(pool,'snp',pp),snMaxSeq(b,'snp',pp))+1;
+  return {sn:pt+p4(nt),snp:pp+p4(np)};
+}
+function snIssue(kind,rec,batch){
+  const r=snCompute(kind,rec,batch);
+  if(r){rec.sn=r.sn;rec.snp=r.snp;}
+  if(batch)batch.push(rec);
+  return rec;
+}
+// 一次儲存可能有好幾筆新紀錄（表單 ➊／➋、Together 額外項目）：依序配發，後面的會接在前面的後面
+function snIssueAll(kind,entries){
+  const batch=[];
+  for(let i=0;i<entries.length;i++)snIssue(kind,entries[i],batch);
+  return entries;
+}
+// 編輯：把舊紀錄的流水號與標記原樣帶到新收集的紀錄上
+function snLock(old,neu){
+  if(!old||!neu)return neu;
+  SN_LOCK_KEYS.forEach(function(k){if(old[k]!==undefined)neu[k]=old[k];});
+  return neu;
+}
+
+
+// ---------- V10.1：分帳／集點卡／待去清單的資料存取（流水號引擎與 LINE 草稿共用）----------
+//   這些函式在網頁載入的最早期就可能被呼叫（草稿校正），那時分帳、集點卡的資料變數還沒宣告完 → 一律包 try/catch，抓不到就當作沒有資料
+// 分帳：所有群組的所有支出（流水號在整個分帳模組裡一起算）
+function splitAllExpenses(){
+  const out=[];
+  try{(Array.isArray(splitGroups)?splitGroups:[]).forEach(function(g){if(g&&Array.isArray(g.expenses))g.expenses.forEach(function(e){out.push(e);});});}catch(_){}
+  return out;
+}
+// 集點卡：乖寶寶集點卡的點數紀錄 + 互助集點卡的點數紀錄（兩張卡共用同一組 LINE-PTS 流水號）
+function stickerAllEvents(){
+  let a=[],b=[];
+  try{a=Array.isArray(stickerEvents)?stickerEvents:[];}catch(_){}
+  try{b=Array.isArray(mutualEvents)?mutualEvents:[];}catch(_){}
+  return a.concat(b);
+}
+// 待去清單：資料放在 localStorage 的 wishlist_data_v2（由待去清單頁 wishlist.html 維護）。
+//   wishDefaults() 必須和待去清單頁「一開始的預設內容」一模一樣：從來沒開過待去清單的人，網頁也是從這份預設內容開始新增（測試會逐項比對）
+const WISH_KEY='wishlist_data_v2';
+function wishDefaults(){return {"categoryNextSeq":{"1":2,"2":2,"3":2,"4":1,"5":2,"6":1,"7":1,"8":1,"9":1,"10":1},"countryRegistry":{"台灣":"TW-001","日本":"JP-002","韓國":"KR-003"},"nextCountryCodeNum":4,"cityRegistry":{"台灣_金門":"TW-KNM-001","台灣_高雄":"TW-KHH-002","台灣_台北":"TW-TPE-003"},"nextCityCodeNum":4,"nextTotalSeq":5,"categories":[{"id":"cat_1","num":1,"name":"食","icon":"🍽️"},{"id":"cat_2","num":2,"name":"衣","icon":"👕"},{"id":"cat_3","num":3,"name":"住","icon":"🏨"},{"id":"cat_4","num":4,"name":"行","icon":"🚗"},{"id":"cat_5","num":5,"name":"娛樂","icon":"🎡"},{"id":"cat_6","num":6,"name":"夜景","icon":"🌃"},{"id":"cat_7","num":7,"name":"最美的地方","icon":"📸"},{"id":"cat_8","num":8,"name":"購物","icon":"🛍️"},{"id":"cat_9","num":9,"name":"旅遊","icon":"🗺️"},{"id":"cat_10","num":10,"name":"其他","icon":"➕"}],"nextCategoryNum":11,"wishItems":[{"id":1,"category":"食","name":"金許園－金湖店","country":"台灣","city":"金門","detailPlace":"金湖鎮市港路56號","openHours":"⚫ 今日公休","hoursDetail":{"todayStatus":"⚫ 今日公休","times":"06:00–14:00","restDays":"週四"},"reason":"在地人推薦餡餅","source":"朋友推薦","rating":5,"notes":"","proposer":"朋友","suggestDate":"2026-09-10","status":"待去","targetTime":"2026年10月","completedDate":"","completedTime":"","categorySeq":"1-0001","countrySeq":"TW-001","citySeq":"TW-KNM-001","totalSeq":"000001","lat":24.4398,"lng":118.4172},{"id":2,"category":"衣","name":"GU 高雄大遠百店","country":"台灣","city":"高雄","detailPlace":"三多四路21號","openHours":"🟢 營業中 | 11:00-22:00","hoursDetail":{"todayStatus":"🟢 營業中","times":"11:00-22:00"},"reason":"換季特惠採買","source":"自己發現","rating":4,"notes":"記得帶會員卡","proposer":"本人","suggestDate":"2026-09-15","status":"已安排","targetTime":"2026年10月12日","completedDate":"","completedTime":"","categorySeq":"2-0001","countrySeq":"TW-001","citySeq":"TW-KHH-002","totalSeq":"000002","lat":22.6136,"lng":120.3039},{"id":3,"category":"住","name":"高雄圓山大飯店","country":"台灣","city":"高雄","detailPlace":"圓山路2號","openHours":"🟢 營業中 | 24小時","hoursDetail":{"todayStatus":"🟢 營業中","times":"24小時"},"reason":"東方宮殿風格","source":"IG","rating":5,"notes":"","proposer":"伴侶","suggestDate":"2026-08-01","status":"已完成","targetTime":"2026年9月20日","completedDate":"2026-09-20","completedTime":"15:30","categorySeq":"3-0001","countrySeq":"TW-001","citySeq":"TW-KHH-002","totalSeq":"000003","lat":22.6534,"lng":120.3524},{"id":4,"category":"娛樂","name":"金獅影城","country":"台灣","city":"金門","detailPlace":"中山路8-8號","openHours":"🟢 營業中 | 10:00-22:30","hoursDetail":{"todayStatus":"🟢 營業中","times":"10:00-22:30"},"reason":"頂級巨幕影廳看電影","source":"Threads","rating":4,"notes":"","proposer":"朋友","suggestDate":"2026-09-22","status":"待去","targetTime":"未定","completedDate":"","completedTime":"","categorySeq":"5-0001","countrySeq":"TW-001","citySeq":"TW-KNM-001","totalSeq":"000004","lat":24.4485,"lng":118.361}]};}
+// 讀出待去清單的目前內容：存檔裡有的欄位才覆蓋預設值（和待去清單頁載入存檔的規則相同）
+function wishLoad(){
+  const w=wishDefaults();
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem(WISH_KEY)||'null');}catch(e){d=null;}
+  if(!d||typeof d!=='object'||Array.isArray(d))return w;
+  if(Array.isArray(d.wishItems))w.wishItems=d.wishItems;
+  if(d.categoryNextSeq&&typeof d.categoryNextSeq==='object')w.categoryNextSeq=d.categoryNextSeq;
+  if(d.nextTotalSeq)w.nextTotalSeq=d.nextTotalSeq;
+  if(Array.isArray(d.categories)&&d.categories.length)w.categories=d.categories;
+  if(d.nextCategoryNum)w.nextCategoryNum=d.nextCategoryNum;
+  if(d.countryRegistry&&typeof d.countryRegistry==='object')w.countryRegistry=d.countryRegistry;
+  if(d.cityRegistry&&typeof d.cityRegistry==='object')w.cityRegistry=d.cityRegistry;
+  if(d.nextCountryCodeNum)w.nextCountryCodeNum=d.nextCountryCodeNum;
+  if(d.nextCityCodeNum)w.nextCityCodeNum=d.nextCityCodeNum;
+  return w;
+}
+function wishReadItems(){try{return wishLoad().wishItems;}catch(e){return [];}}
+// 寫回（欄位順序與待去清單頁的 saveStorageData 相同）。透過 localStorage.setItem，所以會跟著雲端同步
+function wishSaveAll(w){
+  const e=lsSet(WISH_KEY,{wishItems:w.wishItems,categories:w.categories,nextCategoryNum:w.nextCategoryNum,categoryNextSeq:w.categoryNextSeq,countryRegistry:w.countryRegistry,nextCountryCodeNum:w.nextCountryCodeNum,cityRegistry:w.cityRegistry,nextCityCodeNum:w.nextCityCodeNum,nextTotalSeq:w.nextTotalSeq});
+  if(e){saveFail(e);return false;}
+  return true;
+}
+// 待去清單頁「新增項目」的永久流水號規則（分類流水號、國家流水號、城市流水號、總流水號），逐行對照 wishlist.html 的 handleItemFormSubmit
+function wishAllocSeq(w,catObj,country,city){
+  const pad=function(n,l){return String(n).padStart(l,'0');};
+  const catNum=catObj.num;
+  const nextCatId=w.categoryNextSeq[catNum]||1;
+  const out={categorySeq:catNum+'-'+pad(nextCatId,4),countrySeq:'',citySeq:'',totalSeq:''};
+  w.categoryNextSeq[catNum]=nextCatId+1;
+  if(country){
+    if(!w.countryRegistry[country]){w.countryRegistry[country]='TW-'+pad(w.nextCountryCodeNum,3);w.nextCountryCodeNum++;}
+    out.countrySeq=w.countryRegistry[country];
+  }
+  if(city&&country){
+    const key=country+'_'+city;
+    if(!w.cityRegistry[key]){w.cityRegistry[key]='TW-CTY-'+pad(w.nextCityCodeNum,3);w.nextCityCodeNum++;}
+    out.citySeq=w.cityRegistry[key];
+  }
+  out.totalSeq=pad(w.nextTotalSeq,6);
+  w.nextTotalSeq++;
+  return out;
+}
+
+
+// ---------- 表單上的流水號預覽（跟儲存時同一套算法，只是不寫入）----------
+function snFormRec(kind,p){
+  const isFood=kind==='food';
+  const dateEl=document.getElementById(isFood?p+'-m-date':p+'-date');
+  const person=isFood?getCustom(p+'-m-eater',p+'-m-eater-c'):getCustom(p+'-drinker',p+'-drinker-c');
+  const c=draftCtx;
+  const r={date:dateEl?dateEl.value:'',panel:p==='a'?'1':'2'};
+  r[isFood?'eater':'drinker']=person||'';
+  if(c&&c.kind===kind&&p==='a')r.lineKey=c.lineKey; // 草稿開出來的表單 → 預覽 LINE 格式
+  return r;
+}
+function snRenderChips(kind,p){
+  const pre=kind==='food'?p+'-m-sn-':p+'-sn-';
+  const totEl=document.getElementById(pre+'total'),perEl=document.getElementById(pre+'personal');
+  if(!totEl&&!perEl)return;
+  const eid=kind==='food'?mealEditId:editId;
+  let tot,per;
+  if(eid&&p==='a'){ // 編輯：顯示這筆紀錄自己「鎖定」的流水號
+    const old=(kind==='food'?meals:recs).find(function(r){return r&&r.id===eid;});
+    tot=(old&&old.sn)||'（無）';per=(old&&old.snp)||'（無）';
+  }else{
+    const r=snCompute(kind,snFormRec(kind,p),null);
+    tot=r?r.sn:'—';per=r?r.snp:'—';
+  }
+  if(totEl)totEl.textContent=tot;
+  if(perEl)perEl.textContent=per;
+}
+function updateSN(p){snRenderChips('drink',p);}
+function updateMealSN(p){snRenderChips('food',p);}
+
+// 資料卡片用：這張草稿「現在按確認新增」預計會拿到的流水號（只是預計，正式號碼以儲存那一刻為準）
+function snPreviewDraft(d){
+  if(!d||!SN_PERSON_FIELD[d.kind])return null;
+  const f=(d.fields&&typeof d.fields==='object')?d.fields:{};
+  const pf=SN_PERSON_FIELD[d.kind];
+  const dk=(SN_SCHEME[d.kind]&&SN_SCHEME[d.kind].dateKey)||'date';
+  const rec={lineKey:d.lineKey||'draft',panel:'1'};
+  rec[dk]=(typeof f[dk]==='string'?f[dk]:'');
+  rec[pf]=(typeof f[pf]==='string'&&f[pf])?f[pf]:(d.owner||'');
+  return snCompute(d.kind,rec,null);
+}
+
+// ============================================================
+// 📝 LINE 待確認草稿（LINE整合 V9）
+//   流程：LINE 訊息解析 → 表單自動帶入 → 人工審核 → 確認儲存 → 流水號生成
+//   ・LINE 伺服器把訊息解析成「草稿」放進同步資料（line_drafts，status:'pending'），不會直接建立正式紀錄。
+//   ・這裡的收件匣列出草稿；開啟後把內容套進原本的「紀錄日常」表單（欄位、樣式、操作都沒變），由使用者檢查、修改、補充。
+//   ・按表單原本的「儲存」才會建立紀錄，並由表單原有的規則產生總流水號／個人流水號；草稿同時標示為「已儲存」，LINE 與網頁看到的狀態一致。
+//   ・自動帶入不代表自動儲存：沒有人按「儲存」，就不會有任何紀錄。
+//   ・LINE 沒提到、又無法可靠辨識的欄位維持空白；表單原本的預設值維持不變並標示「預設」；辨識不確定的欄位標示「待確認」，儲存前會再提醒一次。
+//   ・一則訊息有多個品項時，每個品項是一張獨立的草稿、各開一張表單。
+//   ・V10：點 LINE 連結先跳「資料卡片」（web_v10_card）；流水號改由「流水號引擎」在儲存時配發（web_sn_block）。
+// ============================================================
+const DRAFT_LS_KEY='line_drafts';
+const DRAFT_KINDS={drink:{icon:'🧋',name:'飲料'},food:{icon:'🍱',name:'美食'},travel:{icon:'🚆',name:'交通'},split:{icon:'🧾',name:'分帳'},sticker:{icon:'🌟',name:'集點卡'},wish:{icon:'📍',name:'待去清單'}};
+const DRAFT_LABELS={date:'日期',time:'時間',area:'地點',brand:'品牌',drink:'飲品',category:'類別',size:'SIZE',topping:'加料',sugar:'甜度',ice:'冰塊',payment:'付款方式',currency:'幣別',amount:'金額',drinker:'飲用者',eater:'用餐者',recorder:'紀錄者',note:'備註',rating:'評分',dish:'餐點',cuisine:'菜系',portion:'份量',spicy:'辣度',diningType:'用餐方式',type:'交通類型',company:'公司',no:'班次／編號',depPort:'出發地',arrPort:'到達地',transitPort:'經停',depTime:'出發時間',arrTime:'到達時間',seat:'座位',vehicleType:'車種／機型',ticketPrice:'票價',
+  group:'分帳群組',entry:'類型',cat:'類別',desc:'品項',payer:'誰先付錢',participants:'分給誰',splitAll:'分給誰',customShares:'每人金額',card:'集點卡',kid:'孩子',behavior:'行為',points:'點數',dir:'加點／扣點',
+  name:'項目名稱',country:'國家／地區',city:'城市／地區',detailPlace:'詳細地點／商家',reason:'推薦原因',notes:'備註',targetTime:'預計時間',suggestDate:'提議日期',suggestTime:'提議時間',status:'狀態'};
+const DRAFT_CORE={drink:['brand','drink','amount'],food:['brand','dish','amount'],travel:['type','date','depPort','arrPort','ticketPrice'],split:['group','desc','amount','payer'],sticker:['kid','behavior','points'],wish:['name','proposer']};
+const DRAFT_CIRCLED=['①','②','③','④','⑤','⑥','⑦','⑧'];
+const DRAFT_LABELS_KIND={drink:{brand:'品牌名稱',drink:'飲品名稱',category:'飲品類別',size:'規格（SIZE）',topping:'加料',payment:'支付方式'},food:{brand:'店家名稱',dish:'餐點名稱',category:'用餐類別',payment:'支付方式'},travel:{payment:'付款方式'},split:{payment:'付款方式'},sticker:{note:'原因／備註'},wish:{category:'分類',source:'來源',proposer:'提議者',rating:'推薦指數'}};
+function draftLabel(kind,k){return (DRAFT_LABELS_KIND[kind]&&DRAFT_LABELS_KIND[kind][k])||DRAFT_LABELS[k]||k;}
+function dEsc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function drEl(id){return document.getElementById(id);}
+
+// ---------- 草稿資料（存在 localStorage 的 line_drafts，會跟著雲端同步）----------
+// 草稿資料來自雲端同步，不能假設格式一定正確：欄位型別不對就整理成安全的樣子，認不得的整張略過（不會讓整個收件匣壞掉）
+function draftNorm(d){
+  if(!d||typeof d!=='object'||Array.isArray(d)||!d.id||!DRAFT_KINDS[d.kind])return null;
+  const obj=function(x){return (x&&typeof x==='object'&&!Array.isArray(x))?x:{};};
+  d.id=String(d.id);
+  d.fields=obj(d.fields);d.notes=obj(d.notes);d.unmapped=obj(d.unmapped);
+  d.uncertain=Array.isArray(d.uncertain)?d.uncertain.filter(function(x){return typeof x==='string';}):[];
+  return d;
+}
+function draftsLoad(){
+  try{
+    const a=JSON.parse(localStorage.getItem(DRAFT_LS_KEY)||'[]');
+    return Array.isArray(a)?a.map(draftNorm).filter(Boolean):[];
+  }catch(e){return [];}
+}
+let lineDrafts=draftsLoad();
+try{draftsReconcile();}catch(e){} // 載入時就校正（紀錄已存在、草稿卻還是待確認的情況），首頁的數字才不會多算
+function draftsReload(){lineDrafts=draftsLoad();draftsReconcile();}
+function draftsPersist(){
+  const e=lsSet(DRAFT_LS_KEY,lineDrafts);
+  if(e){saveFail(e);return false;}
+  try{if(typeof schedulePush==='function')schedulePush();}catch(_){}
+  draftsRefreshHome();
+  return true;
+}
+function draftById(id){for(let i=0;i<lineDrafts.length;i++){if(lineDrafts[i]&&lineDrafts[i].id===id)return lineDrafts[i];}return null;}
+// 這個登入身分看得到哪些草稿：自己傳的（紀錄者）、或飲用者／用餐者是自己的；超級模式看全部（規則與「紀錄」的可見範圍一致）
+function draftVisible(d){
+  if(!d||!currentUser)return false;
+  if(superModeUnlocked)return true;
+  const f=d.fields||{};
+  return d.owner===currentUser||f.drinker===currentUser||f.eater===currentUser||f.recorder===currentUser;
+}
+function draftList(status){
+  return lineDrafts.filter(function(d){return d&&d.status===status&&draftVisible(d);}).sort(function(a,b){
+    return ((Number(b.msgTs)||0)-(Number(a.msgTs)||0))||((a.itemIndex||0)-(b.itemIndex||0));
+  });
+}
+function draftPendingCount(){return draftList('pending').length;}
+function draftRecordsOf(kind){
+  if(kind==='split')return splitAllExpenses();
+  if(kind==='sticker')return stickerAllEvents();
+  if(kind==='wish')return wishReadItems();
+  return kind==='drink'?recs:(kind==='food'?meals:travels);
+}
+// 找出「帶著這張草稿標記」的正式紀錄（儲存時會把草稿的 lineKey 記在紀錄上，用來防止同一張草稿建立兩筆紀錄）
+function draftFindRecord(d){
+  if(!d||!d.lineKey)return null;
+  const arr=draftRecordsOf(d.kind)||[];
+  for(let i=0;i<arr.length;i++){if(arr[i]&&arr[i].lineKey===d.lineKey)return arr[i];}
+  return null;
+}
+function draftMarkSaved(d,rec){
+  d.status='saved';d.savedAt=Date.now();
+  d.savedRecId=(rec&&rec.id)||'';d.sn=(rec&&rec.sn)||'';d.snp=(rec&&rec.snp)||'';
+  return draftsPersist();
+}
+// 紀錄已經存在、但草稿狀態還是「待確認」（例如被舊的雲端資料蓋回去）→ 校正成已儲存，避免使用者再存一次
+function draftsReconcile(){
+  let changed=false;
+  lineDrafts.forEach(function(d){
+    if(!d||d.status!=='pending')return;
+    const rec=draftFindRecord(d);
+    if(rec){d.status='saved';d.savedAt=d.savedAt||Date.now();d.savedRecId=rec.id||'';d.sn=rec.sn||'';d.snp=rec.snp||'';changed=true;}
+  });
+  if(changed)draftsPersist();
+  return changed;
+}
+
+// ---------- 首頁入口 ----------
+function draftHomeBtnHtml(){
+  if(!syncEnabled&&!lineDrafts.length)return '';
+  const n=draftPendingCount(),on=n>0;
+  return '<button id="dr-home-btn" onclick="openDrafts()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid '+(on?'#f59e0b':'var(--bdr)')+';border-radius:14px;background:'+(on?'#fffbeb':'var(--sur)')+';color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-size:16px">📝</span>LINE 待確認草稿'+(on?'<span style="background:#f59e0b;color:#fff;border-radius:999px;padding:1px 9px;font-size:12px">'+n+'</span>':'')+'</button>';
+}
+// 有待確認草稿時，首頁最上面（模組卡片上方）再放一條醒目的提醒；沒有草稿時完全不佔版面
+function draftHomeTopHtml(){
+  const n=draftPendingCount();
+  if(!n)return '';
+  return '<button id="dr-home-top" onclick="openDrafts()" style="margin:0 16px 14px;width:calc(100% - 32px);padding:12px 14px;border:1px solid #f59e0b;border-radius:14px;background:#fffbeb;color:#92400e;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-size:16px">📝</span>有 '+n+' 張 LINE 待確認草稿，點這裡確認<span style="font-size:16px">›</span></button>';
+}
+function draftsRefreshHome(){
+  try{
+    const b=drEl('dr-home-btn');
+    if(b){
+      const tmp=document.createElement('div');
+      tmp.innerHTML=draftHomeBtnHtml();
+      if(tmp.firstChild)b.replaceWith(tmp.firstChild);else b.remove();
+    }
+    const slot=drEl('dr-home-top-slot');
+    if(slot)slot.innerHTML=draftHomeTopHtml();
+  }catch(e){}
+}
+
+// ---------- 收件匣 ----------
+function draftBrief(d){
+  const f=d.fields||{},unc=d.uncertain||[];
+  const mk=function(k,t){return t?(t+(unc.indexOf(k)>=0?'⚠':'')):'';};
+  let parts;
+  if(d.kind==='drink'){
+    parts=[mk('brand',f.brand),mk('drink',f.drink),mk('size',f.size),mk('sugar',f.sugar!==undefined?(SL[f.sugar]||f.sugar):''),mk('ice',f.ice!==undefined?(IL[f.ice]||f.ice):''),mk('topping',f.topping&&f.topping!=='無'?'加'+f.topping:''),mk('amount',f.amount!==undefined?'$'+f.amount:'')];
+  }else if(d.kind==='food'){
+    parts=[mk('brand',f.brand),mk('dish',f.dish),mk('category',f.category),mk('amount',f.amount!==undefined?'$'+f.amount:'')];
+  }else if(d.kind==='split'){
+    const how=f.participants&&f.participants.length?'分給'+f.participants.join('、'):(f.splitAll?'均分':'');
+    parts=[mk('group',f.group?'【'+f.group+'】':''),mk('desc',f.desc),mk('amount',f.amount!==undefined?'$'+f.amount:''),mk('payer',f.payer?f.payer+'先付':''),mk('participants',how)];
+  }else if(d.kind==='sticker'){
+    const pt=f.points!==undefined?(f.points>0?'+':'')+f.points+'點':'';
+    parts=(f.card==='mutual')?['互助',mk('points',pt),mk('note',f.note)]:[mk('kid',f.kid),mk('behavior',f.behavior),mk('points',pt)];
+  }else if(d.kind==='wish'){
+    parts=[mk('name',f.name),mk('city',f.city),mk('category',f.category?'〔'+f.category+'〕':'')];
+  }else{
+    const tm=f.type&&TRAVEL_TYPES[f.type]?TRAVEL_TYPES[f.type]:null;
+    const route=(f.depPort||f.arrPort)?((f.depPort?mk('depPort',f.depPort):'')+(f.arrPort?'→'+mk('arrPort',f.arrPort):'')):'';
+    parts=[tm?tm.icon+tm.name:'',route,mk('no',f.no),mk('ticketPrice',f.ticketPrice!==undefined?'$'+f.ticketPrice:'')];
+  }
+  return parts.filter(Boolean).join(' ')||'（只辨識到部分欄位）';
+}
+function draftWhen(d){
+  const t=new Date(Number(d.msgTs)||Number(d.createdAt)||Date.now());
+  return (t.getMonth()+1)+'/'+t.getDate()+' '+p2(t.getHours())+':'+p2(t.getMinutes());
+}
+function draftCardHtml(d,focus){
+  const k=DRAFT_KINDS[d.kind];
+  const multi=(Number(d.itemCount)>1)?('　'+(DRAFT_CIRCLED[d.itemIndex]||'')+'／共'+d.itemCount+'張'):'';
+  const unc=(d.uncertain||[]).map(function(x){return draftLabel(d.kind,x);});
+  return '<div class="dr-card'+(focus?' focus':'')+'">'
+    +'<div class="dr-card-hd"><b>'+k.icon+' '+k.name+dEsc(multi)+'</b><span>'+dEsc(draftWhen(d))+(d.groupName?'・'+dEsc(d.groupName):'')+'</span></div>'
+    +'<div class="dr-card-brief">'+dEsc(draftBrief(d))+'</div>'
+    +(unc.length?'<div class="dr-card-unc">⚠ 待確認：'+unc.map(dEsc).join('、')+'</div>':'')
+    +(d.rawText?'<div class="dr-card-raw">原文：「'+dEsc(String(d.rawText).slice(0,80))+(String(d.rawText).length>80?'…':'')+'」</div>':'')
+    +'<div class="dr-card-act"><button type="button" class="dr-btn pri" data-dr-act="open" data-dr-id="'+dEsc(d.id)+'">✏️ 開啟表單確認</button><button type="button" class="dr-btn" data-dr-act="discard" data-dr-id="'+dEsc(d.id)+'">🗑 捨棄</button></div>'
+    +'</div>';
+}
+function draftDoneRowHtml(d){
+  const k=DRAFT_KINDS[d.kind];
+  const saved=d.status==='saved';
+  const sn=saved?(d.sn?('　總流水號 '+d.sn+(d.snp?'・個人流水號 '+d.snp:'')):''):'';
+  return '<div class="dr-done"><span>'+(saved?'✅ 已儲存':'🗑 已捨棄')+'</span> '+k.icon+' '+dEsc(draftBrief(d))+'<div class="dr-done-sub">'+dEsc(draftWhen(d))+dEsc(sn)+'</div></div>';
+}
+let draftFocusMsg='';
+function openDrafts(opts){
+  opts=opts||{};
+  draftFocusMsg=(typeof opts.focusMsg==='string')?opts.focusMsg:'';
+  draftsReload();
+  let m=drEl('draft-modal');
+  if(!m){
+    m=document.createElement('div');
+    m.id='draft-modal';
+    m.style.cssText='position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+    m.addEventListener('click',function(e){
+      if(e.target===m){closeDrafts();return;}
+      const b=e.target.closest?e.target.closest('[data-dr-act]'):null;
+      if(!b)return;
+      const act=b.getAttribute('data-dr-act'),id=b.getAttribute('data-dr-id')||'';
+      if(act==='close')closeDrafts();
+      else if(act==='refresh')draftsRefresh();
+      else if(act==='open')openDraft(id,{fromInbox:true});
+      else if(act==='discard')draftDiscard(id,false);
+      else if(act==='toggle-done'){const w=drEl('draft-done-wrap');if(w)w.style.display=w.style.display==='none'?'block':'none';}
+    });
+    document.body.appendChild(m);
+  }
+  m.innerHTML='<div style="background:var(--sur);width:100%;max-width:520px;max-height:88vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden">'
+    +'<div style="padding:16px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-size:16px;font-weight:900;color:var(--bd);font-family:\'Noto Serif TC\',serif">📝 LINE 待確認草稿</div>'
+    +'<button type="button" data-dr-act="close" style="border:none;background:var(--crm);width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;color:var(--t5)">✕</button>'
+    +'</div>'
+    +'<div style="padding:10px 18px 0"><button type="button" id="draft-refresh" data-dr-act="refresh" style="width:100%;padding:8px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">🔄 重新整理（同步 LINE 新草稿）</button></div>'
+    +'<div id="draft-body" style="padding:12px 18px 22px;overflow-y:auto;flex:1"></div>'
+    +'</div>';
+  m.style.display='flex';
+  draftsRender();
+}
+function closeDrafts(){const m=drEl('draft-modal');if(m)m.style.display='none';}
+function draftsRender(){
+  const body=drEl('draft-body');
+  if(!body)return;
+  const pend=draftList('pending');
+  const done=lineDrafts.filter(function(d){return d&&d.status!=='pending'&&draftVisible(d);}).sort(function(a,b){
+    return (Number(b.savedAt||b.discardedAt||b.createdAt)||0)-(Number(a.savedAt||a.discardedAt||a.createdAt)||0);
+  }).slice(0,20);
+  const hidden=lineDrafts.filter(function(d){return d&&d.status==='pending'&&!draftVisible(d);}).length;
+  let h='<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:10px">從 LINE 傳來、<b>還沒正式儲存</b>的紀錄。開啟後會帶入原本的表單，檢查、修改或補充沒問題，按「儲存」才會建立紀錄並產生流水號；LINE 沒提到的欄位會留白。</div>';
+  if(!(syncEnabled&&syncCode)){
+    h+='<div style="margin-bottom:10px;padding:10px 12px;border:1px solid #fde68a;background:#fffbeb;border-radius:10px;font-size:12px;line-height:1.7;color:#92400e">這支裝置還沒有啟用雲端同步，LINE 建立的草稿不會出現在這裡。請到首頁「雲端同步」輸入和 LINE 綁定相同的同步碼。</div>';
+  }
+  if(!pend.length){
+    h+='<div style="text-align:center;color:var(--t5);padding:26px 10px;font-size:13px;line-height:1.8">目前沒有待確認的草稿 🎉<br><span style="font-size:11px">在 LINE 傳「50嵐珍奶 65」之類的訊息，系統會解析後放到這裡等你確認</span></div>';
+  }else{
+    h+='<div style="font-size:12px;font-weight:900;color:var(--bd);margin:4px 0 8px">待確認（'+pend.length+'）</div>';
+    pend.forEach(function(d){
+      const focus=draftFocusMsg&&String(d.lineKey||'').split('#')[0]===draftFocusMsg;
+      h+=draftCardHtml(d,focus);
+    });
+  }
+  if(hidden>0)h+='<div style="margin:10px 0;font-size:11px;color:var(--t5);line-height:1.7">另外還有 '+hidden+' 張草稿屬於其他使用者，需要用超級模式登入才看得到。</div>';
+  if(done.length){
+    h+='<button type="button" data-dr-act="toggle-done" style="margin-top:14px;width:100%;padding:9px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">最近處理過的草稿（'+done.length+'）</button>'
+      +'<div id="draft-done-wrap" style="display:none;margin-top:8px">'+done.map(draftDoneRowHtml).join('')+'</div>';
+  }
+  body.innerHTML=h;
+}
+async function draftsRefresh(){
+  if(!(syncEnabled&&syncCode)){toast('尚未啟用雲端同步');return;}
+  const b=drEl('draft-refresh');
+  if(b){b.disabled=true;b.textContent='同步中…';}
+  try{sessionStorage.setItem('dr_reopen','1');}catch(e){}
+  let r;
+  try{r=await syncPull();}catch(e){}
+  if(r==='reload')return; // 頁面即將重新載入，載入後會自動重新打開收件匣
+  try{sessionStorage.removeItem('dr_reopen');}catch(e){}
+  if(b){b.disabled=false;b.textContent='🔄 重新整理（同步 LINE 新草稿）';}
+  draftsReload();draftsRender();
+}
+// 網頁重新載入後（例如按了「重新整理」拉到新資料）自動回到收件匣
+function draftResumeAfterReload(){
+  try{
+    if(sessionStorage.getItem('dr_reopen')==='1'){sessionStorage.removeItem('dr_reopen');openDrafts();}
+  }catch(e){}
+}
+// LINE 回覆卡片的「開啟網頁確認」按鈕：?open=drafts&d=<LINE訊息編號>。只有一張草稿就先跳「資料卡片」（V10，見 web_v10_card）；多張（一則訊息多品項）進收件匣，一張一張處理
+function draftDeepLink(msgId){
+  draftsReload();
+  const mine=draftList('pending');
+  const hit=msgId?mine.filter(function(d){return String(d.lineKey||'').split('#')[0]===msgId;}):[];
+  if(hit.length===1&&draftCardOpen(hit[0].id))return;
+  openDrafts({focusMsg:msgId||''});
+}
+
+// ---------- 開啟草稿 → 帶入表單 ----------
+let draftCtx=null; // 目前正在處理的草稿：{id,kind,lineKey,fromInbox,saving,applying,closedInSave,marks:{key:{...}},cleanups:[]}
+let draftOpening=false;
+function dSetText(id,v){
+  const el=drEl(id);
+  if(!el||v===undefined||v===null||v==='')return false;
+  el.value=String(v);
+  return true;
+}
+function dHasOption(id,v){
+  const s=drEl(id);
+  if(!s||!s.options)return false;
+  for(let i=0;i<s.options.length;i++){if(s.options[i].value===String(v)&&!s.options[i].disabled)return true;}
+  return false;
+}
+// 設定下拉選單：回傳 'ok'（照選項）｜'custom'（選項裡沒有，用「自訂」欄位帶入）｜'miss'（帶不進去）｜'skip'（沒有值）
+function dSetSel(id,v,allowCustom){
+  const s=drEl(id);
+  if(!s||v===undefined||v===null||v==='')return 'skip';
+  v=String(v);
+  const c=drEl(id+'-c');
+  let hasC=false;
+  for(let i=0;i<s.options.length;i++){if(s.options[i].value==='c')hasC=true;}
+  if(dHasOption(id,v)){s.value=v;if(c){c.value='';c.style.display='none';}return 'ok';}
+  if(allowCustom&&hasC&&c){s.value='c';c.value=v;c.style.display='block';return 'custom';}
+  return 'miss';
+}
+// 收集「這張草稿每個欄位帶入後的狀態」，之後才一次畫上標示
+function draftMarker(d){
+  const unc={};
+  (d.uncertain||[]).forEach(function(k){unc[k]=(d.notes&&d.notes[k])||'LINE 辨識結果不太確定，請確認';});
+  const list=[];
+  return {
+    list:list,unc:unc,
+    // status：true／'ok' 已帶入｜'custom' 用自訂內容帶入｜'miss' 帶不進去｜false／'skip' 草稿沒有這個欄位
+    put:function(key,ids,status,opt){
+      opt=opt||{};
+      const base={key:key,ids:ids,label:opt.label,box:opt.box};
+      const applied=(status===true||status==='ok');
+      if(status==='custom'){list.push(Object.assign(base,{state:'unc',note:unc[key]||opt.customNote||('「'+(opt.value||'')+'」不在表單的選項內，已用自訂內容帶入，請確認')}));return;}
+      if(applied){list.push(Object.assign(base,{state:(key in unc)?'unc':'fill',note:unc[key]||''}));return;}
+      if(key in unc){list.push(Object.assign(base,{state:'unc',note:unc[key]}));return;}
+      if(status==='miss'){list.push(Object.assign(base,{state:'unc',note:'這個值帶不進表單的選項，請自己選'}));return;}
+      if(opt.def)list.push(Object.assign(base,{state:'def',note:opt.defNote||'LINE 沒提到，這是表單原本的預設值'}));
+    },
+    force:function(key,ids,note,opt){opt=opt||{};list.push({key:key,ids:ids,label:opt.label,box:opt.box,state:'unc',note:note});},
+  };
+}
+// 飲用者／用餐者：訊息有提到就用提到的；沒提到時，用傳訊者（LINE 身分，不是猜的）當預設；傳訊者不是 App 帳號就請使用者確認
+function draftApplyPerson(d,m,key,selId,mentioned){
+  const owner=d.owner||'';
+  if(mentioned){
+    const r=dSetSel(selId,mentioned,true);
+    m.put(key,[selId],r,{value:mentioned,customNote:'訊息裡的稱呼「'+mentioned+'」不是已知帳號，請確認'});
+    return;
+  }
+  if(owner&&dHasOption(selId,owner)){
+    dSetSel(selId,owner,false);
+    m.put(key,[selId],'skip',{def:true,defNote:'LINE 沒提到，預設為傳訊息的人'});
+    return;
+  }
+  if(owner){
+    const cur=(drEl(selId)||{}).value||'';
+    m.force(key,[selId],'LINE 傳訊者「'+owner+'」不是 App 帳號，目前先用表單預設的「'+cur+'」，請確認');
+  }
+}
+function draftApplyRecorder(d,m,selId,f){
+  if(!f.recorder)return;
+  const r=dSetSel(selId,f.recorder,true);
+  m.put('recorder',[selId],r,{value:f.recorder,customNote:'LINE 傳訊者「'+f.recorder+'」不是 App 帳號，已用自訂內容帶入，請確認紀錄者'});
+}
+// 草稿裡有值、但格式不對（日期、時間、金額）→ 不帶入，也不默默留白：標成待確認請使用者自己填
+// 格式正確還不夠：日期要是真的存在的日子（沒有 2 月 31 日），時間要是 00:00～23:59
+function draftValidDate(v){
+  if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;
+  const y=+v.slice(0,4),mo=+v.slice(5,7),da=+v.slice(8,10),t=new Date(y,mo-1,da);
+  return t.getFullYear()===y&&t.getMonth()===mo-1&&t.getDate()===da;
+}
+function draftValidTime(v){
+  if(typeof v!=='string'||!/^\d{2}:\d{2}$/.test(v))return false;
+  const h=+v.slice(0,2),mi=+v.slice(3,5);
+  return h<=23&&mi<=59;
+}
+function draftBadValue(m,f,key,ids,what){
+  const v=f[key];
+  if(v===undefined||v===null||v===''||(key in m.unc))return; // 伺服器本來就標了待確認的欄位，已經有標示了
+  m.force(key,ids,'草稿裡的'+what+'「'+String(v).slice(0,30)+'」格式不對，沒有帶入，請自己填');
+}
+function draftApplyDrink(d,m){
+  const f=d.fields||{},p='a';
+  let st=false;
+  if(draftValidDate(f.date)){drEl(p+'-date').value=f.date;handleDateChange(p);st=true;}
+  m.put('date',[p+'-date'],st);
+  if(!st)draftBadValue(m,f,'date',[p+'-date'],'日期');
+  st=false;
+  if(draftValidTime(f.time)){setTimeValue(p,f.time);st=true;}
+  m.put('time',[p+'-time-text',p+'-time-h',p+'-time-m'],st);
+  if(!st)draftBadValue(m,f,'time',[p+'-time-text',p+'-time-h',p+'-time-m'],'時間');
+  m.put('area',[p+'-area'],dSetText(p+'-area',f.area));
+  m.put('brand',[p+'-brand'],dSetText(p+'-brand',f.brand));
+  m.put('drink',[p+'-drink'],dSetText(p+'-drink',f.drink));
+  m.put('category',[p+'-category'],dSetText(p+'-category',f.category));
+  m.put('size',[p+'-size'],dSetSel(p+'-size',f.size,true),{def:true,value:f.size});
+  m.put('topping',[p+'-topping'],dSetSel(p+'-topping',f.topping,true),{def:true,value:f.topping});
+  m.put('sugar',[p+'-sugar'],dSetSel(p+'-sugar',f.sugar,false),{def:true});
+  m.put('ice',[p+'-ice'],dSetSel(p+'-ice',f.ice,false),{def:true});
+  m.put('currency',[p+'-cur'],dSetSel(p+'-cur',f.currency,true),{def:true,value:f.currency});
+  st=false;
+  if(f.amount!==undefined&&f.amount!==null&&f.amount!==''&&isFinite(Number(f.amount))){drEl(p+'-amt').value=String(f.amount);st=true;}
+  m.put('amount',[p+'-amt'],st);
+  if(!st)draftBadValue(m,f,'amount',[p+'-amt'],'金額');
+  m.put('payment',[p+'-pay'],dSetSel(p+'-pay',f.payment,true),{def:true,value:f.payment});
+  draftApplyPerson(d,m,'drinker',p+'-drinker',f.drinker);
+  handleDrinkerChange(p);
+  draftApplyRecorder(d,m,p+'-recorder',f);
+  m.put('note',[p+'-note'],dSetText(p+'-note',f.note));
+  st=false;
+  const rt=Math.round(Number(f.rating)||0);
+  if(rt>=1&&rt<=5){setDrinkRating(p,rt);st=true;}
+  if(st)m.put('rating',[p+'-rating-wrap'],true);
+  updateSN(p);
+}
+function draftExpandSpicy(){
+  const w=drEl('a-m-spicy-dining-wrap'),b=drEl('a-m-spicy-dining-btn');
+  if(w)w.style.display='block';
+  if(b)b.textContent='－ 收合辣度／用餐方式';
+}
+function draftApplyMeal(d,m){
+  const f=d.fields||{},p='a';
+  let st=false;
+  if(draftValidDate(f.date)){drEl(p+'-m-date').value=f.date;handleMealDateChange(p);st=true;}
+  m.put('date',[p+'-m-date'],st);
+  if(!st)draftBadValue(m,f,'date',[p+'-m-date'],'日期');
+  st=false;
+  if(draftValidTime(f.time)){setMealTimeValue(p,f.time);st=true;}
+  m.put('time',[p+'-m-time-h',p+'-m-time-m'],st);
+  if(!st)draftBadValue(m,f,'time',[p+'-m-time-h',p+'-m-time-m'],'時間');
+  m.put('brand',[p+'-m-brand'],dSetText(p+'-m-brand',f.brand));
+  m.put('dish',[p+'-m-dish'],dSetText(p+'-m-dish',f.dish));
+  m.put('category',[p+'-m-category'],dSetSel(p+'-m-category',f.category,true),{def:true,value:f.category});
+  m.put('cuisine',[p+'-m-cuisine'],dSetSel(p+'-m-cuisine',f.cuisine,true),{value:f.cuisine});
+  m.put('portion',[p+'-m-portion'],dSetSel(p+'-m-portion',f.portion,true),{def:true,value:f.portion});
+  const sp=dSetSel(p+'-m-spicy',f.spicy,true),dt=dSetSel(p+'-m-diningType',f.diningType,true);
+  m.put('spicy',[p+'-m-spicy'],sp,{def:true,value:f.spicy});
+  m.put('diningType',[p+'-m-diningType'],dt,{def:true,value:f.diningType});
+  if((f.spicy&&f.spicy!=='不辣')||(f.diningType&&f.diningType!=='內用')||('spicy' in m.unc)||('diningType' in m.unc)||sp==='custom'||dt==='custom')draftExpandSpicy();
+  m.put('currency',[p+'-m-cur'],dSetSel(p+'-m-cur',f.currency,true),{def:true,value:f.currency});
+  st=false;
+  if(f.amount!==undefined&&f.amount!==null&&f.amount!==''&&isFinite(Number(f.amount))){drEl(p+'-m-amt').value=String(f.amount);st=true;}
+  m.put('amount',[p+'-m-amt'],st);
+  if(!st)draftBadValue(m,f,'amount',[p+'-m-amt'],'金額');
+  m.put('payment',[p+'-m-pay'],dSetSel(p+'-m-pay',f.payment,true),{def:true,value:f.payment});
+  draftApplyPerson(d,m,'eater',p+'-m-eater',f.eater);
+  handleMealEaterChange(p);
+  draftApplyRecorder(d,m,p+'-m-recorder',f);
+  m.put('note',[p+'-m-note'],dSetText(p+'-m-note',f.note));
+  st=false;
+  const rt=Math.round(Number(f.rating)||0);
+  if(rt>=1&&rt<=5){setMealRating(p,rt);st=true;}
+  if(st)m.put('rating',[p+'-m-rating-wrap'],true);
+  updateMealSN(p);
+}
+const DRAFT_TRAVEL_IDS={
+  flight:{date:'date',no:'no',company:'airline',depPort:'dep',arrPort:'arr',transitPort:'transit',depTime:'dep-time',arrTime:'arr-time',seat:'seat',vehicleType:'aircraft',ticketPrice:'price',note:'note'},
+  ship:{date:'date',no:'no',company:'company',depPort:'dep',arrPort:'arr',transitPort:'transit',depTime:'dep-time',arrTime:'arr-time',seat:'cabin',vehicleType:'vessel-type',ticketPrice:'price',note:'note'},
+  gen:{date:'date',no:'no',company:'company',depPort:'dep',arrPort:'arr',transitPort:'transit',depTime:'dep-time',arrTime:'arr-time',seat:'seat',vehicleType:'vtype',ticketPrice:'price',note:'note'},
+};
+function draftApplyTravel(d,m){
+  const f=d.fields||{},p='a';
+  const type=(f.type&&TRAVEL_TYPES[f.type])?f.type:'';
+  const typeLabel=document.querySelector('#travel-fo .sec-div');
+  const tplBox=drEl('travel-tpl-flight')?drEl('travel-tpl-flight').parentElement:null;
+  if(type){
+    setTravelTemplate(type);
+    m.put('type',[drEl('travel-tpl-'+type)],true,{label:typeLabel,box:tplBox});
+  }else{
+    // 訊息沒有明確說是哪一種交通：三種欄位區塊都先帶入，等使用者選好類型就是他選的那一塊；類型一定要請使用者自己確認
+    m.force('type',[tplBox],'訊息沒有明確說是哪一種交通，請在上方點選交通類型',{label:typeLabel,box:tplBox});
+  }
+  const blocks=type?[TRAVEL_TYPES[type].block]:['flight','ship','gen'];
+  ['date','no','company','depPort','arrPort','transitPort','depTime','arrTime','seat','vehicleType','ticketPrice','note'].forEach(function(k){
+    const v=f[k];
+    const has=v!==undefined&&v!==null&&v!=='';
+    blocks.forEach(function(b){
+      const id='a-t-'+b+'-'+DRAFT_TRAVEL_IDS[b][k];
+      const el=drEl(id);
+      if(!el)return;
+      if(has)el.value=String(v);
+      m.put(k,[id],has);
+    });
+  });
+  blocks.forEach(function(b){
+    if(b==='flight')calcFlightDuration(p);
+    else if(b==='ship')calcShipDuration(p);
+    else calcGenDuration(p);
+  });
+  m.put('payment',['a-t-pay'],dSetSel('a-t-pay',f.payment,true),{def:true,value:f.payment});
+  if(f.recorder){
+    const r=dSetSel('a-t-recorder',f.recorder,true);
+    handleTravelRecorderChange(p);
+    m.put('recorder',['a-t-recorder'],r,{value:f.recorder,customNote:'LINE 傳訊者「'+f.recorder+'」不是 App 帳號，已用自訂內容帶入，請確認紀錄者'});
+  }
+}
+// ============================================================
+// 🧾🌟📍 分帳／集點卡／待去清單 的 LINE 草稿（LINE整合 V10.1）
+//   ・分帳：沿用原本的「新增支出」表單（欄位、樣式、操作都沒變），LINE 的內容帶進去，由使用者核對後按「新增」儲存
+//   ・集點卡、待去清單：原本就沒有可以套用的「表單」（集點卡是點一下行為就記錄、待去清單是另一個頁面），
+//     所以【修改內容】會打開一張「可編輯的資料卡片」，欄位和原本的「記一筆」／「新增項目」一致
+//   ・三者都是在「確認新增」時才寫入紀錄並正式產生流水號（LINE-SPL／LINE-PTS／LINE-WSH）；沒有人按，就不會有任何紀錄
+//   ・LINE 沒提到、又無法可靠辨識的欄位維持空白；辨識不確定的欄位標「待確認」，儲存前會再提醒一次（和飲料／美食／交通相同）
+// ============================================================
+function draftCore(d){
+  if(d.kind==='sticker')return ((d.fields||{}).card==='mutual')?['points']:['kid','behavior','points'];
+  return DRAFT_CORE[d.kind]||[];
+}
+function draftTodayStr(){const t=new Date();return t.getFullYear()+'-'+p2(t.getMonth()+1)+'-'+p2(t.getDate());}
+function draftNowTimeStr(){const t=new Date();return p2(t.getHours())+':'+p2(t.getMinutes());}
+// 欄位帶入的標示：帶入成功 → 照常標示；沒帶進去、而且伺服器沒有說明原因 → 自己標「待確認」並寫原因
+function draftPutOrForce(m,key,ids,status,note,opt){
+  if(status===true||status==='ok'||status==='custom'||(key in m.unc))m.put(key,ids,status,opt);
+  else m.force(key,ids,note);
+}
+// 紀錄者下拉：App 帳號；LINE 傳訊者不是 App 帳號時多一個選項並標「待確認」（個人流水號會用這個人的代號）
+function draftRecorderSelect(selId,d,m){
+  const sel=drEl(selId);
+  if(!sel)return;
+  const f=d.fields||{};
+  const accts=Object.keys(AUTH_USERS||{});
+  const rec=f.recorder?String(f.recorder):'';
+  const inAcct=!!rec&&accts.indexOf(rec)>=0;
+  let h=accts.map(function(a){return '<option value="'+dEsc(a)+'">'+dEsc(a)+'</option>';}).join('');
+  if(rec&&!inAcct)h+='<option value="'+dEsc(rec)+'">'+dEsc(rec)+'（LINE 傳訊者）</option>';
+  sel.innerHTML=h;
+  if(inAcct){sel.value=rec;m.put('recorder',[selId],true);}
+  else if(rec){sel.value=rec;m.force('recorder',[selId],'LINE 傳訊者「'+rec+'」不是 App 帳號，個人流水號會用「'+getDrinkerPrefix(rec)+'」開頭，請確認紀錄者');}
+  else{
+    if(currentUser&&accts.indexOf(currentUser)>=0)sel.value=currentUser;
+    m.put('recorder',[selId],'skip',{def:true,defNote:'LINE 沒帶到傳訊者，預設為目前登入的帳號'});
+  }
+}
+
+// ---------- 分帳：找群組／選群組 ----------
+// 這張草稿要記在哪個分帳群組？草稿指定的群組找得到（而且只有一個）→ 用它；沒指定、而且只有一個群組 → 用那一個；其他情況 → null（請使用者選）
+function draftSplitGroup(d,gid){
+  const gs=Array.isArray(splitGroups)?splitGroups:[];
+  if(gid){const g=gs.filter(function(x){return x&&x.id===gid;})[0];if(g)return g;}
+  const f=(d&&d.fields)||{};
+  if(f.group){const hit=gs.filter(function(x){return x&&x.name===f.group;});return hit.length===1?hit[0]:null;}
+  return gs.length===1?gs[0]:null;
+}
+function draftSplitPick(d,cb){
+  const gs=(Array.isArray(splitGroups)?splitGroups:[]).filter(function(g){return g&&Array.isArray(g.members)&&g.members.length;});
+  if(!gs.length){toast('分帳裡還沒有可以記帳的群組（群組要有成員），請先到「分帳」新增群組與成員');return;}
+  const old=drEl('dr-pick-sheet');
+  if(old)old.remove();
+  const sheet=document.createElement('div');
+  sheet.id='dr-pick-sheet';
+  sheet.style.cssText='position:fixed;inset:0;z-index:10010;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;touch-action:manipulation';
+  const why=(d.notes&&d.notes.group)||'';
+  sheet.innerHTML='<div style="background:var(--bg);border-radius:20px;width:100%;max-width:360px;max-height:80vh;overflow-y:auto;padding:22px 20px;box-shadow:0 12px 30px rgba(0,0,0,.2)">'
+    +'<div style="font-size:30px;text-align:center;margin-bottom:4px">🧾</div>'
+    +'<div style="font-size:16px;font-weight:900;color:var(--bd);text-align:center;margin-bottom:6px">這筆要記在哪個分帳群組？</div>'
+    +'<div style="font-size:12px;color:var(--t5);line-height:1.7;text-align:center;margin-bottom:12px">'+dEsc(draftBrief(d))+(why?'<br>'+dEsc(why):'')+'</div>'
+    +gs.map(function(g,i){return '<button type="button" data-pick="'+i+'" style="width:100%;text-align:left;padding:12px 14px;border:1px solid var(--bdr);border-radius:12px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px"><span>'+(g.iconImg?'🖼️':dEsc(g.emoji||'🧾'))+' '+dEsc(g.name)+'</span><span style="font-size:11px;color:var(--t5);font-weight:700;white-space:nowrap">'+g.members.length+' 位成員</span></button>';}).join('')
+    +'<button type="button" id="dr-pick-cancel" style="width:100%;padding:12px;border:1px solid var(--bdr);border-radius:12px;background:var(--bg);color:var(--t);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">先不要，回去</button>'
+    +'</div>';
+  document.body.appendChild(sheet);
+  sheet.addEventListener('click',function(e){
+    const b=e.target.closest?e.target.closest('[data-pick]'):null;
+    if(b){const g=gs[Number(b.getAttribute('data-pick'))];sheet.remove();if(g)cb(g.id);return;}
+    if(e.target.id==='dr-pick-cancel'||e.target===sheet)sheet.remove();
+  });
+}
+
+// ---------- 分帳：把草稿帶進「新增支出」表單 ----------
+function draftApplySplit(d,m,opts){
+  opts=opts||{};
+  const f=d.fields||{},t=splitExpTmp;
+  const g=t?splitGroups.filter(function(x){return x&&x.id===t.gid;})[0]:null;
+  const sheet=drEl('split-exp-sheet');
+  if(!t||!g||!sheet)throw new Error('分帳表單沒有打開');
+  // 群組（唯讀）：表單是「記在哪個群組」，放在最上面讓使用者一眼看到
+  const first=sheet.querySelector('.fg');
+  const gRow=document.createElement('div');
+  gRow.className='fg';
+  gRow.innerHTML='<label class="fl">分帳群組</label><div id="se-group-name" class="fi" style="display:flex;align-items:center;gap:8px;font-weight:900;color:var(--bd)">'+(g.iconImg?'🖼️':dEsc(g.emoji||'🧾'))+' '+dEsc(g.name)+'</div>';
+  first.parentNode.insertBefore(gRow,first);
+  if(opts.picked){ // 使用者自己選的群組：不用再確認
+    if(m.unc.group!==undefined)delete m.unc.group;
+    m.put('group',['se-group-name'],true);
+  }else if(f.group){
+    m.put('group',['se-group-name'],true);
+  }else{
+    m.force('group',['se-group-name'],(d.notes&&d.notes.group)||'訊息沒指定群組，暫用你唯一的分帳群組，請確認');
+  }
+  // 類型（支出／收入）
+  if(f.entry==='income'||f.entry==='expense'){setExpKind(f.entry);m.put('entry',['se-kind-exp','se-kind-inc'],true);}
+  // 日期、時間
+  let st=false;
+  if(draftValidDate(f.date)){drEl('se-date').value=f.date;st=true;}
+  m.put('date',['se-date'],st);
+  if(!st)draftBadValue(m,f,'date',['se-date'],'日期');
+  st=false;
+  if(draftValidTime(f.time)){drEl('se-time').value=f.time;st=true;}
+  m.put('time',['se-time'],st);
+  if(!st)draftBadValue(m,f,'time',['se-time'],'時間');
+  // 類別、品項、金額、幣別
+  m.put('cat',['se-cat'],dSetSel('se-cat',f.cat,false),{def:true});
+  m.put('desc',['se-desc'],dSetText('se-desc',f.desc));
+  st=false;
+  if(f.amount!==undefined&&f.amount!==null&&f.amount!==''&&isFinite(Number(f.amount))&&Number(f.amount)>0){drEl('se-amount').value=String(f.amount);st=true;updateCustomSum();}
+  m.put('amount',['se-amount'],st);
+  if(!st)draftBadValue(m,f,'amount',['se-amount'],'金額');
+  const cr=dSetSel('se-cur',f.currency,false);
+  if(cr==='miss')m.force('currency',['se-cur'],'「'+f.currency+'」不在分帳表單的幣別選項內，目前先用「'+drEl('se-cur').value+'」，請自己選');
+  else m.put('currency',['se-cur'],cr,{def:true,defNote:'LINE 沒提到，這是群組的幣別（'+(g.currency||'NT$')+'）'});
+  // 誰先付錢（用名字對成員；對不上就請使用者選，不替他決定）
+  const byName=function(n){return g.members.filter(function(x){return x&&x.name===n;})[0]||null;};
+  const pm=f.payer?byName(f.payer):null;
+  if(pm){drEl('se-payer').value=pm.id;m.put('payer',['se-payer'],true);}
+  else m.force('payer',['se-payer'],((d.notes&&d.notes.payer)||(f.payer?'群組成員裡找不到「'+f.payer+'」，請選擇':'訊息沒提到誰先付錢，請選擇'))+'（表單目前先選了「'+memberName(g,drEl('se-payer').value)+'」，不是 LINE 提供的）');
+  // 付款方式
+  const pr=dSetSel('se-pay',f.payment,false);
+  if(pr==='miss')m.force('payment',['se-pay'],'「'+f.payment+'」不在分帳表單的付款方式選項內，目前先用「'+drEl('se-pay').value+'」，請自己選');
+  else m.put('payment',['se-pay'],pr,{def:true});
+  // 分給誰
+  let pids=null;
+  if(Array.isArray(f.participants)&&f.participants.length){
+    const ids=[],miss=[];
+    f.participants.forEach(function(n){const mm=byName(n);if(mm){if(ids.indexOf(mm.id)<0)ids.push(mm.id);}else miss.push(n);});
+    if(ids.length)pids=ids;
+    if(miss.length)m.force('participants',['se-parts'],'群組成員裡找不到「'+miss.join('、')+'」'+(ids.length?'，其他人已帶入':'，先預設全部成員均分')+'，請確認');
+    else m.put('participants',['se-parts'],true);
+  }else if(f.splitAll){
+    m.put('participants',['se-parts'],true);
+  }else{
+    m.put('participants',['se-parts'],'skip',{def:true,defNote:'LINE 沒提到，這是表單原本的預設（全部成員均分）'});
+  }
+  if(pids){t.participantIds=pids;renderPartChecks();if(t.splitType==='custom')renderCustomShares();}
+  // 紀錄者：表單原本沒有這一欄，只有從 LINE 草稿開出來的表單才加上（個人流水號要用到）
+  const noteFg=drEl('se-note')?drEl('se-note').closest('.fg'):null;
+  if(noteFg){
+    const rRow=document.createElement('div');
+    rRow.className='fg';
+    rRow.innerHTML='<label class="fl">紀錄者</label><select class="fi fsel" id="se-recorder"></select>';
+    noteFg.parentNode.insertBefore(rRow,noteFg);
+    draftRecorderSelect('se-recorder',d,m);
+  }
+  m.put('note',['se-note'],dSetText('se-note',f.note));
+}
+
+// ============================================================
+// 🌟📍 集點卡／待去清單：可編輯的資料卡片（打開後欄位已經帶好，核對、修改，按【確認新增】才寫入）
+// ============================================================
+const DRAFT_INLINE={sticker:true,wish:true};
+function draftIsInline(kind){return !!DRAFT_INLINE[kind];}
+const DRAFT_ED_ID='dr-ed-modal';
+function draftEdRow(label,inner){return '<div class="fg"><label class="fl">'+label+'</label>'+inner+'</div>';}
+function draftStickerFormHtml(){
+  const kids=Array.isArray(stickerKids)?stickerKids:[];
+  const behs=Array.isArray(stickerBehaviors)?stickerBehaviors:[];
+  return draftEdRow('集點卡','<select class="fi fsel" id="dr-ed-card"><option value="kid">👶 乖寶寶集點卡</option><option value="mutual">💑 互助集點卡</option></select>')
+    +'<div id="dr-ed-kidwrap">'
+    +draftEdRow('孩子','<select class="fi fsel" id="dr-ed-kid"><option value="">請選擇</option>'+kids.map(function(k){return '<option value="'+dEsc(k.id)+'">'+dEsc(k.name)+'</option>';}).join('')+'</select>')
+    +draftEdRow('行為','<select class="fi fsel" id="dr-ed-behavior"><option value="">請選擇</option>'+behs.map(function(b){return '<option value="'+dEsc(b.id)+'">'+dEsc(b.name)+'（+'+dEsc(b.points)+'）</option>';}).join('')+'<option value="__c">✍️ 自訂行為（不在清單內）</option></select><input class="fi" id="dr-ed-behavior-c" placeholder="行為名稱" style="display:none;margin-top:6px">')
+    +'</div>'
+    +draftEdRow('點數（加點填正數、扣點填負數）','<input class="fi" id="dr-ed-points" type="number" inputmode="decimal" step="any" placeholder="例如 1 或 -2">')
+    +draftEdRow('日期','<input class="fi" id="dr-ed-date" type="date">')
+    +draftEdRow('時間','<input class="fi" id="dr-ed-time" type="time">')
+    +draftEdRow('紀錄者','<select class="fi fsel" id="dr-ed-recorder"></select>')
+    +draftEdRow('原因／備註','<input class="fi" id="dr-ed-note" placeholder="選填">');
+}
+// 待去清單頁裡「提議者」「來源」的建議選項（頁面管理設定 + 已有項目用過的）
+function draftWishOpts(){
+  const out={proposer:[],source:[],status:[]};
+  let S={};
+  try{S=JSON.parse(localStorage.getItem('wishlist_mgmt_v2')||'{}')||{};}catch(e){S={};}
+  const o=(S&&S.opts)||{};
+  ['proposer','source','status'].forEach(function(k){
+    (Array.isArray(o[k])?o[k]:[]).forEach(function(x){if(x&&x.name&&x.on!==false&&out[k].indexOf(String(x.name))<0)out[k].push(String(x.name));});
+  });
+  wishReadItems().forEach(function(it){['proposer','source'].forEach(function(k){const v=it&&it[k];if(v&&typeof v==='string'&&out[k].indexOf(v)<0)out[k].push(v);});});
+  return out;
+}
+function draftWishFormHtml(){
+  const w=wishLoad(),opts=draftWishOpts();
+  const dl=function(id,arr){return '<datalist id="'+id+'">'+arr.map(function(x){return '<option value="'+dEsc(x)+'"></option>';}).join('')+'</datalist>';};
+  const sts=['待去','已安排','暫不去','取消'];
+  opts.status.forEach(function(x){if(sts.indexOf(x)<0&&x!=='已完成')sts.push(x);});
+  return draftEdRow('分類','<select class="fi fsel" id="dr-ed-category">'+w.categories.map(function(c){return '<option value="'+dEsc(c.name)+'">'+dEsc((c.icon?c.icon+' ':'')+c.name)+'</option>';}).join('')+'</select>')
+    +draftEdRow('項目名稱（必填）','<input class="fi" id="dr-ed-name" placeholder="店家、景點名稱">')
+    +draftEdRow('國家／地區','<input class="fi" id="dr-ed-country">')
+    +draftEdRow('城市／地區','<input class="fi" id="dr-ed-city">')
+    +draftEdRow('詳細地點／商家','<input class="fi" id="dr-ed-detailPlace">')
+    +draftEdRow('推薦原因','<textarea class="fi" id="dr-ed-reason" rows="2"></textarea>')
+    +draftEdRow('備註','<textarea class="fi" id="dr-ed-notes" rows="2"></textarea>')
+    +draftEdRow('來源','<input class="fi" id="dr-ed-source" list="dr-ed-dl-source">'+dl('dr-ed-dl-source',opts.source))
+    +draftEdRow('推薦指數','<select class="fi fsel" id="dr-ed-rating"><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option></select>')
+    +draftEdRow('提議者（必填）','<input class="fi" id="dr-ed-proposer" list="dr-ed-dl-proposer">'+dl('dr-ed-dl-proposer',opts.proposer))
+    +draftEdRow('提議日期（必填）','<input class="fi" id="dr-ed-suggestDate" type="date"><div id="dr-ed-sdnote" style="font-size:10px;color:var(--t5);margin-top:3px"></div>')
+    +draftEdRow('狀態','<select class="fi fsel" id="dr-ed-status">'+sts.map(function(s){return '<option value="'+dEsc(s)+'">'+dEsc(s)+'</option>';}).join('')+'</select>')
+    +draftEdRow('預計時間','<input class="fi" id="dr-ed-targetTime" placeholder="例如 2027年3月、未定">')
+    +draftEdRow('紀錄者','<select class="fi fsel" id="dr-ed-recorder"></select>');
+}
+function draftStickerToggle(){
+  const cs=drEl('dr-ed-card');
+  if(!cs)return;
+  const mut=cs.value==='mutual';
+  const kw=drEl('dr-ed-kidwrap');
+  if(kw)kw.style.display=mut?'none':'';
+  const bs=drEl('dr-ed-behavior'),bc=drEl('dr-ed-behavior-c');
+  if(bs&&bc)bc.style.display=(!mut&&bs.value==='__c')?'':'none';
+}
+function draftInlineOpen(d){
+  const old=drEl(DRAFT_ED_ID);
+  if(old)old.remove();
+  const k=DRAFT_KINDS[d.kind];
+  const m=document.createElement('div');
+  m.id=DRAFT_ED_ID;
+  m.innerHTML='<div class="dr-ed" role="dialog" aria-label="'+dEsc(k.name)+'資料卡片">'
+    +'<div class="dr-ed-hd"><span>📝 '+k.icon+' '+dEsc(k.name)+'・確認內容</span><button type="button" class="dr-cd-x" data-dr-ed="close" aria-label="關閉">✕</button></div>'
+    +'<div class="dr-ed-body">'+(d.kind==='sticker'?draftStickerFormHtml():draftWishFormHtml())+'</div>'
+    +'<div class="dr-ed-act"><button type="button" class="dr-cd-btn pri" data-dr-ed="save">✅ 確認新增</button></div>'
+    +'</div>';
+  m.addEventListener('click',function(e){
+    const b=e.target.closest?e.target.closest('[data-dr-ed]'):null;
+    if(!b)return;
+    const act=b.getAttribute('data-dr-ed');
+    if(act==='close')draftInlineClose();
+    else if(act==='save'){if(d.kind==='sticker')saveStickerDraft();else saveWishDraft();}
+  });
+  document.body.appendChild(m);
+  if(d.kind==='sticker'){
+    const cs=drEl('dr-ed-card'),bs=drEl('dr-ed-behavior');
+    if(cs)cs.addEventListener('change',draftStickerToggle);
+    if(bs)bs.addEventListener('change',function(){
+      draftStickerToggle();
+      const pe=drEl('dr-ed-points');
+      const b=(stickerBehaviors||[]).filter(function(x){return x&&x.id===bs.value;})[0];
+      if(b&&pe&&!pe.value&&Number(b.points)){pe.value=String(Number(b.points));pe.dispatchEvent(new Event('input',{bubbles:true}));} // 選了清單裡的行為、點數還空著 → 帶入這個行為在 App 設定的點數
+    });
+  }
+}
+function draftInlineClose(){
+  const m=drEl(DRAFT_ED_ID);
+  if(m)m.remove();
+  const c=draftCtx;
+  if(c&&draftIsInline(c.kind))draftFormClosed(c.kind);
+}
+
+// ---------- 集點卡：帶入 ----------
+function draftApplySticker(d,m){
+  const f=d.fields||{};
+  const isMut=f.card==='mutual';
+  drEl('dr-ed-card').value=isMut?'mutual':'kid';
+  if(!isMut){
+    const kid=f.kid?(stickerKids||[]).filter(function(k){return k&&k.name===f.kid;})[0]:null;
+    if(kid)drEl('dr-ed-kid').value=kid.id;
+    draftPutOrForce(m,'kid',['dr-ed-kid'],kid?true:(f.kid?'miss':'skip'),f.kid?'集點卡裡找不到叫「'+f.kid+'」的孩子，請選擇':'訊息沒指定是哪個孩子，請選擇');
+    if(f.behavior){
+      const b=(stickerBehaviors||[]).filter(function(x){return x&&x.name===f.behavior;})[0];
+      if(b){drEl('dr-ed-behavior').value=b.id;m.put('behavior',['dr-ed-behavior','dr-ed-behavior-c'],true);}
+      else{
+        drEl('dr-ed-behavior').value='__c';
+        drEl('dr-ed-behavior-c').value=f.behavior;
+        m.put('behavior',['dr-ed-behavior','dr-ed-behavior-c'],'custom',{value:f.behavior,customNote:'行為清單裡沒有「'+f.behavior+'」，儲存時會當成自訂行為記錄，請確認'});
+      }
+    }else{
+      draftPutOrForce(m,'behavior',['dr-ed-behavior','dr-ed-behavior-c'],'skip','訊息沒提到是哪個行為，請選擇');
+    }
+  }
+  draftStickerToggle();
+  const pn=Number(f.points);
+  if(f.points!==undefined&&f.points!==null&&f.points!==''&&isFinite(pn)&&pn!==0){drEl('dr-ed-points').value=String(pn);m.put('points',['dr-ed-points'],true);}
+  else draftPutOrForce(m,'points',['dr-ed-points'],'skip','訊息沒提到點數，請輸入');
+  let st=false;
+  if(draftValidDate(f.date)){drEl('dr-ed-date').value=f.date;st=true;}
+  else drEl('dr-ed-date').value=draftTodayStr();
+  m.put('date',['dr-ed-date'],st,{def:true,defNote:'LINE 沒帶到日期，先用今天'});
+  if(!st)draftBadValue(m,f,'date',['dr-ed-date'],'日期');
+  st=false;
+  if(draftValidTime(f.time)){drEl('dr-ed-time').value=f.time;st=true;}
+  else drEl('dr-ed-time').value=draftNowTimeStr();
+  m.put('time',['dr-ed-time'],st,{def:true,defNote:'LINE 沒帶到時間，先用現在'});
+  if(!st)draftBadValue(m,f,'time',['dr-ed-time'],'時間');
+  m.put('note',['dr-ed-note'],dSetText('dr-ed-note',f.note));
+  draftRecorderSelect('dr-ed-recorder',d,m);
+}
+// 檢查並收集卡片上的內容（儲存前的檢查與實際儲存共用）：回傳 {err,id}（哪裡有問題）或 {data}
+function draftStickerCollect(){
+  const g=function(id){const el=drEl(id);return el?String(el.value==null?'':el.value).trim():'';};
+  const o={card:g('dr-ed-card')==='mutual'?'mutual':'kid'};
+  if(o.card==='kid'){
+    const kid=(stickerKids||[]).filter(function(k){return k&&k.id===g('dr-ed-kid');})[0];
+    if(!kid)return {err:'請選擇孩子',id:'dr-ed-kid'};
+    o.kidId=kid.id;
+    const bv=g('dr-ed-behavior');
+    if(bv==='__c'){
+      o.behaviorId='';o.behaviorName=g('dr-ed-behavior-c');
+      if(!o.behaviorName)return {err:'請輸入行為名稱',id:'dr-ed-behavior-c'};
+    }else{
+      const b=(stickerBehaviors||[]).filter(function(x){return x&&x.id===bv;})[0];
+      if(!b)return {err:'請選擇行為',id:'dr-ed-behavior'};
+      o.behaviorId=b.id;o.behaviorName=b.name;
+    }
+  }
+  const pv=g('dr-ed-points'),pts=Number(pv);
+  if(pv===''||!isFinite(pts)||pts===0)return {err:'請輸入點數（加點填正數、扣點填負數，不能是 0）',id:'dr-ed-points'};
+  o.points=Math.round(pts*100)/100;
+  o.date=g('dr-ed-date');
+  if(!o.date||!draftValidDate(o.date))return {err:'請選擇正確的日期',id:'dr-ed-date'};
+  o.time=g('dr-ed-time');
+  if(o.time&&!draftValidTime(o.time))return {err:'時間格式不正確',id:'dr-ed-time'};
+  o.recorder=g('dr-ed-recorder');
+  if(!o.recorder)return {err:'請選擇紀錄者',id:'dr-ed-recorder'};
+  o.note=g('dr-ed-note');
+  return {data:o};
+}
+function saveStickerDraft0(){
+  const c=draftCtx;
+  if(!c||c.kind!=='sticker')return;
+  const r=draftStickerCollect();
+  if(r.err){toast('⚠️ '+r.err);return;}
+  const x=r.data;
+  let rec;
+  if(x.card==='kid')rec={id:uid(),kidId:x.kidId,behaviorId:x.behaviorId,behaviorName:x.behaviorName,points:x.points,date:x.date,time:x.time,recorder:x.recorder,note:x.note};
+  else rec={id:uid(),actor:x.recorder,forWhom:'',amount:x.points,note:x.note,date:x.date,time:x.time,recorder:x.recorder};
+  rec.lineKey=c.lineKey;rec.draftId=c.id;
+  snIssue('sticker',rec); // 流水號在這裡配發：最大號 + 1（乖寶寶與互助兩張卡一起算）
+  if(x.card==='kid'){stickerEvents.unshift(rec);if(!saveStickerEvents()){stickerEvents.shift();return;}}
+  else{mutualEvents.unshift(rec);if(!saveMutualEvents()){mutualEvents.shift();return;}}
+  try{const sm=drEl('sticker-modal');if(sm&&sm.style.display!=='none')renderStickerCard();}catch(_){}
+  draftInlineClose();
+}
+function saveStickerDraft(){return draftSaveWrap('sticker',saveStickerDraft0,function(){const r=draftStickerCollect();return r.err?r:null;});}
+
+// ---------- 待去清單：帶入 ----------
+function draftApplyWish(d,m){
+  const f=d.fields||{};
+  draftPutOrForce(m,'category',['dr-ed-category'],dSetSel('dr-ed-category',f.category,false),f.category?'分類「'+f.category+'」不在你的待去清單分類裡，請選擇':'訊息沒提到分類，請選擇');
+  [['name','dr-ed-name'],['country','dr-ed-country'],['city','dr-ed-city'],['detailPlace','dr-ed-detailPlace'],['reason','dr-ed-reason'],['notes','dr-ed-notes'],['source','dr-ed-source'],['targetTime','dr-ed-targetTime']].forEach(function(p){
+    m.put(p[0],[p[1]],dSetText(p[1],f[p[0]]));
+  });
+  // 提議者：必填，LINE 不會知道是誰提議的 → 留白，請使用者自己填（不替他決定）
+  if(f.proposer){drEl('dr-ed-proposer').value=String(f.proposer);m.put('proposer',['dr-ed-proposer'],true);}
+  else m.force('proposer',['dr-ed-proposer'],'提議者是必填欄位，LINE 沒有提到，請自己填');
+  m.put('rating',['dr-ed-rating'],dSetSel('dr-ed-rating',f.rating!==undefined?String(f.rating):undefined,false),{def:true,defNote:'LINE 沒提到，預設推薦 5 顆星'});
+  m.put('status',['dr-ed-status'],dSetSel('dr-ed-status',f.status,false),{def:true,defNote:'新增的地點，狀態預設「待去」'});
+  let st=false;
+  if(draftValidDate(f.suggestDate)){drEl('dr-ed-suggestDate').value=f.suggestDate;st=true;}
+  else drEl('dr-ed-suggestDate').value=draftTodayStr();
+  m.put('suggestDate',['dr-ed-suggestDate'],st,{def:true,defNote:'LINE 沒帶到日期，先用今天'});
+  if(!st)draftBadValue(m,f,'suggestDate',['dr-ed-suggestDate'],'提議日期');
+  const sn=drEl('dr-ed-sdnote');
+  if(sn)sn.textContent=f.suggestTime?('LINE 傳送時間 '+f.suggestTime+'（會一併記錄）'):'';
+  draftRecorderSelect('dr-ed-recorder',d,m);
+}
+function draftWishCollect(){
+  const v=function(id){const el=drEl(id);return el?String(el.value==null?'':el.value).trim():'';};
+  const name=v('dr-ed-name');
+  if(!name)return {err:'請填項目名稱',id:'dr-ed-name'};
+  const category=v('dr-ed-category');
+  if(!category)return {err:'請選擇分類',id:'dr-ed-category'};
+  const proposer=v('dr-ed-proposer');
+  if(!proposer)return {err:'請填提議者（待去清單的必填欄位，LINE 不知道是誰提議的）',id:'dr-ed-proposer'};
+  const suggestDate=v('dr-ed-suggestDate');
+  if(!suggestDate||!draftValidDate(suggestDate))return {err:'請選擇正確的提議日期',id:'dr-ed-suggestDate'};
+  const recorder=v('dr-ed-recorder');
+  if(!recorder)return {err:'請選擇紀錄者',id:'dr-ed-recorder'};
+  return {data:{name:name,category:category,country:v('dr-ed-country'),city:v('dr-ed-city'),detailPlace:v('dr-ed-detailPlace'),reason:v('dr-ed-reason'),notes:v('dr-ed-notes'),source:v('dr-ed-source'),rating:parseInt(v('dr-ed-rating'),10)||5,proposer:proposer,suggestDate:suggestDate,status:v('dr-ed-status')||'待去',targetTime:v('dr-ed-targetTime'),recorder:recorder}};
+}
+function saveWishDraft0(){
+  const c=draftCtx;
+  if(!c||c.kind!=='wish')return;
+  const d=draftById(c.id);
+  if(!d)return;
+  const r=draftWishCollect();
+  if(r.err){toast('⚠️ '+r.err);return;}
+  const x=r.data;
+  if(drEl('wishlist-modal')){try{closeWishlist();}catch(_){}} // 待去清單頁開著時先關掉，避免它之後用舊資料蓋掉剛新增的項目
+  const w=wishLoad();
+  const catObj=w.categories.filter(function(cc){return cc&&cc.name===x.category;})[0];
+  if(!catObj){toast('⚠️ 待去清單裡沒有「'+x.category+'」這個分類，請重新選擇');return;}
+  const seq=wishAllocSeq(w,catObj,x.country,x.city); // 待去清單原本的分類／國家／城市／總流水號，規則和待去清單頁「新增項目」相同
+  let id=Date.now();
+  while(w.wishItems.some(function(i){return i&&i.id===id;}))id++;
+  const item={id:id,category:x.category,name:x.name,country:x.country,city:x.city,detailPlace:x.detailPlace,openHours:'',
+    hoursDetail:{todayStatus:'',times:'',restDays:'',lastOrder:'',phone:'',website:'',booking:'',serviceTime:'',specialTime:'',changes:'',updatedDate:''},
+    reason:x.reason,notes:x.notes,source:x.source,rating:x.rating,proposer:x.proposer,suggestDate:x.suggestDate,status:x.status,targetTime:x.targetTime,
+    completedDate:'',completedTime:'',lat:null,lng:null,categorySeq:seq.categorySeq,countrySeq:seq.countrySeq,citySeq:seq.citySeq,totalSeq:seq.totalSeq};
+  const f=d.fields||{};
+  if(f.suggestTime)item.suggestTime=f.suggestTime;
+  item.recorder=x.recorder;
+  item.lineKey=c.lineKey;item.draftId=c.id;
+  snIssue('wish',item); // LINE 流水號：最大號 + 1（年份依提議日期）
+  w.wishItems.unshift(item);
+  if(!wishSaveAll(w))return;
+  draftInlineClose();
+}
+function saveWishDraft(){return draftSaveWrap('wish',saveWishDraft0,function(){const r=draftWishCollect();return r.err?r:null;});}
+
+
+function draftOpenForm(kind){
+  if(kind==='drink')openForm(null,null);
+  else if(kind==='food')openMealForm(null,null);
+  else openTravelForm(null);
+}
+function draftCloseForm(c){
+  if(!c)return;
+  if(c.kind==='drink')closeForm();
+  else if(c.kind==='food')closeMealForm();
+  else if(c.kind==='split')closeExpSheet();
+  else if(draftIsInline(c.kind))draftInlineClose();
+  else closeTravelForm();
+}
+function openDraft(id,opts){
+  opts=opts||{};
+  draftsReload();
+  const d=draftById(id);
+  if(!d){toast('找不到這張草稿');draftsRender();return;}
+  if(d.status!=='pending'){toast('這張草稿已經處理過了');draftsRender();return;}
+  const hit=draftFindRecord(d);
+  if(hit){ // 已經有紀錄帶著這張草稿的標記：不重複建立
+    draftMarkSaved(d,hit);
+    toast('這張草稿已經儲存過了，不會重複建立');
+    draftsRender();
+    return;
+  }
+  // 分帳：先確定記在哪個群組（草稿指定的群組找得到就直接用；找不到、有好幾個同名、或訊息沒指定而且不只一個群組時，請使用者選）
+  let gid=opts.gid||'';
+  if(d.kind==='split'&&!gid){
+    const sg=draftSplitGroup(d);
+    if(sg)gid=sg.id;
+    else{draftSplitPick(d,function(pid){openDraft(id,Object.assign({},opts,{gid:pid,picked:true}));});return;}
+  }
+  closeDrafts();
+  draftOpening=true;
+  try{
+    draftClear();
+    if(d.kind==='split')openExpenseSheet(gid);
+    else if(draftIsInline(d.kind))draftInlineOpen(d);
+    else draftOpenForm(d.kind);
+  }finally{draftOpening=false;}
+  if(d.kind==='split'&&!drEl('split-exp-sheet')){ // 表單沒打開（例如群組還沒有成員，已經有提示）：草稿維持原樣
+    if(opts.fromInbox)openDrafts();
+    return;
+  }
+  const c={id:d.id,kind:d.kind,lineKey:d.lineKey,fromInbox:!!opts.fromInbox,saving:false,applying:true,closedInSave:false,marks:{},cleanups:[]};
+  draftCtx=c;
+  try{
+    const m=draftMarker(d);
+    if(d.kind==='drink')draftApplyDrink(d,m);
+    else if(d.kind==='food')draftApplyMeal(d,m);
+    else if(d.kind==='split')draftApplySplit(d,m,{picked:!!opts.picked});
+    else if(d.kind==='sticker')draftApplySticker(d,m);
+    else if(d.kind==='wish')draftApplyWish(d,m);
+    else draftApplyTravel(d,m);
+    draftDecorate(c,m.list);
+    draftBannerMount(d,c);
+    draftPaint();
+    try{if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();}catch(_){}
+  }catch(err){
+    console.error('草稿帶入失敗',err);
+    // 帶入失敗：不要留下半套的表單 → 關掉表單、清掉狀態，草稿本身沒有被動到
+    c.applying=false;
+    c.saving=false;
+    draftCtx=null;
+    try{draftCloseForm(c);}catch(_){}
+    draftClear();
+    toast('⚠️ 草稿帶入失敗，草稿沒有被刪除，請稍後再試');
+    if(opts.fromInbox)openDrafts();
+    return;
+  }
+  c.applying=false;
+}
+
+// ---------- 欄位標示（LINE 帶入／預設／待確認）----------
+function dLabelOf(el){
+  let n=el;
+  for(let i=0;i<5&&n&&n.parentElement;i++){
+    n=n.parentElement;
+    const kids=n.children;
+    for(let j=0;j<kids.length;j++){
+      const k=kids[j];
+      if(k.tagName==='LABEL'||(k.classList&&(k.classList.contains('dtl-cell-label')||k.classList.contains('fl'))))return k;
+    }
+    if(n.classList&&(n.classList.contains('form-panel')||n.classList.contains('fp-body')))break;
+  }
+  return null;
+}
+function dBoxOf(el){return (el.closest&&el.closest('.dtl-cell, .loc-row'))||el;}
+function draftDecorate(c,list){
+  list.forEach(function(it){
+    const els=it.ids.map(function(x){return typeof x==='string'?drEl(x):x;}).filter(Boolean);
+    if(!els.length)return;
+    let mk=c.marks[it.key];
+    if(!mk){mk=c.marks[it.key]={key:it.key,state:it.state,note:it.note||'',acked:false,items:[]};}
+    else if(it.state==='unc'){mk.state='unc';mk.note=it.note||mk.note;}
+    const box=it.box||dBoxOf(els[0]);
+    const label=it.label||dLabelOf(els[0]);
+    const tag=document.createElement('span');
+    tag.className='dr-tag';
+    tag.setAttribute('data-dr-key',it.key);
+    tag.addEventListener('click',function(ev){
+      ev.preventDefault();ev.stopPropagation();
+      if(!draftCtx||draftCtx.id!==c.id)return;
+      const cur=draftCtx.marks[it.key];
+      if(cur&&cur.state==='unc')draftAck(it.key,!cur.acked);
+    });
+    if(label)label.appendChild(tag);
+    else if(box&&box.parentNode)box.parentNode.insertBefore(tag,box);
+    mk.items.push({tag:tag,box:box,solo:!label});
+    if(it.state==='unc'){
+      const onEdit=function(){if(draftCtx&&draftCtx.id===c.id&&!draftCtx.applying)draftAck(it.key,true);};
+      els.forEach(function(el){
+        const isField=/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName);
+        const evs=isField?['input','change']:['click'];
+        evs.forEach(function(ev){
+          el.addEventListener(ev,onEdit);
+          c.cleanups.push(function(){el.removeEventListener(ev,onEdit);});
+        });
+      });
+    }
+  });
+}
+function draftAck(key,on){
+  const c=draftCtx;
+  if(!c||!c.marks[key])return;
+  c.marks[key].acked=!!on;
+  draftPaint();
+}
+function draftPaint(){
+  const c=draftCtx;
+  if(!c)return;
+  Object.keys(c.marks).forEach(function(k){
+    const mk=c.marks[k];
+    mk.items.forEach(function(it){
+      let cls='dr-tag',txt='';
+      if(mk.state==='fill'){cls+=' fill';txt='LINE';}
+      else if(mk.state==='def'){cls+=' def';txt='預設';}
+      else if(mk.acked){cls+=' ok';txt='✔ 已確認';}
+      else{cls+=' unc';txt='⚠ 待確認';}
+      it.tag.className=cls;
+      it.tag.textContent=(it.solo?draftLabel(c.kind,k)+'：':'')+txt;
+      it.tag.title=mk.note||'';
+      if(it.box){
+        if(mk.state==='unc'&&!mk.acked)it.box.classList.add('dr-unc');
+        else it.box.classList.remove('dr-unc');
+      }
+    });
+  });
+  draftBannerRender();
+}
+function draftUnacked(c){
+  const out=[];
+  Object.keys(c.marks).forEach(function(k){
+    const mk=c.marks[k];
+    if(mk.state==='unc'&&!mk.acked)out.push({key:k,labelText:draftLabel(c.kind,k),note:mk.note});
+  });
+  return out;
+}
+function draftAckAll(c){Object.keys(c.marks).forEach(function(k){if(c.marks[k].state==='unc')c.marks[k].acked=true;});draftPaint();}
+function draftGoto(key){
+  const c=draftCtx;
+  if(!c||!c.marks[key])return;
+  if(c.kind==='food'&&(key==='spicy'||key==='diningType'))draftExpandSpicy();
+  const items=c.marks[key].items;
+  let it=null;
+  for(let i=0;i<items.length;i++){if(items[i].box&&items[i].box.offsetParent!==null){it=items[i];break;}}
+  if(!it)it=items[0];
+  if(!it||!it.box)return;
+  if(typeof it.box.scrollIntoView==='function'){try{it.box.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){it.box.scrollIntoView();}}
+  it.box.classList.remove('dr-flash');
+  void it.box.offsetWidth;
+  it.box.classList.add('dr-flash');
+}
+
+// ---------- 表單上方的說明橫幅 ----------
+const DRAFT_FORM_ID={drink:'fo',food:'meal-fo',travel:'travel-fo'};
+function draftBannerMount(d,c){
+  let wrap=null,hdr=null;
+  if(d.kind==='split'){wrap=document.querySelector('#split-exp-sheet > div');hdr=wrap?wrap.firstElementChild:null;}
+  else if(draftIsInline(d.kind)){wrap=document.querySelector('#'+DRAFT_ED_ID+' .dr-ed');hdr=wrap?wrap.querySelector('.dr-ed-hd'):null;}
+  else{wrap=document.querySelector('#'+DRAFT_FORM_ID[d.kind]+' .fs-wrap');hdr=wrap?wrap.querySelector('.fs-hdr'):null;}
+  if(!wrap)return;
+  const old=drEl('dr-banner');
+  if(old)old.remove();
+  const b=document.createElement('div');
+  b.id='dr-banner';
+  b.className='dr-banner';
+  b.addEventListener('click',function(ev){
+    const t=ev.target.closest?ev.target.closest('[data-dr-bact]'):null;
+    if(!t)return;
+    const act=t.getAttribute('data-dr-bact'),key=t.getAttribute('data-dr-key')||'';
+    if(act==='goto')draftGoto(key);
+    else if(act==='ack')draftAck(key,true);
+    else if(act==='discard'&&draftCtx)draftDiscard(draftCtx.id,true);
+    else if(act==='toggle'&&draftCtx){draftCtx.bannerCollapsed=!draftCtx.bannerCollapsed;draftBannerRender();}
+  });
+  if(hdr&&hdr.nextSibling)wrap.insertBefore(b,hdr.nextSibling);else wrap.appendChild(b);
+  c.banner=b;
+}
+function draftBannerRender(){
+  const c=draftCtx;
+  if(!c||!c.banner)return;
+  const d=draftById(c.id);
+  if(!d)return;
+  const f=d.fields||{};
+  const unc=Object.keys(c.marks).filter(function(k){return c.marks[k].state==='unc';});
+  const open=unc.filter(function(k){return !c.marks[k].acked;});
+  const collapsed=!!c.bannerCollapsed;
+  const multi=(Number(d.itemCount)>1)?('　第 '+(Number(d.itemIndex)+1)+'／'+d.itemCount+' 張（同一則訊息的其他品項是各自獨立的草稿）'):'';
+  let h='<div class="dr-b-top"><div><b>📝 LINE 待確認草稿</b><span class="dr-b-st">尚未儲存</span></div>'
+    +'<div class="dr-b-btns"><button type="button" class="dr-b-btn" data-dr-bact="toggle">'+(collapsed?'▾ 展開':'▴ 收合')+'</button><button type="button" class="dr-b-btn" data-dr-bact="discard">🗑 捨棄草稿</button></div></div>';
+  if(collapsed){ // 收合：只留一行狀態，把畫面讓給表單
+    h+='<div class="dr-b-src">'+(open.length?'<b>⚠ 還有 '+open.length+' 個欄位待確認</b>':(unc.length?'✔ 待確認的欄位都確認過了':'請檢查表單內容，沒問題再儲存'))+'　（點「展開」看明細）</div>';
+    c.banner.innerHTML=h;
+    return;
+  }
+  h+='<div class="dr-b-src">'+dEsc(draftWhen(d))+(d.userName?'・'+dEsc(d.userName):'')+(d.groupName?'・群組「'+dEsc(d.groupName)+'」':'')+dEsc(multi)+(d.rawText?'<div class="dr-b-raw">原文：「'+dEsc(String(d.rawText).slice(0,120))+'」</div>':'')+'</div>';
+  if(unc.length){
+    h+='<div class="dr-b-sec"><b>'+(open.length?'⚠ 還有 '+open.length+' 個欄位待確認':'✔ 待確認的欄位都確認過了')+'</b>（點欄位旁的標籤，或直接修改，就算確認）</div>';
+    unc.forEach(function(k){
+      const mk=c.marks[k];
+      h+='<div class="dr-b-item'+(mk.acked?' dr-b-ok':'')+'"><span>'+(mk.acked?'✔':'⚠')+'</span><span><b>'+dEsc(draftLabel(c.kind,k))+'</b>'+(mk.note?'：'+dEsc(mk.note):'')+'</span>'
+        +'<button type="button" class="go" data-dr-bact="goto" data-dr-key="'+dEsc(k)+'">前往</button>'
+        +(mk.acked?'':'<button type="button" class="go" data-dr-bact="ack" data-dr-key="'+dEsc(k)+'">沒問題</button>')+'</div>';
+    });
+  }
+  const blank=draftCore(d).filter(function(k){
+    if(k==='type')return false;
+    return f[k]===undefined||f[k]===null||f[k]==='';
+  }).map(function(k){return draftLabel(d.kind,k);});
+  if(blank.length)h+='<div class="dr-b-sec">LINE 沒提到、已留白：'+blank.map(dEsc).join('、')+'（需要的話請自己補上）</div>';
+  const um=d.unmapped||{};
+  const umKeys=Object.keys(um).filter(function(k){return um[k];});
+  if(umKeys.length){
+    h+='<div class="dr-b-sec">ℹ️ 訊息有提到、但這張表單沒有對應欄位，所以沒有帶入：'+umKeys.map(function(k){return dEsc(draftLabel(d.kind,k))+'＝'+dEsc(um[k]);}).join('、')+'</div>';
+  }
+  h+='<div class="dr-b-legend"><span class="dr-tag fill" style="margin-left:0">LINE</span> 從訊息帶入　<span class="dr-tag def">預設</span> LINE 沒提到、表單原本的預設值　<span class="dr-tag unc">⚠ 待確認</span> 請檢查</div>';
+  h+='<div class="dr-b-hint">檢查沒問題後，按下方「儲存」才會建立紀錄並產生流水號。先關掉表單也沒關係，草稿會留在「LINE 待確認草稿」。</div>';
+  c.banner.innerHTML=h;
+}
+
+// ---------- 清除 ----------
+function draftClear(){
+  const c=draftCtx;
+  if(c&&c.cleanups){c.cleanups.forEach(function(fn){try{fn();}catch(_){}});}
+  try{
+    const b=drEl('dr-banner');if(b)b.remove();
+    document.querySelectorAll('.dr-tag').forEach(function(t){t.remove();});
+    document.querySelectorAll('.dr-unc').forEach(function(e){e.classList.remove('dr-unc');});
+    document.querySelectorAll('.dr-flash').forEach(function(e){e.classList.remove('dr-flash');});
+    const cs=drEl('dr-confirm-sheet');if(cs)cs.remove();
+  }catch(_){}
+  draftCtx=null;
+}
+// 表單被打開（不是由草稿打開的）→ 清掉前一次殘留的草稿狀態，確保一般的新增紀錄完全不受影響
+function draftOnOpen(kind){
+  try{if(draftOpening)return;if(draftCtx||drEl('dr-banner'))draftClear();}catch(e){}
+}
+// 表單被關閉
+function draftFormClosed(kind){
+  try{
+    const c=draftCtx;
+    if(!c||c.kind!==kind)return;
+    if(c.saving){c.closedInSave=true;return;} // 儲存成功時表單會自己關閉：等儲存流程收尾
+    const again=c.fromInbox;
+    draftClear();
+    if(again)setTimeout(function(){openDrafts();},60);
+  }catch(e){}
+}
+
+// ---------- 儲存把關 ----------
+// 三個「儲存」按鈕都改成先經過這裡。不是草稿開出來的表單完全照原本的流程。
+function draftSaveWrap(kind,orig,pre){
+  const c=draftCtx;
+  if(!c||c.kind!==kind||c.saving)return orig();
+  draftsReload();
+  const d=draftById(c.id);
+  if(!d||d.status!=='pending'){
+    toast('這張草稿已經處理過了，不會重複儲存');
+    const again=c.fromInbox;
+    draftClear();
+    draftCloseFormSafe(kind);
+    if(again)setTimeout(function(){openDrafts();},60);
+    return;
+  }
+  if(typeof pre==='function'){ // 必填欄位還沒填好：先告訴使用者，不要先跳「待確認」視窗
+    const bad=pre();
+    if(bad){
+      toast('⚠️ '+bad.err);
+      const el=bad.id?drEl(bad.id):null;
+      if(el){try{if(el.scrollIntoView)el.scrollIntoView({block:'center'});el.focus();}catch(_){}}
+      return;
+    }
+  }
+  const miss=draftUnacked(c);
+  if(miss.length){draftAskConfirm(c,miss,function(){draftAckAll(c);draftDoSave(c,orig);});return;}
+  draftDoSave(c,orig);
+}
+function draftCloseFormSafe(kind){
+  try{if(kind==='drink')closeForm();else if(kind==='food')closeMealForm();else if(kind==='split')closeExpSheet();else if(draftIsInline(kind))draftInlineClose();else closeTravelForm();}catch(e){}
+}
+function draftDoSave(c,orig){
+  if(draftCtx!==c)return;
+  const d=draftById(c.id);
+  if(!d||d.status!=='pending'){toast('這張草稿已經處理過了，不會重複儲存');return;}
+  const dup=draftFindRecord(d);
+  if(dup){ // 已經有紀錄帶著這張草稿的標記 → 不再建立第二筆
+    draftMarkSaved(d,dup);
+    toast('這張草稿已經有對應的紀錄了，不會重複建立');
+    const again=c.fromInbox;
+    c.saving=true;
+    draftCloseFormSafe(c.kind);
+    draftClear();
+    if(again)setTimeout(function(){openDrafts();},60);
+    return;
+  }
+  c.saving=true;
+  c.closedInSave=false;
+  try{_lastSaveSig='';}catch(_){} // 表單原有的「6 秒內相同內容」防連點會把第二張內容相同的草稿擋掉；同一張草稿重複儲存已由草稿狀態與標記把關
+  let thrown=null;
+  try{orig();}catch(e){thrown=e;}
+  c.saving=false;
+  const rec=draftFindRecord(d);
+  if(rec)draftFinish(c,d,rec);
+  else if(c.closedInSave)draftClear(); // 表單關了卻沒有紀錄（理論上不會發生）：清掉狀態，草稿維持待確認
+  if(thrown)throw thrown;
+}
+// 比較長的提示（流水號）：手機上會換行，不會被畫面邊緣切掉（原本的提示是不換行的單行）
+function draftToast(msg,dur){
+  const t=drEl('toast');
+  if(t)t.classList.add('dr-wrap');
+  toast(msg,dur);
+  setTimeout(function(){if(t&&t.textContent===msg)t.classList.remove('dr-wrap');},(dur||2200)+400);
+}
+function draftFinish(c,d,rec){
+  draftMarkSaved(d,rec);
+  const again=c.fromInbox;
+  draftClear();
+  const sn=rec.sn?('總流水號 '+rec.sn+(rec.snp?'・個人流水號 '+rec.snp:'')):'（這筆紀錄沒有流水號）';
+  draftToast('✅ 草稿已儲存\n'+sn,5200);
+  if(again)setTimeout(function(){openDrafts();},350);
+}
+function draftAskConfirm(c,miss,onGo){
+  const old=drEl('dr-confirm-sheet');
+  if(old)old.remove();
+  const sheet=document.createElement('div');
+  sheet.id='dr-confirm-sheet';
+  sheet.style.cssText='position:fixed;inset:0;z-index:10010;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;touch-action:manipulation';
+  const items=miss.map(function(x){return '<li style="margin-bottom:4px"><b>'+dEsc(x.labelText)+'</b>'+(x.note?'：'+dEsc(x.note):'')+'</li>';}).join('');
+  sheet.innerHTML='<div style="background:var(--bg);border-radius:20px;width:100%;max-width:360px;padding:24px 22px;box-shadow:0 12px 30px rgba(0,0,0,.2)">'
+    +'<div style="font-size:34px;text-align:center;margin-bottom:6px">📝</div>'
+    +'<div style="font-size:16px;font-weight:900;color:var(--bd);text-align:center;margin-bottom:8px">還有 '+miss.length+' 個欄位是「待確認」</div>'
+    +'<ul style="margin:0 0 14px;padding-left:18px;font-size:12px;color:var(--t);line-height:1.7">'+items+'</ul>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:16px;text-align:center">這些是 LINE 辨識得不太確定的內容。確定都正確再儲存，不確定就先回去檢查。</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button type="button" id="dr-confirm-back" style="flex:1;padding:14px;border:1px solid var(--bdr);border-radius:13px;background:var(--sur);color:var(--t);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">回去檢查</button>'
+    +'<button type="button" id="dr-confirm-go" style="flex:1;padding:14px;border:none;border-radius:13px;background:var(--br);color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer">都沒問題，儲存</button>'
+    +'</div></div>';
+  document.body.appendChild(sheet);
+  drEl('dr-confirm-back').onclick=function(){
+    sheet.remove();
+    if(miss.length)draftGoto(miss[0].key);
+  };
+  drEl('dr-confirm-go').onclick=function(){sheet.remove();onGo();};
+}
+// 三個儲存按鈕 → 先經過把關；收集資料時，把草稿的標記寫進紀錄（用來防止重複、也方便日後查是哪則 LINE 訊息來的）
+function draftTagRecord(kind,p,r){
+  const c=draftCtx;
+  if(c&&c.saving&&c.kind===kind&&p==='a'&&r){r.lineKey=c.lineKey;r.draftId=c.id;}
+  return r;
+}
+function collectPanel(p){return draftTagRecord('drink',p,collectPanel0(p));}
+function collectMealPanel(p){return draftTagRecord('food',p,collectMealPanel0(p));}
+function collectTravelPanel(p){return draftTagRecord('travel',p,collectTravelPanel0(p));}
+function saveRecs(){return draftSaveWrap('drink',saveRecs0);}
+function saveMealRecs(){return draftSaveWrap('food',saveMealRecs0);}
+function saveTravelRecord(){return draftSaveWrap('travel',saveTravelRecord0);}
+
+// ---------- 捨棄 ----------
+function draftDiscard(id,fromForm,opts){
+  draftsReload();
+  const d=draftById(id);
+  if(!d||d.status!=='pending'){toast('這張草稿已經處理過了');draftsRender();return;}
+  showDangerConfirm('要捨棄這張草稿嗎？','捨棄後不會建立任何紀錄，LINE 的「待確認草稿」也會一起移除。',function(){
+    const cur=draftById(id);
+    if(!cur||cur.status!=='pending')return;
+    cur.status='discarded';cur.discardedAt=Date.now();
+    draftsPersist();
+    toast('🗑 已捨棄草稿');
+    if(fromForm&&draftCtx&&draftCtx.id===id){
+      const c=draftCtx;
+      const again=c.fromInbox;
+      draftClear();
+      draftCloseFormSafe(c.kind);
+      if(again)setTimeout(function(){openDrafts();},60);
+    }else{draftsRender();}
+    if(opts&&typeof opts.onDone==='function'){try{opts.onDone();}catch(_){}} // 資料卡片的【取消】：捨棄成功後把卡片關掉
+  },'確認捨棄');
+}
+
+// ---------- 管理頁：草稿模式開關與「各紀錄類型適用範圍」----------
+function lcDraftToggle(on){
+  return lcCommit(function(c){c.draft={enabled:!!on};},on?'✅ 已開啟草稿模式':'✅ 已關閉草稿模式（LINE 回到原本的確認流程）');
+}
+function lcRenderDraftSection(){
+  const on=!(lc.cfg&&lc.cfg.draft&&lc.cfg.draft.enabled===false);
+  let h='<div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--sur)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
+    +'<div><div style="font-size:14px;font-weight:900;color:var(--bd)">📝 LINE 草稿模式　<span style="font-size:11px;font-weight:700;color:'+(on?'#16a34a':'var(--t5)')+'">'+(on?'已開啟':'已關閉')+'</span></div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-top:3px">'+(on?'已綁定同步碼的使用者，傳到 LINE 的飲料／美食／交通／分帳／集點卡／待去清單紀錄會先變成「待確認草稿」，到網頁表單確認後才儲存。':'已關閉：LINE 回到原本的流程（在 LINE 按「確認儲存」，紀錄直接寫入）。')+'</div></div>'
+    +'<button type="button" onclick="lcDraftToggle('+(on?'false':'true')+')" aria-label="草稿模式開關" style="border:none;cursor:pointer;touch-action:manipulation;width:52px;height:30px;border-radius:15px;background:'+(on?'#16a34a':'#cbd5e1')+';position:relative;flex-shrink:0;transition:background .2s"><span style="position:absolute;top:3px;'+(on?'left:25px':'left:3px')+';width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span></button>'
+    +'</div></div>';
+  const sp=lc.specs&&lc.specs.drafts;
+  if(!sp)return h;
+  const st={confirmed:['✅ 已確認','#16a34a'],pending:['🚧 待確認','#dc2626'],excluded:['➖ 不適用','#64748b']};
+  h+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin:4px 0 4px">📋 各紀錄類型適用範圍</div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:8px">'+dEsc(sp.flow||'')+'</div>'
+    +'<div style="border:1px solid var(--bdr);background:var(--sur);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:var(--t);line-height:1.8">'+(sp.rules||[]).map(function(r){return '・'+dEsc(r);}).join('<br>')+'</div>';
+  (sp.types||[]).forEach(function(t){
+    const s=st[t.status]||st.pending;
+    h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--sur)">'
+      +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span style="font-size:13px;font-weight:900;color:var(--bd)">'+dEsc(t.name)+'</span><span style="font-size:10px;font-weight:900;color:'+s[1]+';white-space:nowrap">'+s[0]+'</span></div>'
+      +((t.fields&&t.fields.length)?'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-top:4px">會自動帶入的欄位：'+t.fields.map(dEsc).join('、')+'</div>':'')
+      +(t.serial?'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-top:3px">流水號：'+dEsc(t.serial)+'</div>':'')
+      +(t.note?'<div style="font-size:10px;color:var(--t5);line-height:1.6;margin-top:3px">'+dEsc(t.note)+'</div>':'')
+      +'</div>';
+  });
+  return h;
+}
+function lcRenderSpecs(){return lcRenderDraftSection()+lcRenderSpecs0();}
+
+// ============================================================
+// 🪪 LINE 資料卡片（LINE整合 V10）
+//   點 LINE 回覆卡片的「開啟網頁確認」連結 → 先跳出資料卡片，方便快速核對：
+//     ・列出 LINE 解析出的欄位、⚠ 待確認的欄位與原因、LINE 沒提到而留白的欄位、預計的流水號
+//     ・【確認新增】：走表單原本的「儲存」流程（有待確認欄位會先提醒），儲存後才建立紀錄並正式產生流水號
+//     ・【修改內容】：打開原本的完整表單逐欄修改
+//     ・【取消】：放棄這張草稿，不建立任何紀錄（會先跳出確認視窗）
+//     ・✕／點背景：先關掉，草稿留在「LINE 待確認草稿」，不會有任何改變
+//   自動跳出卡片不代表自動儲存：沒有人按【確認新增】，就不會有任何紀錄。
+// ============================================================
+const DRAFT_CARD_ORDER={
+  drink:['date','time','area','brand','drink','category','size','topping','sugar','ice','amount','payment','drinker','recorder','rating','note'],
+  food:['date','time','brand','dish','category','cuisine','portion','spicy','diningType','amount','payment','eater','recorder','rating','note'],
+  travel:['type','date','company','no','depPort','arrPort','transitPort','depTime','arrTime','seat','vehicleType','ticketPrice','payment','recorder','note'],
+  split:['group','entry','date','time','cat','desc','amount','payer','payment','participants','note','recorder'],
+  sticker:['card','kid','behavior','points','date','time','note','recorder'],
+  wish:['category','name','country','city','detailPlace','reason','notes','source','proposer','targetTime','suggestDate','rating','status','recorder']
+};
+let draftCardId='';
+function draftCardVal(kind,k,f,d){
+  const v=f[k];
+  if(kind==='split'&&k==='participants'){
+    if(Array.isArray(v)&&v.length)return v.join('、');
+    return f.splitAll?'全部成員均分':'全部成員均分（預設）';
+  }
+  if(v===undefined||v===null||v===''||typeof v==='object')return '';
+  if(k==='date'||k==='suggestDate'){ // 日期顯示成 年/月/日（待去清單的提議日期後面接 LINE 傳送時間）
+    const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v));
+    let s=m?(m[1]+'/'+m[2]+'/'+m[3]):String(v);
+    if(k==='suggestDate'&&f.suggestTime)s+=' '+f.suggestTime;
+    return s;
+  }
+  if(k==='sugar')return String(SL[v]||v);
+  if(k==='ice')return String(IL[v]||v);
+  if(kind==='split'&&k==='amount'){const g=d?draftSplitGroup(d):null;return (f.currency?String(f.currency):((g&&g.currency)||'NT$'))+' '+v;}
+  if(k==='amount'||k==='ticketPrice')return (f.currency?String(f.currency):'NT$')+' '+v;
+  if(k==='type'){const tm=TRAVEL_TYPES[v];return tm?(tm.icon+tm.name):String(v);}
+  if(k==='entry')return v==='income'?'💰 收入':'💸 支出';
+  if(k==='cat'){const cm=catMeta(v);return cm.icon+' '+cm.name;}
+  if(k==='card')return v==='mutual'?'💑 互助集點卡':'👶 乖寶寶集點卡';
+  if(k==='points'){const n=Number(v);return (n>0?'+':'')+n+' 點';}
+  if(k==='rating')return kind==='wish'?('⭐'.repeat(Math.max(1,Math.min(5,Math.round(Number(v)||0))))):('★ '+v);
+  return String(v);
+}
+function draftCardHtml2(d){
+  const k=DRAFT_KINDS[d.kind],f=d.fields||{},unc=d.uncertain||[],notes=d.notes||{};
+  const multi=(Number(d.itemCount)>1)?('　'+(DRAFT_CIRCLED[d.itemIndex]||'')+'／共'+d.itemCount+'張'):'';
+  let rows='';
+  (DRAFT_CARD_ORDER[d.kind]||[]).forEach(function(key){
+    const t=draftCardVal(d.kind,key,f,d);
+    if(!t)return;
+    const bad=unc.indexOf(key)>=0;
+    rows+='<div class="dr-cd-row'+(bad?' unc':'')+'" data-dr-key="'+dEsc(key)+'"><span class="k">'+dEsc(draftLabel(d.kind,key))+'</span><span class="v">'+dEsc(t)+(bad?'<b class="w">⚠ 待確認</b>':'')+'</span></div>';
+  });
+  if(!rows)rows='<div class="dr-cd-empty">只辨識到部分資訊，沒有可以帶入的欄位，請按【修改內容】自己填寫。</div>';
+  let h='<div class="dr-cd" role="dialog" aria-label="LINE 資料卡片">'
+    +'<div class="dr-cd-hd"><div><div class="dr-cd-title">📝 LINE 轉入的紀錄　'+k.icon+' '+k.name+dEsc(multi)+'</div>'
+    +'<div class="dr-cd-src">'+dEsc(draftWhen(d))+(d.userName?'・'+dEsc(d.userName):'')+(d.groupName?'・群組「'+dEsc(d.groupName)+'」':'')+'</div></div>'
+    +'<button type="button" class="dr-cd-x" data-dr-card="close" aria-label="關閉">✕</button></div>'
+    +'<div class="dr-cd-body">';
+  if(d.rawText)h+='<div class="dr-cd-raw">原文：「'+dEsc(String(d.rawText).slice(0,120))+(String(d.rawText).length>120?'…':'')+'」</div>';
+  h+='<div class="dr-cd-rows">'+rows+'</div>';
+  if(unc.length){
+    h+='<div class="dr-cd-sec warn"><b>⚠ '+unc.length+' 個欄位待確認</b>（LINE 辨識得不太確定，請核對）'
+      +unc.map(function(key){return '<div class="dr-cd-note"><b>'+dEsc(draftLabel(d.kind,key))+'</b>'+(notes[key]?'：'+dEsc(notes[key]):'')+'</div>';}).join('')+'</div>';
+  }
+  const blank=draftCore(d).filter(function(key){
+    if(key==='type')return false;
+    return f[key]===undefined||f[key]===null||f[key]==='';
+  }).map(function(key){return draftLabel(d.kind,key);});
+  if(blank.length)h+='<div class="dr-cd-sec">LINE 沒提到、已留白：'+blank.map(dEsc).join('、')+'（需要的話按【修改內容】補上）</div>';
+  const um=d.unmapped||{};
+  const umKeys=Object.keys(um).filter(function(key){return um[key];});
+  if(umKeys.length)h+='<div class="dr-cd-sec">ℹ️ 訊息有提到、但表單沒有對應欄位，所以沒有帶入：'+umKeys.map(function(key){return dEsc(draftLabel(d.kind,key))+'＝'+dEsc(um[key]);}).join('、')+'</div>';
+  const sn=snPreviewDraft(d);
+  h+='<div class="dr-cd-sn" id="dr-card-sn">'
+    +(sn?'<div>預計流水號<span>按【確認新增】時才正式產生，以儲存當下為準</span></div><div class="chips"><span class="sn-chip total">總流水號　'+dEsc(sn.sn)+'</span><span class="sn-chip personal">個人流水號　'+dEsc(sn.snp)+'</span></div>'
+         :'<div>流水號：儲存時產生</div>')
+    +'</div>';
+  h+='</div>'
+    +'<div class="dr-cd-act">'
+    +'<button type="button" class="dr-cd-btn pri" data-dr-card="confirm" data-dr-id="'+dEsc(d.id)+'">✅ 確認新增</button>'
+    +'<button type="button" class="dr-cd-btn" data-dr-card="edit" data-dr-id="'+dEsc(d.id)+'">✏️ 修改內容</button>'
+    +'<button type="button" class="dr-cd-btn danger" data-dr-card="cancel" data-dr-id="'+dEsc(d.id)+'">取消</button>'
+    +'</div>'
+    +'<div class="dr-cd-hint">【取消】＝放棄這張草稿、不建立紀錄。只是想晚點再看？按右上角 ✕，草稿會留在「LINE 待確認草稿」。</div>'
+    +'</div>';
+  return h;
+}
+function draftCardClose(){
+  const m=drEl('dr-card-modal');
+  if(m)m.remove();
+  draftCardId='';
+}
+function draftCardOpen(id){
+  draftsReload();
+  const d=draftById(id);
+  if(!d){toast('找不到這張草稿');return false;}
+  if(d.status!=='pending'){toast('這張草稿已經處理過了');return false;}
+  const hit=draftFindRecord(d);
+  if(hit){ // 已經有紀錄帶著這張草稿的標記：不重複建立
+    draftMarkSaved(d,hit);
+    toast('這張草稿已經儲存過了，不會重複建立');
+    return false;
+  }
+  draftCardClose();
+  draftCardId=id;
+  const m=document.createElement('div');
+  m.id='dr-card-modal';
+  m.innerHTML=draftCardHtml2(d);
+  m.addEventListener('click',function(e){
+    if(e.target===m){draftCardClose();return;}
+    const b=e.target.closest?e.target.closest('[data-dr-card]'):null;
+    if(!b)return;
+    const act=b.getAttribute('data-dr-card'),cid=b.getAttribute('data-dr-id')||draftCardId;
+    if(act==='close')draftCardClose();
+    else if(act==='confirm')draftCardConfirm(cid);
+    else if(act==='edit'){draftCardClose();openDraft(cid,{fromInbox:false});}
+    else if(act==='cancel')draftDiscard(cid,false,{onDone:draftCardClose});
+  });
+  document.body.appendChild(m);
+  return true;
+}
+// 【確認新增】：把草稿帶進表單，再走表單原本的「儲存」按鈕（有待確認欄位會先提醒；沒有就直接儲存）
+function draftCardConfirm(id){
+  draftsReload();
+  const d=draftById(id);
+  if(!d||d.status!=='pending'){draftCardClose();toast('這張草稿已經處理過了，不會重複儲存');return;}
+  if(d.kind==='split'&&!draftSplitGroup(d)){ // 分帳：要先確定記在哪個群組；選好才關卡片往下走，不選就留在卡片上
+    draftSplitPick(d,function(gid){draftCardConfirm2(id,gid);});
+    return;
+  }
+  draftCardConfirm2(id,'');
+}
+function draftCardConfirm2(id,gid){
+  draftCardClose();
+  openDraft(id,{fromInbox:false,gid:gid||'',picked:!!gid});
+  const c=draftCtx;
+  if(!c||c.id!==id)return; // 帶入失敗或已經處理過：openDraft 已經提示了
+  if(c.kind==='drink')saveRecs();
+  else if(c.kind==='food')saveMealRecs();
+  else if(c.kind==='split')saveExpense();
+  else if(c.kind==='sticker')saveStickerDraft();
+  else if(c.kind==='wish')saveWishDraft();
+  else saveTravelRecord();
+}
+
+
 // ============================================
 // 登入系統（介面層密碼鎖，非伺服器級安全；資料仍存於同一裝置 localStorage）
 // ============================================
@@ -2057,10 +3781,10 @@ function showApp(){
 }
 // 網址帶 ?open=wishlist（待去清單）／split（分帳）／sticker（集點卡）時，直接開啟對應功能；開啟後把參數從網址拿掉，避免之後重新整理又重複開啟
 function runDeepLink(){
-  let target='';
-  try{ target=new URLSearchParams(location.search).get('open')||''; }catch(e){}
-  if(!target) return;
-  const actions={ wishlist:function(){ openWishlist(); }, split:function(){ enterSplit(); }, sticker:function(){ openStickerCard(); } };
+  let target='',dparam='';
+  try{ const q=new URLSearchParams(location.search); target=q.get('open')||''; dparam=q.get('d')||''; }catch(e){}
+  if(!target){ draftResumeAfterReload(); return; }
+  const actions={ wishlist:function(){ openWishlist(); }, split:function(){ enterSplit(); }, sticker:function(){ openStickerCard(); }, drafts:function(){ draftDeepLink(dparam); } };
   try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
   if(actions[target]) actions[target]();
 }
@@ -2198,14 +3922,14 @@ const IL = {normal:'正常冰',more:'多冰',less:'少冰',micro:'微冰',no_ice
 const SL = {'0':'無糖','0.5':'0.5分糖','1':'一分糖','2':'二分糖','3':'微糖','5':'半糖','7':'少糖','10':'全糖'};
 
 // --- 版本資訊與更新紀錄 ---
-const APP_VERSION = '26.0.0'; // ⚙️ 系統層版本：適用範圍無法明確劃分模組的改動（資料管理中心、回收桶、返回首頁等）
-const DRINK_VERSION = '22.5.0'; // 🧋 飲料模組獨立版本：沿用原全域版本號接續計算，僅飲料專屬功能變動計入
-const FOOD_VERSION = '6.2.0'; // 🍱 美食模組獨立版本：僅美食專屬功能變動計入，下次美食更新即為 V6 系列
-const TRAVEL_VERSION = '1.1.0'; // ✈️🚢 航班/船班模組獨立版本：全新模組，從 V1.0.0 起算
-const SPLIT_VERSION = '1.0.0'; // 🧾 分帳模組獨立版本
-const STICKER_VERSION = '1.0.0'; // 🌟 集點卡模組獨立版本（含乖寶寶、互助兩張卡）
-const WISHLIST_VERSION = '1.0.0'; // 🗺️ 待去清單模組獨立版本：全新模組，從 V1.0.0 起算
-const LINE_VERSION = '8.0.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉，V7為可管理的選單／關鍵字／群組權限，V8為統一的「紀錄／查詢＋三版本」操作與可靠同步
+const APP_VERSION = '26.1.0'; // ⚙️ 系統層版本：適用範圍無法明確劃分模組的改動（資料管理中心、回收桶、返回首頁、首頁全館總覽、開場動畫等）
+const DRINK_VERSION = '22.6.0'; // 🧋 飲料模組獨立版本：沿用原全域版本號接續計算，僅飲料專屬功能變動計入
+const FOOD_VERSION = '6.3.0'; // 🍱 美食模組獨立版本：僅美食專屬功能變動計入，下次美食更新即為 V6 系列
+const TRAVEL_VERSION = '1.2.0'; // ✈️🚢 航班/船班模組獨立版本：全新模組，從 V1.0.0 起算
+const SPLIT_VERSION = '1.1.0'; // 🧾 分帳模組獨立版本（V1.1.0：LINE 草稿、資料卡片與 LINE 流水號）
+const STICKER_VERSION = '1.1.0'; // 🌟 集點卡模組獨立版本（含乖寶寶、互助兩張卡）；V1.1.0：LINE 草稿、資料卡片與 LINE 流水號
+const WISHLIST_VERSION = '1.1.0'; // 🗺️ 待去清單模組獨立版本：全新模組，從 V1.0.0 起算；V1.1.0：LINE 草稿、資料卡片與 LINE 流水號
+const LINE_VERSION = '10.1.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉，V7為可管理的選單／關鍵字／群組權限，V8為統一的「紀錄／查詢＋三版本」操作與可靠同步，V9為LINE訊息自動帶入網頁表單（待確認草稿），V10為資料卡片與LINE轉入紀錄的新流水號（最大號+1、編輯鎖定、依紀錄年份），V10.1為分帳／集點卡／待去清單也納入同一套LINE草稿與資料卡片流程（新增LINE-SPL／LINE-PTS／LINE-WSH流水號）
 
 // 版本治理規範（僅供未來判定版本號／更新提示策略參考，本身不觸發版本變更）：
 // 1. Major：重大架構改版或不向下相容的 Breaking Change（如資料結構不相容、核心引擎重寫）。
@@ -2233,6 +3957,107 @@ const UPDATE_POLICY = {
 const DEV_ORDER_POLICY = ['紀錄日常','數據統計','生活工具','設定'];
 
 const CHANGELOG = [
+  {
+    version:'26.1.0', type:'Minor', date:'2026/11/03',
+    items:[
+      '首頁總覽：「全館總覽（本月）」新增「集點卡・本月筆數」（乖寶寶與互助兩張卡的點數紀錄合計）與「待去清單・本月新增」（本月提議的地點數，依提議日期計算）兩格，現在每個功能都有一格；點這兩格會直接打開集點卡／待去清單。分帳原本就有「分帳・本月筆數」一格，維持不變',
+      '開場動畫：圖示由 4 個增加為 7 個——在原本的杯子、餐具、飛機、筆記本之後，依序描繪新增的收據（分帳）、星星（集點卡）、地標（待去清單），圖形與首頁的模組卡片相同；描繪節奏加快，整體長度維持約 2.4 秒；手機窄螢幕會自動縮小圖示，7 個一排排得下',
+      '調整：「全館總覽（本月）」下方的說明文字，改為明確區分「僅顯示您個人的資料」的範圍（花費金額那三格）與共用資料的範圍（其餘三格），避免誤以為全部都是個人資料',
+      '調整：標語由「記錄每一餐，感受每一刻。」改為「記錄每一刻，感受每一種生活」，首頁最上方與「設定 → 關於」兩處一起更新',
+      '調整：「設定」頁底部 LINE 管理卡片的標題改為兩行——📡 圖示放在兩行文字的左側正中間，上行是新標語「智能解析，不再遺漏任何心動角落」，下行是原本的標題「LINE官方帳號 × 智慧關鍵字辨識 × LINE群組使用權限」',
+      '修正：版本資訊下方的說明文字原本寫「五套版本號」，實際已有八套（各模組、LINE整合、系統），已更正；系統層版本的適用範圍說明補上「首頁總覽、開場動畫」',
+    ],
+    reason:'本次是首頁、開場畫面與設定頁文案的系統層改動：新增首頁總覽兩格與開場動畫圖示，屬功能新增，故列為 Minor，由 v26.0.0 升至 v26.1.0（標語與設定頁標題的文字調整一併收錄在同一版）；各功能模組本身沒有變動，模組版本號不變。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.1.0', type:'Minor', date:'2026/11/03',
+    items:[
+      'LINE整合：分帳、集點卡、待去清單現在也走和飲料、美食、交通相同的流程：在 LINE 傳訊息（或用選單記錄）→ 變成「待確認草稿」→ 點「開啟網頁確認」跳出資料卡片 → 按【確認新增】才正式新增並產生流水號，按【取消】不會留下任何紀錄，按【修改內容】可以逐欄核對修改。三種資料的欄位都是對照網頁既有的表單推導出來的（分帳＝「新增支出」表單、集點卡＝「記一筆」、待去清單＝「新增項目」），沒有另外發明欄位',
+      'LINE整合：新增三組 LINE 流水號——分帳 LINE-SPL-區塊-年份-流水（個人流水號 LINE-MSPL-紀錄者代號-年份-流水）、集點卡 LINE-PTS／LINE-MPTS（乖寶寶與互助兩張卡共用同一組號碼）、待去清單 LINE-WSH／LINE-MWSH（年份依提議日期），例如 LINE-SPL-1-2026-0001、LINE-MSPL-XG-2026-0001；規則與 V10 相同：最大號碼 + 1、編輯時鎖定、依紀錄年份、按【確認新增】時才產生。網頁手動新增的分帳、集點卡、待去清單紀錄沒有這組流水號',
+      'LINE整合：不確定的欄位一律標「待確認」並說明原因，不替你決定——分帳的群組、「誰先付錢」、「分給誰」，集點卡的孩子與行為，待去清單的分類（對不上時暫放「其他」）；待去清單的「提議者」是必填欄位、LINE 不會知道，需要自己填。訊息沒提到日期或時間時，帶入 LINE 傳送的時間並標待確認（待去清單的提議日期固定用傳送日期，不算缺漏）',
+      'LINE整合：集點卡與待去清單屬於個人資料（孩子姓名、個人清單），只在「1 對 1 聊天室」用自由文字記錄；分帳在群組裡也能用。分帳與待去清單要先綁定同步碼並開啟草稿模式，因為要對照你網頁裡的分帳群組成員與待去清單分類；對照用的清單只會交給你自己的這次解析，不會混進別人的請求',
+      'LINE整合：管理頁「版本規格」分頁的「各紀錄類型適用範圍」把分帳、集點卡、待去清單改成「✅ 已確認」，並列出會自動帶入的欄位與流水號格式',
+    ],
+    reason:'依「LINE 官方帳號轉表單全功能整合規範」，把分帳、集點卡、待去清單也納入 LINE → 草稿 → 資料卡片 → 確認新增 → 流水號的流程（V10 只做了飲料、美食、交通）。這三項的欄位沒有另外提供規格，依網頁既有表單推導；LINE 沒提到的欄位留白或標待確認，不自行補造。',
+  },
+  {
+    version:'🧾 分帳 V1.1.0', type:'Minor', date:'2026/11/03',
+    items:[
+      '分帳：LINE 傳來的分帳（例如「晚餐 1200 AA」）會先變成待確認草稿，點資料卡片的【確認新增】才新增支出。群組、類型、日期、時間、類別、品項、金額、幣別、誰先付錢、付款方式、分給誰、備註會自動帶入原本的「新增支出」表單（欄位、樣式、操作都沒變）；「誰先付錢」「分給誰」對不上群組成員時標「待確認」請你選，訊息沒指定群組而且有好幾個群組時，會先請你選群組',
+      '分帳：LINE 轉入的支出在新增時產生流水號（LINE-SPL-1-年份-流水／LINE-MSPL-紀錄者代號-年份-流水，整個分帳模組一起算、最大號 + 1）；編輯這筆支出時流水號與草稿標記鎖定不變；流水號會顯示在支出清單每一筆的下方與編輯畫面上，搜尋框也可以用流水號找；手動新增的支出沒有這組流水號',
+      '分帳：訊息提到「每個人金額不同」時，先用均分帶入並提醒，不會自動套用自訂金額；需要的話在表單改成「自訂金額」',
+    ],
+    reason:'分帳也納入 LINE 資料卡片與 LINE 流水號流程，沿用原本的「新增支出」表單，不改變手動新增的做法。',
+  },
+  {
+    version:'🌟 集點卡 V1.1.0', type:'Minor', date:'2026/11/03',
+    items:[
+      '集點卡：在 LINE 傳集點訊息（例如「小明 刷牙」「加3點」），或在 LINE 選單選孩子與行為，會先變成待確認草稿，點資料卡片的【確認新增】才寫入集點卡紀錄；乖寶寶集點卡與互助集點卡都支援。孩子與行為對照你的清單，對不上時標「待確認」（行為不在清單內時，儲存為自訂行為）；【修改內容】會打開可編輯的資料卡片，欄位和原本的「記一筆」一致',
+      '集點卡：LINE 轉入的集點紀錄在新增時產生流水號（LINE-PTS-1-年份-流水／LINE-MPTS-紀錄者代號-年份-流水），乖寶寶與互助兩張卡共用同一組號碼、最大號 + 1，並顯示在兩張卡的紀錄畫面每一筆的下方；手動記錄的集點沒有這組流水號',
+      '集點卡：修正「扣點」紀錄在孩子的點數紀錄裡顯示成「+-2」的問題，現在會顯示「-2」並用紅色標示',
+    ],
+    reason:'集點卡也納入 LINE 資料卡片與 LINE 流水號流程；順手修正扣點紀錄的顯示。',
+  },
+  {
+    version:'🗺️ 待去清單 V1.1.0', type:'Minor', date:'2026/11/03',
+    items:[
+      '待去清單：在 LINE 傳「想去 九份老街」之類的訊息（或用選單新增待去地點），會先變成待確認草稿，點資料卡片的【確認新增】才新增到待去清單。項目名稱、分類、國家、城市、詳細地點、推薦原因、備註、來源、預計時間會自動帶入；分類對照你的清單，對不上時暫放「其他」並標待確認',
+      '待去清單：LINE 轉入的地點在新增時產生 LINE 流水號（LINE-WSH-1-年份-流水／LINE-MWSH-紀錄者代號-年份-流水，年份依提議日期），原本的分類／國家／城市／總流水號照原規則分配；編輯時 LINE 流水號鎖定保留，並顯示在「流水號明細」裡，搜尋框也可以用流水號找',
+      '待去清單：LINE 不會知道「提議者」，這個必填欄位會留白請你自己填；推薦指數預設 5 顆星、狀態預設「待去」、提議日期用 LINE 傳送的日期',
+      '待去清單：修正編輯既有項目時「預計時間」會被清空的問題——現在編輯畫面會帶出原本的預計時間，沒有改動就保留',
+    ],
+    reason:'待去清單也納入 LINE 資料卡片與 LINE 流水號流程；順手修正編輯時預計時間被清空的問題（LINE 轉入的地點可能帶有預計時間）。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.0.0', type:'Minor', date:'2026/11/03',
+    items:[
+      'LINE整合：點 LINE 回覆卡片的「開啟網頁確認」連結，網頁會先跳出「資料卡片」：列出 LINE 解析出的欄位、⚠ 待確認的欄位與原因、LINE 沒提到而留白的欄位，以及預計的流水號，方便快速核對。卡片有【確認新增】【修改內容】【取消】三個按鈕：【確認新增】走表單原本的儲存流程（有待確認欄位會先提醒），儲存後才建立紀錄並正式產生流水號；【修改內容】打開原本的完整表單；【取消】放棄這張草稿、不建立任何紀錄。按右上角 ✕ 只是先關掉，草稿會留在「LINE 待確認草稿」。一則訊息有多個品項時，仍進收件匣一張一張處理',
+      'LINE整合：LINE 轉入的飲料、美食、交通紀錄，在網頁按「確認新增」（或表單的「儲存」）時，改用 LINE 專用的流水號格式：飲料 LINE-DRK-區塊-年份-流水（個人流水號 LINE-DRK-飲用者代號-年份-流水）、美食 LINE-FD／LINE-MFD、交通 LINE-TRP／LINE-MTRP（交通的個人流水號用紀錄者的代號），例如 LINE-DRK-1-2026-0001、LINE-DRK-XG-2026-0001。網頁手動新增的紀錄維持原本的格式（例如 1-2026-0001），手動新增的交通紀錄仍然沒有流水號',
+      'LINE整合：流水號改用「最大號碼 + 1」計算（同一個前綴底下現有的最大號 + 1），刪除舊紀錄後再新增不會再撞號；年份依「紀錄日期」所屬的年份，補登去年、預訂明年的紀錄會算在那一年自己的流水裡，新的一年自動從 0001 起算；放在回收桶（30 天內可還原）的紀錄也算在內，所以刪掉的號碼要等回收桶清掉才會再被使用，還原時不會撞號；已經撞號的舊資料不會自動改號',
+      'LINE整合：編輯已經存在的紀錄時，流水號與 LINE 草稿標記會鎖定保留，不會因為修改備註或內容而變號；同時補上 V9 的缺口——草稿存成紀錄後被編輯，標記不見，之後若舊資料把草稿蓋回「待確認」，同一張草稿可能再存出第二筆紀錄',
+      'LINE整合：修正 V9 的小問題——在「LINE 待確認草稿」收件匣按「🗑 捨棄」時，確認視窗會被收件匣蓋住、點不到；現在通用的確認視窗一律顯示在最上層',
+      'LINE整合：管理頁「版本規格」分頁的「各紀錄類型適用範圍」更新了流水號規則；分帳（SPL）、集點卡（PTS）、待去清單（WSH）的流水號前綴先登記、尚未啟用——它們「LINE → 表單」的欄位規格還沒確認，不自行補造',
+    ],
+    reason:'依「LINE 官方帳號轉表單全功能整合規範」：LINE 轉入的紀錄要經過網頁確認才正式新增並產生流水號，並解決刪除後撞號、編輯後換號、跨年算號的問題。分帳、集點卡、待去清單的 LINE → 表單流程規格尚未確認，只先登記流水號前綴，不自行補造欄位。',
+  },
+  {
+    version:'🧋 飲料 V22.6.0', type:'Minor', date:'2026/11/03',
+    items:[
+      '調整：飲料紀錄的總流水號、個人流水號改用「最大號 + 1」計算（原本是「筆數 + 1」）：刪除舊紀錄後再新增不會撞號（回收桶裡的紀錄也算，還原時不會撞號）；年份依紀錄日期所屬的年份，補登去年或預訂明年的飲料紀錄會算在那一年自己的流水裡',
+      '修正：編輯既有的飲料紀錄時，流水號固定不變（原本只改備註也會換新號）；表單上的流水號預覽在編輯時顯示這筆自己的號碼，改日期或飲用者時預覽也會跟著更新',
+      '修正：飲用者選擇「Together」並新增多筆飲料時，額外項目原本的總流水號只算這一次儲存的筆數（容易跟既有紀錄撞號）、個人流水號則沿用主紀錄同一個；現在每一筆都有自己的總流水號與個人流水號，依序接在後面',
+    ],
+    reason:'調整飲料流水號的計算與編輯規則，不改變既有資料與格式（網頁手動新增的仍是 1-2026-0001），屬功能調整，故列為飲料模組 Minor，由 V22.5.0 升至 V22.6.0。',
+  },
+  {
+    version:'🍱 美食 V6.3.0', type:'Minor', date:'2026/11/03',
+    items:[
+      '調整：美食紀錄的總流水號、個人流水號改用「最大號 + 1」計算（原本是「筆數 + 1」）：刪除舊紀錄後再新增不會撞號（回收桶裡的紀錄也算，還原時不會撞號）；年份依紀錄日期所屬的年份，補登去年或預訂明年的美食紀錄會算在那一年自己的流水裡',
+      '修正：編輯既有的美食紀錄時，流水號固定不變（原本只改備註也會換新號）；表單上的流水號預覽在編輯時顯示這筆自己的號碼，改日期或用餐者時預覽也會跟著更新',
+      '修正：用餐者選擇「Together」並新增多筆美食紀錄時，額外項目原本的總流水號只算這一次儲存的筆數（容易跟既有紀錄撞號）、個人流水號則沿用主紀錄同一個；現在每一筆都有自己的總流水號與個人流水號，依序接在後面',
+    ],
+    reason:'調整美食流水號的計算與編輯規則，不改變既有資料與格式（網頁手動新增的仍是 M1-2026-0001），屬功能調整，故列為美食模組 Minor，由 V6.2.0 升至 V6.3.0。',
+  },
+  {
+    version:'✈️🚢 航班船班 V1.2.0', type:'Minor', date:'2026/11/03',
+    items:[
+      '新增：LINE 轉入的交通紀錄（航班／船班／高鐵／火車等，在網頁按「確認新增」或「儲存」）會產生流水號：總流水號 LINE-TRP-1-年份-流水、個人流水號 LINE-MTRP-紀錄者代號-年份-流水，例如 LINE-TRP-1-2026-0001、LINE-MTRP-XG-2026-0001；網頁手動新增的交通紀錄仍然沒有流水號',
+      '修正：編輯既有的交通紀錄時，流水號固定不變',
+    ],
+    reason:'交通紀錄新增流水號（僅限 LINE 轉入），屬功能新增，故列為交通模組 Minor，由 V1.1.0 升至 V1.2.0。',
+  },
+  {
+    version:'⚙️ LINE整合 V9.0.0', type:'Minor', date:'2026/11/02',
+    items:[
+      'LINE整合：LINE 傳來的飲料、美食、交通紀錄（一句話記錄，以及簡易版／標準版／旗艦版、快速記錄的問答流程）改為先建立「待確認草稿」：系統把訊息解析出的日期、時間、地點、品牌、飲品、規格、加料、甜度、冰塊、金額、幣別、支付方式、飲用者、備註等資訊帶入網頁原本的「紀錄日常」表單，不再由 LINE 直接寫入正式紀錄。已綁定同步碼的使用者適用；還沒綁定的人維持原本流程',
+      'LINE整合：首頁新增「LINE 待確認草稿」收件匣（有待處理的草稿會顯示數字），LINE 的回覆卡片也有「開啟網頁確認」按鈕。開啟草稿會使用原本的表單（欄位、樣式、操作都沒變），可以檢查、修改、補充，按原本的「儲存」才會建立紀錄並產生總流水號與個人流水號；自動帶入不代表自動儲存，沒有人按「儲存」就不會有任何紀錄',
+      'LINE整合：訊息沒提到、又無法可靠辨識的欄位一律留白，表單原本的預設值（例如甜度、冰塊、付款方式）維持不變並標示「預設」；辨識不確定的欄位標示「待確認」，儲存前會再提醒一次，不會當成正確資料。飲料與美食沒提到日期、時間時暫用 LINE 傳送時間並標示待確認；交通的日期沒提到就留空',
+      'LINE整合：一則訊息有多個品項時，每個品項各建立一張草稿、各開一張表單，資料不會混在一起。同一則 LINE 訊息只會建立一次草稿（LINE 重送、重複點擊都不會重複），同一張草稿最多只會建立一筆紀錄；網頁儲存或捨棄後，LINE 的「待確認草稿」清單會同步更新',
+      'LINE整合：管理頁「版本規格」分頁新增「草稿模式」開關與「各紀錄類型適用範圍」：列出飲料、美食、交通各自會帶入哪些欄位與流水號規則；網頁美食表單沒有「地點」欄位、交通紀錄目前沒有流水號，這兩項標示待確認、不自行補造。關閉草稿模式後，LINE 回到原本的「確認儲存」流程',
+      'LINE整合：修正 LINE 自動同步的紀錄日期與時間會差 8 小時的問題（伺服器使用 UTC 時區），現在一律換算成台灣時間',
+    ],
+    reason:'依「LINE 輸入資料 → 系統表單自動帶入」需求，建立「訊息解析 → 表單自動帶入 → 人工審核 → 確認儲存 → 流水號生成」的流程。自動帶入不代表自動儲存，所以保留人工審核；規格沒有確認的項目（交通紀錄的流水號、美食表單的地點欄位）不自行補造，標示待確認。記帳、分帳、集點卡、待去清單不在這個流程內，維持原本做法。',
+  },
   {
     version:'⚙️ LINE整合 V8.0.0', type:'Minor', date:'2026/10/22',
     items:[
@@ -2919,6 +4744,10 @@ function goHome(){
   });
   renderHome();
 }
+// 首頁「全館總覽（本月）」用：某個清單裡，日期欄位屬於指定年月（'YYYY-MM'）的紀錄有幾筆（日期不是字串、格式不對的一律不算）
+function homeMonthCount(list,dateKey,ym){
+  try{return (Array.isArray(list)?list:[]).filter(function(r){return r&&typeof r[dateKey]==='string'&&r[dateKey].slice(0,7)===ym;}).length;}catch(_){return 0;}
+}
 // --- 首頁：雙模組入口 + 全館總覽（並排顯示，禁止合併計算）---
 function renderHome(){
   const page=document.getElementById('page-home');
@@ -2933,12 +4762,16 @@ function renderHome(){
   const travelMonthRecs=visTravels.filter(r=>r.date?.startsWith(`${cY}-${cM}`));
   const travelMonthTotal=travelMonthRecs.reduce((s,r)=>s+(Number(r.ticketPrice)||0),0);
   const splitMonthCount=splitGroups.reduce((s,g)=>s+(g.expenses||[]).filter(e=>(e.date||'').startsWith(`${cY}-${cM}`)).length,0);
+  // V10.2：集點卡（乖寶寶＋互助兩張卡的點數紀錄筆數）、待去清單（本月提議的地點數，看「提議日期」）；跟分帳一樣是共用資料，不依登入身分過濾
+  const stickerMonthCount=homeMonthCount(stickerAllEvents(),'date',`${cY}-${cM}`);
+  const wishMonthCount=homeMonthCount(wishReadItems(),'suggestDate',`${cY}-${cM}`);
   page.innerHTML=`
   <div style="text-align:center;padding:28px 16px 18px">
     <div style="display:flex;justify-content:center;gap:12px;margin-bottom:6px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 8h12l-1.2 11.3a1 1 0 01-1 .7H8.2a1 1 0 01-1-.7L6 8z"/><path d="M5 8h14"/><path d="M14.5 3.5l1.5 4.5"/></svg><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7 3v4"/><path d="M9 3v4"/><path d="M11 3v4"/><path d="M7 7h4"/><path d="M9 7v14"/><path d="M16 3c-1.6 0-2.4 3-2.4 6 0 2.2 1 3 2.4 3v9"/></svg><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15.5l-7.5-4V5a1.5 1.5 0 00-3 0v6.5L3 15.5v1.8l7.5-2.2v3.6l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-3.6L21 17.3v-1.8z"/></svg><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M9 4v16"/><path d="M13 9h3"/><path d="M13 13h3"/></svg></div>
     <div style="font-size:18px;font-weight:900;color:var(--bd);font-family:'Noto Serif TC',serif">日常小秘書</div>
-    <div style="font-size:11px;color:var(--t5);margin-top:4px">記錄每一餐，感受每一刻。</div>
+    <div id="home-slogan" style="font-size:11px;color:var(--t5);margin-top:4px">${APP_SLOGAN}</div>
   </div>
+  <div id="dr-home-top-slot">${draftHomeTopHtml()}</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:18px">
     <div onclick="enterModule('drink')" class="dc-card" style="text-align:center;padding:20px 8px;touch-action:manipulation">
       <div style="margin-bottom:8px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 8h12l-1.2 11.3a1 1 0 01-1 .7H8.2a1 1 0 01-1-.7L6 8z"/><path d="M5 8h14"/><path d="M14.5 3.5l1.5 4.5"/></svg></div>
@@ -2973,16 +4806,19 @@ function renderHome(){
   </div>
   <div class="chart-card" style="margin:0 16px">
     <div class="ct"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M20 20H3"/></svg>全館總覽（本月）</div>
-    <div style="font-size:10px;color:var(--t5);margin-top:-8px;margin-bottom:14px">${superModeUnlocked?'超級模式：顯示所有人資料，各項數據獨立呈現不做合併計算':'僅顯示您個人的資料，各項數據獨立呈現不做合併計算'}</div>
+    <div style="font-size:10px;color:var(--t5);margin-top:-8px;margin-bottom:14px">${superModeUnlocked?'超級模式：顯示所有人資料，各項數據獨立呈現不做合併計算':'飲料、美食、交通僅顯示您個人的資料；分帳、集點卡、待去清單是共用資料。各項數據獨立呈現不做合併計算'}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('drink','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 8h12l-1.2 11.3a1 1 0 01-1 .7H8.2a1 1 0 01-1-.7L6 8z"/><path d="M5 8h14"/><path d="M14.5 3.5l1.5 4.5"/></svg></div><div class="iv" style="font-size:18px">${drinkMonthTotal}</div><div class="il">飲料 NT$</div></div>
       <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('food','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7 3v4"/><path d="M9 3v4"/><path d="M11 3v4"/><path d="M7 7h4"/><path d="M9 7v14"/><path d="M16 3c-1.6 0-2.4 3-2.4 6 0 2.2 1 3 2.4 3v9"/></svg></div><div class="iv" style="font-size:18px">${foodMonthTotal}</div><div class="il">美食 NT$</div></div>
       <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('travel','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15.5l-7.5-4V5a1.5 1.5 0 00-3 0v6.5L3 15.5v1.8l7.5-2.2v3.6l-2 1.4v1.4l3.5-1 3.5 1v-1.4l-2-1.4v-3.6L21 17.3v-1.8z"/></svg></div><div class="iv" style="font-size:18px">${travelMonthTotal}</div><div class="il">交通 NT$</div></div>
       <div class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openDashboard('split','month')"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 3.5h12V21l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3L6 21V3.5z"/><path d="M9 8h6"/><path d="M9 11.5h6"/><path d="M9 15h4"/></svg></div><div class="iv" style="font-size:18px">${splitMonthCount}</div><div class="il">分帳・本月筆數</div></div>
+      <div id="home-ov-sticker" class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openStickerCard()"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg></div><div class="iv" style="font-size:18px">${stickerMonthCount}</div><div class="il">集點卡・本月筆數</div></div>
+      <div id="home-ov-wish" class="ic" style="margin:0;cursor:pointer;touch-action:manipulation" onclick="openWishlist()"><div class="ic-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div><div class="iv" style="font-size:18px">${wishMonthCount}</div><div class="il">待去清單・本月新增</div></div>
     </div>
     <button onclick="openDashboard('all')" style="margin-top:14px;width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#9a7d52,#6f5a3e);color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M20 20H3"/></svg>統計中心</button>
     <button onclick="openAllLedger()" style="margin-top:10px;width:100%;padding:14px;border:none;border-radius:14px;background:var(--br);color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 3h12v18H6.5A1.5 1.5 0 015 19.5V4.5A1.5 1.5 0 016.5 3z"/><path d="M9 3v18"/><path d="M11.5 8.5h4"/><path d="M11.5 12h4"/></svg>查看全館收支</button>
   </div>
+  ${draftHomeBtnHtml()}
   <button onclick="toggleSettings()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid var(--bdr);border-radius:14px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>設定</button>
   <button onclick="openSyncSheet()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid var(--bdr);border-radius:14px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7 18a4 4 0 01-.5-7.97A5 5 0 0116.5 9.2 3.5 3.5 0 0117 18H7z"/></svg>雲端同步${syncEnabled?'<span style="color:#16a34a;font-weight:900">・已啟用</span>':''}</button>
   <button onclick="openLineLog()" style="margin:12px 16px 0;width:calc(100% - 32px);padding:14px;border:1px solid var(--bdr);border-radius:14px;background:var(--sur);color:var(--bd);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-size:16px">📱</span>LINE 記帳</button>
@@ -3167,8 +5003,8 @@ function renderStickerHistory(body,title){
     all.forEach(x=>{
       const isEvent=x.kind==='event';
       html+='<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr);font-size:13px">'
-        +'<div><span style="color:var(--t5);font-size:11px">'+(x.date||'').slice(5)+' '+(x.time||'')+'</span><br>'+(isEvent?'🎯 ':'🎁 ')+splitEsc(x.behaviorName||x.rewardName||'')+'</div>'
-        +'<div style="font-weight:900;color:'+(isEvent?'#16a34a':'#dc2626')+'">'+(isEvent?'+':'-')+x.points+'</div>'
+        +'<div><span style="color:var(--t5);font-size:11px">'+(x.date||'').slice(5)+' '+(x.time||'')+'</span><br>'+(isEvent?'🎯 ':'🎁 ')+splitEsc(x.behaviorName||x.rewardName||'')+((isEvent&&x.sn)?'<div class="dr-sn-line" style="font-size:10px;color:var(--t5);margin-top:2px;word-break:break-all">LINE 流水號　'+splitEsc(x.sn)+(x.snp?'・'+splitEsc(x.snp):'')+'</div>':'')+'</div>'
+        +'<div style="font-weight:900;color:'+((isEvent&&Number(x.points)>=0)?'#16a34a':'#dc2626')+'">'+(isEvent?(Number(x.points)>=0?'+':''):'-')+x.points+'</div>'
         +'</div>';
     });
   }
@@ -3308,7 +5144,7 @@ function renderMutualHistory(body){
     all.forEach(x=>{
       const isEvent=x.kind==='event';
       const posLabel=isEvent?(x.amount>=0?'#16a34a':'#dc2626'):'#dc2626';
-      const desc=isEvent?(splitEsc(x.actor||'')+(x.note?'・'+splitEsc(x.note):'')):('🎁 '+splitEsc(x.rewardName||'')+'（'+splitEsc(x.redeemer||'')+'兌換）');
+      const desc=isEvent?(splitEsc(x.actor||'')+(x.note?'・'+splitEsc(x.note):'')+(x.sn?'<div class="dr-sn-line" style="font-size:10px;color:var(--t5);margin-top:2px;word-break:break-all">LINE 流水號　'+splitEsc(x.sn)+(x.snp?'・'+splitEsc(x.snp):'')+'</div>':'')):('🎁 '+splitEsc(x.rewardName||'')+'（'+splitEsc(x.redeemer||'')+'兌換）');
       html+='<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr);font-size:13px">'
         +'<div><span style="color:var(--t5);font-size:11px">'+(x.date||'').slice(5)+' '+(x.time||'')+'</span><br>'+desc+'</div>'
         +'<div style="font-weight:900;color:'+posLabel+'">'+(isEvent?(x.amount>=0?'+':'')+x.amount:'-'+x.points)+'</div>'
@@ -3690,7 +5526,7 @@ function lcSaveQueryDefault(){
   const v=(document.getElementById('lc-qd')||{}).value||'';
   lcCommit(c=>{c.query={defaultVersion:v};},'✅ 已儲存查詢的預設版本');
 }
-function lcRenderSpecs(){
+function lcRenderSpecs0(){
   const sp=lc.specs;
   if(!sp)return '<div style="padding:24px;text-align:center;color:var(--t5);font-size:12px">沒有取得規格資料</div>';
   const st={confirmed:['✅ 已確認','#16a34a'],pending:['🚧 待確認','#dc2626'],default:['📌 預設（待你確認）','#ca8a04']};
@@ -4374,6 +6210,7 @@ function populateAccountOptions(selectId,includeTogether=true){
 }
 
 function openForm(date,id=null){
+  draftOnOpen('drink');
   editId=id;
   const now=new Date();
   const d=date||`${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`;
@@ -4496,41 +6333,11 @@ function getDrinkerPrefix(name){
   // Auto: first 2 chars uppercase
   return name.replace(/\s+/g,'').slice(0,2).toUpperCase();
 }
-// --- 美食紀錄流水號（與飲品分開計算，格式 M{panel}-YYYY-NNNN）---
-function updateMealSN(p){
-  const yr=new Date().getFullYear();
-  const eater=getCustom(p+'-m-eater',p+'-m-eater-c')||'?';
-  const panelNum=p==='a'?'1':'2';
-  const yrMeals=meals.filter(m=>m.date&&m.date.startsWith(String(yr))&&String(m.panel||'1')===panelNum);
-  const totNext=yrMeals.length+(mealEditId?0:1);
-  const totSN=`M${panelNum}-${yr}-${p4(totNext)}`;
-  const prefix=getDrinkerPrefix(eater);
-  const perMeals=meals.filter(m=>m.date&&m.date.startsWith(String(yr))&&m.eater===eater);
-  const perNext=perMeals.length+(mealEditId?0:1);
-  const perSN=`M${prefix}-${yr}-${p4(perNext)}`;
-  const totEl=document.getElementById(p+'-m-sn-total'),perEl=document.getElementById(p+'-m-sn-personal');
-  if(totEl)totEl.textContent=totSN;
-  if(perEl)perEl.textContent=perSN;
-}
-function updateSN(p){
-  const yr=new Date().getFullYear();
-  const drinker=getCustom(p+'-drinker',p+'-drinker-c')||'?';
-  const panelNum=p==='a'?'1':'2';
-  // 總流水號：每個表單獨立計數，格式 panelNum-YYYY-0001
-  const yrRecs=recs.filter(r=>r.date&&r.date.startsWith(String(yr))&&String(r.panel||'1')===panelNum);
-  const totNext=yrRecs.length+(editId?0:1);
-  const totSN=`${panelNum}-${yr}-${p4(totNext)}`;
-  // 個人流水號
-  const prefix=getDrinkerPrefix(drinker);
-  const perRecs=recs.filter(r=>r.date&&r.date.startsWith(String(yr))&&r.drinker===drinker);
-  const perNext=perRecs.length+(editId?0:1);
-  const perSN=`${prefix}-${yr}-${p4(perNext)}`;
-  document.getElementById(p+'-sn-total').textContent=totSN;
-  document.getElementById(p+'-sn-personal').textContent=perSN;
-}
+// （V10：表單上的流水號預覽 updateSN／updateMealSN 改由「流水號引擎」提供，跟儲存時同一套算法）
 
 function handleDateChange(p){
   const dEl=document.getElementById(p+'-date');if(!dEl)return;
+  updateSN(p);
   const ds=dEl.value,typeEl=document.getElementById(p+'-date-type');
   if(!ds||!typeEl)return;
   const now=new Date(),todayStr=`${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`;
@@ -4550,21 +6357,13 @@ function toggleB(){
   if(panelBEnabled)updateSN('b');
 }
 
-function collectPanel(p){
-  const yr=new Date().getFullYear();
+function collectPanel0(p){
   const drinker=getCustom(p+'-drinker',p+'-drinker-c')||'';
   const panelNum=p==='a'?'1':'2';
-  // Compute SN at save time
-  const yrRecs=recs.filter(r=>r.date&&r.date.startsWith(String(yr))&&String(r.panel||'1')===panelNum);
-  const totNext=yrRecs.length+1;
-  const prefix=getDrinkerPrefix(drinker||'XX');
-  const perRecs=recs.filter(r=>r.date&&r.date.startsWith(String(yr))&&r.drinker===drinker);
-  const perNext=perRecs.length+1;
+  // 流水號不在收集資料時算：新增由 snIssueAll 在儲存時配發（最大號 + 1），編輯由 snLock 原樣保留
   return {
     id:uid(),
     panel:panelNum,
-    sn:`${panelNum}-${yr}-${p4(totNext)}`,
-    snp:`${prefix}-${yr}-${p4(perNext)}`,
     date:document.getElementById(p+'-date').value,time:document.getElementById(p+'-time').value,
     country:getCountryValue(p),area:document.getElementById(p+'-area').value,
     brand:getCustom(p+'-brand',p+'-brand-c'),drink:getCustom(p+'-drink',p+'-drink-c'),
@@ -4580,7 +6379,7 @@ function collectPanel(p){
   };
 }
 
-function saveRecs(){
+function saveRecs0(){
   try{ _saveRecsImpl(); }
   catch(e){ console.error('儲存失敗:',e); saveFail((e&&e.message)?('系統錯誤 — '+e.message):'發生未知錯誤，請重試'); }
 }
@@ -4590,31 +6389,28 @@ function _saveRecsImpl(){
   if(!ra.brand&&!ra.drink){toast('⚠️ 無法儲存：請至少填寫「品牌」或「飲品名稱」');return;}
   if(!validDate(ra.date)){saveFail('日期格式錯誤');return;}
   if(!editId&&dupGuard('d|'+(ra.date||'')+'|'+(ra.time||'')+'|'+(ra.brand||'')+'|'+(ra.drink||'')+'|'+(ra.amount||0))){saveFail('疑似重複紀錄（剛剛已儲存相同內容）');return;}
-  if(editId){const idx=recs.findIndex(r=>r.id===editId);if(idx>-1){ra.id=editId;recs[idx]=ra;}}
+  if(editId){const idx=recs.findIndex(r=>r.id===editId);if(idx>-1){ra.id=editId;snLock(recs[idx],ra);recs[idx]=ra;}}
   else entries.push(ra);
   if(panelBEnabled){
     const rb=collectPanel('b');if(rb.brand||rb.drink)entries.push(rb);
   }
   // Together 額外項目：依主表單共用屬性，各自展開成完整獨立紀錄
   if(!editId){
-    const yr=new Date().getFullYear();
     ['a','b'].forEach(p=>{
       if(p==='b'&&!panelBEnabled)return;
       const base=p==='a'?ra:entries.find(e=>e.panel===(p==='a'?'1':'2'));
       if(!base)return;
       togetherItems[p].forEach((item,i)=>{
         if(!item.drink)return;
-        const seq=entries.filter(e=>e.panel===base.panel).length+1;
         entries.push({
           ...base,id:uid(),
-          sn:`${base.panel}-${yr}-${p4(seq)}`,
           drink:item.drink,topping:item.topping||base.topping,
           amount:Number(item.amount)||0,
         });
       });
     });
   }
-  if(!editId)recs.unshift(...entries);
+  if(!editId){snIssueAll('drink',entries);recs.unshift(...entries);} // 流水號在這裡一次配發：最大號 + 1，後面的接在前面的後面
   recs.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
   if(!saveRecords())return;
   toast(editId?'✅ 已更新！':`✅ 已儲存 ${entries.length} 筆`);
@@ -4626,6 +6422,7 @@ function closeForm(){
   document.getElementById('fo').classList.remove('open');
   document.body.style.overflow='';editId=null;
   togetherItems={a:[],b:[]};
+  draftFormClosed('drink');
 }
 function closeFormIfBg(e){if(e.target===document.getElementById('fo'))confirmCancel();}
 function confirmCancel(){document.getElementById('cancel-modal').classList.add('open','c-open');}
@@ -4637,6 +6434,7 @@ function doCancel(){closeCancelModal();closeForm();}
 // 美食紀錄表單邏輯（與飲品模組鏡像實作，資料完全分離）
 // ============================================
 function openMealForm(date,id=null){
+  draftOnOpen('food');
   mealEditId=id;
   const now=new Date();
   const d=date||`${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`;
@@ -4890,6 +6688,7 @@ function renderMealTogetherList(p){
 
 function handleMealDateChange(p){
   const dEl=document.getElementById(p+'-m-date');if(!dEl)return;
+  updateMealSN(p);
   const ds=dEl.value,typeEl=document.getElementById(p+'-m-date-type');
   if(!ds||!typeEl)return;
   const now=new Date(),todayStr=`${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`;
@@ -4951,20 +6750,13 @@ function toggleMealB(){
   if(panelMealBEnabled)updateMealSN('b');
 }
 
-function collectMealPanel(p){
-  const yr=new Date().getFullYear();
+function collectMealPanel0(p){
   const eater=getCustom(p+'-m-eater',p+'-m-eater-c')||'';
   const panelNum=p==='a'?'1':'2';
-  const yrMeals=meals.filter(m=>m.date&&m.date.startsWith(String(yr))&&String(m.panel||'1')===panelNum);
-  const totNext=yrMeals.length+1;
-  const prefix=getDrinkerPrefix(eater||'XX');
-  const perMeals=meals.filter(m=>m.date&&m.date.startsWith(String(yr))&&m.eater===eater);
-  const perNext=perMeals.length+1;
+  // 流水號不在收集資料時算：新增由 snIssueAll 在儲存時配發（最大號 + 1），編輯由 snLock 原樣保留
   return {
     id:uid(),
     panel:panelNum,
-    sn:`M${panelNum}-${yr}-${p4(totNext)}`,
-    snp:`M${prefix}-${yr}-${p4(perNext)}`,
     date:document.getElementById(p+'-m-date').value,time:document.getElementById(p+'-m-time').value,
     category:getCustom(p+'-m-category',p+'-m-category-c'),
     brand:document.getElementById(p+'-m-brand').value.trim(),dish:document.getElementById(p+'-m-dish').value.trim(),
@@ -4982,36 +6774,33 @@ function collectMealPanel(p){
   };
 }
 
-function saveMealRecs(){
+function saveMealRecs0(){
   const ra=collectMealPanel('a');
   if(!ra.brand&&!ra.dish){toast('⚠️ 無法儲存：請至少填寫「店家」或「餐點名稱」');return;}
   if(!validDate(ra.date)){saveFail('日期格式錯誤');return;}
   if(!mealEditId&&dupGuard('m|'+(ra.date||'')+'|'+(ra.time||'')+'|'+(ra.brand||'')+'|'+(ra.dish||'')+'|'+(ra.amount||0))){saveFail('疑似重複紀錄（剛剛已儲存相同內容）');return;}
   const entries=[];
-  if(mealEditId){const idx=meals.findIndex(r=>r.id===mealEditId);if(idx>-1){ra.id=mealEditId;meals[idx]=ra;}}
+  if(mealEditId){const idx=meals.findIndex(r=>r.id===mealEditId);if(idx>-1){ra.id=mealEditId;snLock(meals[idx],ra);meals[idx]=ra;}}
   else entries.push(ra);
   if(panelMealBEnabled){
     const rb=collectMealPanel('b');if(rb.brand||rb.dish)entries.push(rb);
   }
   // Together 額外項目：依主表單共用屬性，各自展開成完整獨立紀錄
   if(!mealEditId){
-    const yr=new Date().getFullYear();
     ['a','b'].forEach(p=>{
       if(p==='b'&&!panelMealBEnabled)return;
       const base=entries.find(e=>e.panel===(p==='a'?'1':'2'));
       if(!base)return;
       mealTogetherItems[p].forEach(item=>{
         if(!item.dish)return;
-        const seq=entries.filter(e=>e.panel===base.panel).length+1;
         entries.push({
           ...base,id:uid(),
-          sn:`M${base.panel}-${yr}-${p4(seq)}`,
           dish:item.dish,amount:Number(item.amount)||0,
         });
       });
     });
   }
-  if(!mealEditId)meals.unshift(...entries);
+  if(!mealEditId){snIssueAll('food',entries);meals.unshift(...entries);} // 流水號在這裡一次配發：最大號 + 1
   meals.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
   if(!saveMeals())return;
   toast(mealEditId?'✅ 已更新！':`✅ 已儲存 ${entries.length} 筆`);
@@ -5023,6 +6812,7 @@ function closeMealForm(){
   document.getElementById('meal-fo').classList.remove('open');
   document.body.style.overflow='';mealEditId=null;
   mealTogetherItems={a:[],b:[]};
+  draftFormClosed('food');
 }
 function closeMealFormIfBg(e){if(e.target===document.getElementById('meal-fo'))confirmMealCancel();}
 function confirmMealCancel(){
@@ -5066,6 +6856,7 @@ function travelIcon(t){return travelTypeMeta(t).icon;}
 function travelName(t){return travelTypeMeta(t).name;}
 
 function openTravelForm(id=null){
+  draftOnOpen('travel');
   travelEditId=id;
   document.getElementById('travel-form-badge').textContent=travelEditId?'編輯紀錄':'新增紀錄';
   if(travelEditId){
@@ -5246,7 +7037,7 @@ function fillTravelForm(r){
   }
 }
 
-function collectTravelPanel(p){
+function collectTravelPanel0(p){
   const get=id=>document.getElementById(id)?.value?.trim()||'';
   const recorder=getCustom(`${p}-t-recorder`,`${p}-t-recorder-c`);
   const payment=getCustom(`${p}-t-pay`,`${p}-t-pay-c`);
@@ -5289,7 +7080,7 @@ function validateTravelPanel(d){
   return null;
 }
 
-function saveTravelRecord(){
+function saveTravelRecord0(){
   const msgEl=document.getElementById('travel-validation-msg');
   const da=collectTravelPanel('a');
   const errA=validateTravelPanel(da);
@@ -5314,8 +7105,9 @@ function saveTravelRecord(){
   msgEl.style.display='none';
   if(travelEditId){
     const idx=travels.findIndex(r=>r.id===travelEditId);
-    if(idx>-1){entries[0].id=travelEditId;travels[idx]=entries[0];}
+    if(idx>-1){entries[0].id=travelEditId;snLock(travels[idx],entries[0]);travels[idx]=entries[0];}
   } else {
+    snIssueAll('travel',entries);
     travels.unshift(...entries);
   }
   travels.sort((a,b)=>(b.date||'')<(a.date||'')?-1:1);
@@ -5328,6 +7120,7 @@ function saveTravelRecord(){
 function closeTravelForm(){
   document.getElementById('travel-fo').classList.remove('open');
   document.body.style.overflow='';travelEditId=null;
+  draftFormClosed('travel');
 }
 function closeTravelFormIfBg(e){if(e.target===document.getElementById('travel-fo'))confirmTravelCancel();}
 function confirmTravelCancel(){
@@ -7568,26 +9361,32 @@ function renderSettings(){
         <div style="font-size:10px;font-weight:700;color:var(--t5);text-transform:uppercase;letter-spacing:.5px">⚙️ 系統層版本</div>
         <div style="font-size:17px;font-weight:900;color:var(--br);font-family:'Noto Serif TC',serif">v${APP_VERSION}</div>
       </div>
-      <div style="font-size:10px;color:var(--t5);text-align:right;max-width:120px;line-height:1.5">適用於資料管理、回收桶等跨模組系統功能</div>
+      <div style="font-size:10px;color:var(--t5);text-align:right;max-width:160px;line-height:1.5">適用於資料管理、回收桶、首頁總覽、開場動畫等跨模組系統功能</div>
     </div>
     <button onclick="toggleChangelog()" id="changelog-toggle-btn" style="width:100%;padding:11px;border:1px solid var(--bdr);border-radius:10px;background:var(--sur);font-family:inherit;font-size:12px;font-weight:900;color:var(--br);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation">
       📜 查看完整更新紀錄 <span id="changelog-arrow">▾</span>
     </button>
     <div id="changelog-body" style="display:none;margin-top:12px"></div>
     <div style="font-size:10px;color:var(--t5);margin-top:10px;line-height:1.6;text-align:center">
-      五套版本號各自獨立計算（🧋飲料／🍱美食／🚆交通／🧾分帳／⚙️系統），互不影響，皆採 Major.Minor.Patch（SemVer）規則判定。
+      八套版本號各自獨立計算（🧋飲料／🍱美食／🚆交通／🧾分帳／🌟集點卡／🗺️待去清單／⚙️LINE整合／⚙️系統），互不影響，皆採 Major.Minor.Patch（SemVer）規則判定。
     </div>
   </div>
   <div class="chart-card">
     <div class="ct">關於</div>
     <div style="font-size:13px;color:var(--t5);line-height:1.8">
       <div>📝 <strong>日常小秘書 v${APP_VERSION}</strong></div>
-      <div>記錄每一餐，感受每一刻。</div>
+      <div id="about-slogan">${APP_SLOGAN}</div>
       <div style="margin-top:6px;font-size:11px">使用 Google Gemini API（免費方案）</div>
     </div>
   </div>
   <div class="chart-card" style="margin-top:12px">
-    <div class="ct">📡 LINE官方帳號 × 智慧關鍵字辨識 × LINE群組使用權限</div>
+    <div id="line-card-head" class="ct" style="align-items:center;gap:6px;text-transform:none;letter-spacing:0">
+      <span aria-hidden="true" style="font-size:24px;line-height:1;flex:none">📡</span>
+      <div style="min-width:0;flex:1">
+        <div id="line-card-title" style="font-size:13px;font-weight:900;color:var(--bd);line-height:1.5">智能解析，不再遺漏任何心動角落</div>
+        <div id="line-card-sub" style="font-size:10px;font-weight:700;color:var(--t5);line-height:1.5">LINE官方帳號 × 智慧關鍵字辨識 × LINE群組使用權限</div>
+      </div>
+    </div>
     <div style="font-size:12px;color:var(--t5);line-height:1.7;margin-bottom:12px">管理 LINE 的功能選單、關鍵字辨識規則，以及集點卡、待去清單等功能在「1對1」與「群組」的使用權限。設定存放在伺服器，LINE 機器人每則訊息都會依照這裡的設定執行。</div>
     <button onclick="openLineCfg()" style="width:100%;padding:13px;border:1px solid var(--amb);border-radius:12px;background:var(--crm);color:var(--br);font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation">📡 開啟管理</button>
   </div>`;
@@ -7750,6 +9549,7 @@ function toggleChangelog(){
 function detectChangeTag(text){
   if(/^待去清單/.test(text))return'wishlist';
   if(/^LINE整合|LINE Bot|LINE機器人/.test(text))return'line';
+  if(/^(首頁總覽|開場動畫)/.test(text))return'system'; // 首頁總覽、開場畫面是跨模組的系統層畫面：項目開頭寫這兩個詞，就算文字裡提到各模組的名字也歸系統
   const drinkKw=/飲料|飲品|飲用者|手搖|加料|甜度|冰塊/;
   const foodKw=/美食|餐點|用餐|菜系|辣度|飽足感|回訪意願|店家.*餐|食用/;
   const travelKw=/航班|船班|高鐵|火車|地鐵|捷運|打車|交通|班機|車次|登機|艙位|車廂|乘車|航空/;
@@ -7944,7 +9744,7 @@ function confirmClearAll(){
 function showDangerConfirm(title,desc,onConfirm,confirmLabel){
   const sheet=document.createElement('div');
   sheet.id='danger-confirm-sheet';
-  sheet.style.cssText='position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;touch-action:manipulation;padding:20px';
+  sheet.style.cssText='position:fixed;inset:0;z-index:10010;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;touch-action:manipulation;padding:20px';
   sheet.innerHTML=`
     <div style="background:var(--bg);border-radius:20px;width:100%;max-width:340px;padding:26px 22px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.2)" onclick="event.stopPropagation()">
       <div style="font-size:36px;margin-bottom:10px;line-height:1">⚠️</div>
@@ -8536,7 +10336,7 @@ function splitFilterExpenses(v){
 }
 function renderExpenseList(g,q){
   let exps=(g.expenses||[]);
-  if(q){const ql=q.toLowerCase();exps=exps.filter(e=>(e.desc||'').toLowerCase().includes(ql)||memberName(g,e.payerId).toLowerCase().includes(ql)||catMeta(e.cat).name.includes(q));}
+  if(q){const ql=q.toLowerCase();exps=exps.filter(e=>(e.desc||'').toLowerCase().includes(ql)||memberName(g,e.payerId).toLowerCase().includes(ql)||catMeta(e.cat).name.includes(q)||String(e.sn||'').toLowerCase().includes(ql)||String(e.snp||'').toLowerCase().includes(ql));}
   if(!exps.length)return `<div style="text-align:center;padding:16px;color:var(--t5);font-size:12px">${q?'找不到符合的支出':'還沒有支出，點下方新增。'}</div>`;
   const byDate={};
   exps.forEach(e=>{const k=e.date||'未指定日期';(byDate[k]=byDate[k]||[]).push(e);});
@@ -8549,6 +10349,7 @@ function renderExpenseList(g,q){
       const amtStr=fmtMoney({currency:cur},Number(e.amount)||0);
       const timeStr=e.time?(e.time+'・'):'';
       const noteLine=e.note?`<div style="font-size:11px;color:var(--t5);margin-top:2px">📝 ${splitEsc(e.note)}</div>`:'';
+      const snLine=e.sn?`<div class="dr-sn-line" style="font-size:10px;color:var(--t5);margin-top:2px;word-break:break-all">LINE 流水號　${splitEsc(e.sn)}${e.snp?'・'+splitEsc(e.snp):''}</div>`:'';
       const thumb=e.image?`<img src="${e.image}" style="width:40px;height:40px;border-radius:9px;object-fit:cover;border:1px solid var(--bdr);flex-shrink:0">`:'';
       return `<div class="rc" style="cursor:pointer" onclick="openExpenseSheet('${g.id}','${e.id}')">
         <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
@@ -8556,7 +10357,7 @@ function renderExpenseList(g,q){
           <div style="min-width:0;flex:1">
             <div class="rc-br">${splitEsc(e.desc)||'(未命名)'}${isInc?' <span style="font-size:9px;font-weight:900;color:#15803d;background:#dcfce7;padding:1px 6px;border-radius:6px">收入</span>':''}</div>
             <div class="rc-nm">${timeStr}${splitEsc(memberName(g,e.payerId))} ${isInc?'收款':'先付'} ${amtStr}・分 ${parts} 人${e.splitType==='custom'?'（自訂）':''}</div>
-            ${noteLine}
+            ${noteLine}${snLine}
           </div>
           ${thumb}
         </div>
@@ -8833,8 +10634,9 @@ function deleteGroup(gid){
 }
 
 // --- 支出新增／編輯 sheet ---
-function closeExpSheet(){const s=document.getElementById('split-exp-sheet');if(s)s.remove();splitExpTmp=null;}
+function closeExpSheet(){const s=document.getElementById('split-exp-sheet');if(s)s.remove();splitExpTmp=null;draftFormClosed('split');}
 function openExpenseSheet(gid,eid=null){
+  draftOnOpen('split');
   const g=splitGroups.find(x=>x.id===gid);if(!g)return;
   if(!g.members.length){toast('請先在群組編輯裡新增成員');return;}
   const e=eid?(g.expenses||[]).find(x=>x.id===eid):null;
@@ -8857,6 +10659,7 @@ function openExpenseSheet(gid,eid=null){
         <div style="font-size:16px;font-weight:900;color:var(--bd);font-family:'Noto Serif TC',serif">${e?'✏️ 編輯支出':'🧾 新增支出'}</div>
         <button onclick="closeExpSheet()" type="button" style="width:30px;height:30px;border-radius:50%;background:#efe3d5;border:none;color:#9b8c7a;font-size:14px;cursor:pointer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="pointer-events:none"><line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/><line x1="17.5" y1="6.5" x2="6.5" y2="17.5"/></svg></button>
       </div>
+      ${(e&&e.sn)?`<div style="margin:-4px 0 12px;font-size:11px;line-height:1.9;color:var(--t5)">LINE 流水號（編輯時鎖定）<div class="sn-chips"><span class="sn-chip total">總流水號　${splitEsc(e.sn)}</span><span class="sn-chip personal">個人流水號　${splitEsc(e.snp||'')}</span></div></div>`:''}
       <div class="fg"><label class="fl">類型</label>
         <div style="display:flex;gap:8px">
           <button type="button" id="se-kind-exp" onclick="setExpKind('expense')" style="flex:1;padding:9px;border-radius:9px;border:1px solid var(--bdr);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer">💸 支出</button>
@@ -8981,7 +10784,8 @@ function renderExpImg(){
     w.innerHTML='<button type="button" onclick="document.getElementById(\'se-img-input\').click()" style="padding:12px 18px;border:1px dashed var(--bdr);border-radius:12px;background:var(--sur);color:var(--t5);font-family:inherit;font-size:13px;font-weight:900;cursor:pointer;touch-action:manipulation">📷 選擇圖片</button>';
   }
 }
-function saveExpense(){
+function saveExpense(){return draftSaveWrap('split',saveExpense0);}
+function saveExpense0(){
   const t=splitExpTmp;if(!t)return;
   const g=splitGroups.find(x=>x.id===t.gid);if(!g)return;
   const desc=document.getElementById('se-desc').value.trim();
@@ -9005,6 +10809,16 @@ function saveExpense(){
     if(Math.abs(sum-amount)>=0.005){toast('自訂金額總和需等於金額');return;}
   }
   const rec={id:t.eid||uid(),kind:t.kind||'expense',desc,cat,amount,currency,payerId,payment,date,time,splitType:t.splitType,participantIds:[...t.participantIds],customShares,note,image};
+  // V10.1：LINE 草稿存成的支出帶 LINE 流水號（最大號 + 1）；編輯時流水號、草稿標記、紀錄者原樣保留
+  if(t.eid){
+    const old=(g.expenses||[]).find(x=>x.id===t.eid);
+    if(old){snLock(old,rec);if(old.recorder!==undefined)rec.recorder=old.recorder;}
+  }else{
+    const re=document.getElementById('se-recorder');
+    if(re&&re.value)rec.recorder=re.value;
+    draftTagRecord('split','a',rec);
+    if(rec.lineKey)snIssue('split',rec);
+  }
   if(!g.expenses)g.expenses=[];
   if(t.eid){const idx=g.expenses.findIndex(x=>x.id===t.eid);if(idx>-1)g.expenses[idx]=rec;}
   else g.expenses.unshift(rec);
@@ -9022,6 +10836,7 @@ function deleteExpense(gid,eid){
 
 // --- Init ---
 purgeExpiredTrash();
+try{draftsReconcile();}catch(e){} // V10.1：分帳／集點卡的資料變數到這裡才宣告完，再校正一次
 // 已移除帳密登入：直接進入 App，沿用同一份 localStorage（記憶完整保留），並解鎖完整資料可見性
 (function autoEnter(){
   // 確保至少有一個帳號可登入（避免開啟登入保護後鎖死無法進入）
@@ -9036,7 +10851,7 @@ purgeExpiredTrash();
 })();
 </script>
 <script>
-/* 開場載入動畫：四圖示依序描繪 → loading 波浪 → 淡出顯示 App */
+/* 開場載入動畫：七個圖示依序描繪 → loading 波浪 → 淡出顯示 App（V10.2：由四個增為七個，描繪節奏加快，整體長度維持約 2.4 秒） */
 (function(){
   var boot=document.getElementById('boot'); if(!boot) return;
   function hide(){ if(!boot) return; boot.classList.add('hide'); setTimeout(function(){ if(boot&&boot.parentNode) boot.parentNode.removeChild(boot); boot=null; }, 600); }
@@ -9046,13 +10861,13 @@ purgeExpiredTrash();
     icons.forEach(function(s){ Array.prototype.forEach.call(s.querySelectorAll('path'),function(p){p.style.strokeDashoffset=0;}); });
     boot.classList.add('go'); setTimeout(hide,700); return;
   }
-  var DRAW=600, STAG=300;
+  var DRAW=520, STAG=170;
   icons.forEach(function(s,i){
     setTimeout(function(){
       Array.prototype.forEach.call(s.querySelectorAll('path'),function(p){ p.style.transition='stroke-dashoffset '+DRAW+'ms cubic-bezier(.65,0,.35,1)'; p.style.strokeDashoffset=0; });
     }, i*STAG);
   });
-  var done=(icons.length-1)*STAG+DRAW;        // 進場結束 ≈ 1.5s
+  var done=(icons.length-1)*STAG+DRAW;        // 進場結束 ≈ 1.5s（七個圖示：6×170+520＝1540ms，和原本四個圖示的 1500ms 幾乎一樣）
   setTimeout(function(){ if(boot) boot.classList.add('go'); }, done);  // 啟動 loading 波浪 + 字樣
   setTimeout(hide, done+850);                  // 展示約一個波浪後淡出
   setTimeout(function(){ if(boot) hide(); }, 6000);  // 安全網：最遲 6 秒移除
