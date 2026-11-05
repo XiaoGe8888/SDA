@@ -773,6 +773,25 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>#itemForm{display:grid!important;grid-template-columns:1fr;gap:1rem}#itemForm>.grid{display:contents}#itemForm>*{margin:0!important}#itemForm>.sticky{order:99}#itemForm .fnum{display:inline-block;margin-right:4px;color:#059669;font-weight:800}</style>
 <style>@media(max-width:767px){header>div{height:auto!important;padding-top:.75rem;padding-bottom:.75rem;row-gap:.75rem}#viewSwitcher{order:3;width:100%;justify-content:center}#viewSwitcher button{flex:1;justify-content:center}}</style>
+<meta name="wishlist-version" content="1.2.0">
+<style id="biz-status-style">
+/* 營業狀態的顏色（原本建議的 Tailwind 顏色這頁的內建樣式表沒有，所以自己定義；亮色／深色模式都有，字與底色的對比 ≥ 4.5:1）*/
+.biz-badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;line-height:1.6;white-space:nowrap;vertical-align:middle}
+.biz-open{background:#dcfce7;color:#166534}
+.biz-closing{background:#fef9c3;color:#854d0e}
+.biz-opening{background:#ffedd5;color:#9a3412}
+.biz-closed{background:#fee2e2;color:#991b1b}
+.biz-unknown{background:#f1f5f9;color:#475569}
+.dark .biz-open{background:rgba(34,197,94,.22);color:#86efac}
+.dark .biz-closing{background:rgba(234,179,8,.22);color:#fde047}
+.dark .biz-opening{background:rgba(249,115,22,.24);color:#fdba74}
+.dark .biz-closed{background:rgba(239,68,68,.24);color:#fca5a5}
+.dark .biz-unknown{background:rgba(148,163,184,.22);color:#cbd5e1}
+.biz-cell{max-width:300px}
+.biz-sum{vertical-align:middle}
+.biz-hint{font-size:11px;line-height:1.5;color:#64748b}
+.dark .biz-hint{color:#94a3b8}
+</style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-emerald-100 selection:text-emerald-900 transition-colors duration-200">
 
@@ -1034,11 +1053,11 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="p-3 bg-slate-50 dark:bg-slate-700/40 rounded-xl border border-slate-200 dark:border-slate-700 relative">
             <span class="absolute -top-2.5 left-3 bg-slate-200 dark:bg-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-600">03 國家／地區</span>
-            <input type="text" id="formCountry" class="w-full mt-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5">
+            <input type="text" id="formCountry" oninput="bizFormPreview()" class="w-full mt-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5">
           </div>
           <div class="p-3 bg-slate-50 dark:bg-slate-700/40 rounded-xl border border-slate-200 dark:border-slate-700 relative">
             <span class="absolute -top-2.5 left-3 bg-slate-200 dark:bg-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-600">04 城市／地區</span>
-            <input type="text" id="formCity" class="w-full mt-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5">
+            <input type="text" id="formCity" oninput="bizFormPreview()" class="w-full mt-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5">
           </div>
           <div class="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800 relative">
             <span class="absolute -top-2.5 left-3 bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">05 詳細地點／商家</span>
@@ -1058,28 +1077,26 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
               <option value="">▼ 快速套用營業範本...</option>
               <option value="preset_regular">一般餐廳 (11:00-14:00, 17:00-21:00 週一休)</option>
               <option value="preset_brunch">早午餐 (08:00-15:00)</option>
+              <option value="preset_bar">酒吧／宵夜 (20:00-02:00 跨夜，週日休)</option>
+              <option value="preset_24h">24 小時營業</option>
+              <option value="preset_split">平日、假日不同 (平日 11-21, 假日 10-22)</option>
             </select>
-            <button type="button" onclick="toggleHoursFormDetails()" class="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">展開 11 項細節</button>
+            <button type="button" onclick="toggleHoursFormDetails()" class="text-xs text-emerald-700 dark:text-emerald-300 font-semibold">展開 10 項細節</button>
           </div>
           <input type="text" id="formOpenHoursSummary" readonly class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 cursor-not-allowed">
+          <div id="formHourLive" class="mt-1.5"></div>
           
           <div id="hoursDetailFormPanel" class="hidden mt-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            <div>
-              <label class="block text-slate-600 dark:text-slate-400 mb-1">今日營業狀態</label>
-              <select id="formHourTodayStatus" onchange="syncSummaryFromHoursDetails()" class="w-full border dark:border-slate-600 dark:bg-slate-700 rounded p-1.5">
-                <option value="">空白（無法確認）</option>
-                <option value="🟢 營業中">🟢 營業中</option>
-                <option value="⚪ 休息中">⚪ 休息中</option>
-                <option value="⚫ 今日公休">⚫ 今日公休</option>
-              </select>
-            </div>
+            <input type="hidden" id="formHourTodayStatus" value="">
             <div class="md:col-span-2">
               <label class="block text-slate-600 dark:text-slate-400 mb-1">營業時間</label>
               <input type="text" id="formHourTimes" oninput="syncSummaryFromHoursDetails()" class="w-full border dark:border-slate-600 dark:bg-slate-700 rounded p-1.5" placeholder="例: 11:00-14:00, 17:00-21:00">
+              <div class="biz-hint mt-1">可以寫多段（11:00-14:00, 17:00-21:00）、跨夜（20:00-02:00）、24小時、分星期（週一至週五 11:00-21:00; 週六日 10:00-22:00）。「今日營業狀態」會依現在的時間自動判斷，不用再手動選。</div>
             </div>
             <div>
               <label class="block text-slate-600 dark:text-slate-400 mb-1">休息日</label>
-              <input type="text" id="formHourRestDays" oninput="syncSummaryFromHoursDetails()" class="w-full border dark:border-slate-600 dark:bg-slate-700 rounded p-1.5" placeholder="例: 週一">
+              <input type="text" id="formHourRestDays" oninput="syncSummaryFromHoursDetails()" class="w-full border dark:border-slate-600 dark:bg-slate-700 rounded p-1.5" placeholder="例: 週一、週二">
+              <div class="biz-hint mt-1">寫週幾：週一、週二／週六日／每月第1、3個週二／每月最後一個週三</div>
             </div>
             <div><label class="block mb-1">最後入場</label><input type="text" id="formHourLastOrder" class="w-full border dark:bg-slate-700 rounded p-1.5"></div>
             <div><label class="block mb-1">聯絡電話</label><input type="text" id="formHourPhone" class="w-full border dark:bg-slate-700 rounded p-1.5"></div>
@@ -1427,7 +1444,7 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
           if (dateType === 'ALL' && !tMatch && !sMatch && !cMatch) return false;
         }
         if (sSearch) {
-          const str = `${item.name} ${item.detailPlace} ${item.reason} ${item.notes} ${item.proposer}`.toLowerCase();
+          const str = `${item.name} ${item.detailPlace} ${item.reason} ${item.notes} ${item.proposer} ${item.sn || ''} ${item.snp || ''}`.toLowerCase();
           if (!str.includes(sSearch)) return false;
         }
         return true;
@@ -1458,6 +1475,8 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
       renderMapMarkers(filtered);
     }
 
+    // LINE 流水號當純文字顯示（同步資料可能被竄改，不能直接塞進網頁）
+    function lineSnText(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
     function renderTable(data) {
       const tbody = document.getElementById('wishTableBody');
       if (!tbody) return;
@@ -1485,8 +1504,8 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
             <td class="py-3 px-3">${item.country || ''}</td>
             <td class="py-3 px-3">${item.city || ''}</td>
             <td class="py-3 px-3">
-              <button onclick='showHoursDetail(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="text-[11px] bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 px-2 py-1 rounded truncate max-w-[150px] inline-block border border-slate-200">
-                ${item.openHours || '點擊查看營業資訊'}
+              <button onclick='showHoursDetail(${JSON.stringify(item).replace(/'/g, "&apos;")})' data-biz-id="${item.id}" title="${bizEsc(bizTitle(bizItemStatus(item)))}" class="biz-cell text-[11px] bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 px-2 py-1 rounded truncate inline-block border border-slate-200">
+                ${bizCellHtml(item)}
               </button>
             </td>
             <td class="py-3 px-3 truncate max-w-[200px]" title="${item.reason || ''}">${item.reason || ''}</td>
@@ -1509,6 +1528,7 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
                   <div class="flex justify-between"><span class="text-slate-500">國家流水號</span><span class="font-bold">${item.countrySeq || ''}</span></div>
                   <div class="flex justify-between"><span class="text-slate-500">城市流水號</span><span class="font-bold">${item.citySeq || ''}</span></div>
                   <div class="flex justify-between border-t pt-1 mt-1"><span class="text-slate-500">總流水號</span><span class="font-bold">${item.totalSeq || ''}</span></div>
+                  ${item.sn ? `<div class="border-t pt-1 mt-1"><div class="text-slate-500">LINE 總流水號</div><div class="font-bold text-sky-600 break-all">${lineSnText(item.sn)}</div></div><div><div class="text-slate-500">LINE 個人流水號</div><div class="font-bold text-sky-600 break-all">${lineSnText(item.snp)}</div></div>` : ''}
                 </div>
               </div>
             </td>
@@ -1599,17 +1619,525 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
       ` + statCards();
     }
 
+/* ===== BIZ-ENGINE-BEGIN（營業狀態判斷引擎；改這一段請同時跑 test/web110.test.mjs、test/biz_unit.mjs）===== */
+// 依「營業時間」「休息日」和「現在的時間」算出：🟢營業中／🟡即將打烊／🟠即將營業／🔴休息中／⚪資訊未提供
+// 原則：看得懂的才判斷，看不懂就老實說「資訊未提供」，不亂猜。
+const BIZ_SOON_MIN = 60; // 「即將打烊」「即將營業」的緩衝分鐘數（含剛好 60 分鐘）
+const BIZ_STATES = {
+  open:    { text: '營業中',     emoji: '🟢', color: 'biz-open' },
+  closing: { text: '即將打烊',   emoji: '🟡', color: 'biz-closing' },
+  opening: { text: '即將營業',   emoji: '🟠', color: 'biz-opening' },
+  closed:  { text: '休息中',     emoji: '🔴', color: 'biz-closed' },
+  unknown: { text: '資訊未提供', emoji: '⚪', color: 'biz-unknown' }
+};
+const BIZ_WD_CHARS = '日一二三四五六'; // 位置 = JavaScript 的 getDay()（日 0、一 1 … 六 6）
+function bizWdOf(ch) { return ch === '天' ? 0 : BIZ_WD_CHARS.indexOf(ch); }
+function bizNumOf(ch) { const k = '一二三四五'.indexOf(ch); return k >= 0 ? k + 1 : parseInt(ch, 10); }
+
+// ---- 1. 把文字整理成好讀的樣子：全形→半形、各種橫線→-、頓號→逗號、空白合併、英文轉小寫 ----
+function bizNorm(v) {
+  const s = String(v == null ? '' : v).slice(0, 600);
+  let o = '';
+  for (let i = 0; i < s.length; i++) {
+    let c = s.charCodeAt(i);
+    if (c >= 0xFF01 && c <= 0xFF5E) c -= 0xFEE0; // 全形英數與符號 → 半形
+    else if (c === 0x3000 || c === 0xA0 || c === 0x2009 || c === 0x202F || c === 10 || c === 13 || c === 9) c = 32; // 各種空白、換行
+    else if (c === 0x200B || c === 0x200C || c === 0x200D || c === 0xFEFF) continue; // 看不見的字元
+    else if ((c >= 0x2010 && c <= 0x2015) || c === 0x2212 || c === 0xFE58 || c === 0xFE63 || c === 0x301C) c = 45; // 各種橫線、波浪線 → -
+    else if (c === 0x3001) c = 44; // 、 → ,
+    else if (c === 0x3002) c = 59; // 。 → ;
+    o += String.fromCharCode(c);
+  }
+  return o.toLowerCase().replace(/~/g, '-').replace(/ +/g, ' ').trim();
+}
+
+// ---- 2. 辨識「星期幾」：週一、週六日、週一至週五、星期二、禮拜三、平日、假日、每日、Mon-Fri ----
+const BIZ_PFX = '(?:週|周|星期|禮拜|礼拜)';
+const BIZ_W = '[一二三四五六日天]';
+const BIZ_EN = { mon: 1, monday: 1, tue: 2, tues: 2, tuesday: 2, wed: 3, weds: 3, wednesday: 3, thu: 4, thur: 4, thurs: 4, thursday: 4, fri: 5, friday: 5, sat: 6, saturday: 6, sun: 0, sunday: 0 };
+function bizCycle(a, b) { // 從 a 往後數到 b（含），週日接在週六後面：週五→週日 = 五、六、日
+  const out = [];
+  let x = a, n = 0;
+  for (;;) { out.push(x); if (x === b || ++n > 7) break; x = (x + 1) % 7; }
+  return out;
+}
+function bizUnion(list, items) {
+  const set = {};
+  items.forEach(it => bizCycle(it[0], it[1]).forEach(d => { set[d] = 1; }));
+  (list || []).forEach(d => { set[d] = 1; });
+  return Object.keys(set).map(Number).sort((x, y) => x - y);
+}
+function bizMatchDays(r, prev) {
+  let m;
+  if ((m = /^(?:每日|每天|天天|全週|整週|every ?day|daily|7 ?days)/.exec(r))) return { len: m[0].length, set: [0, 1, 2, 3, 4, 5, 6] };
+  if ((m = /^(?:平日|週間|工作日|weekdays?)/.exec(r))) return { len: m[0].length, set: [1, 2, 3, 4, 5] };
+  if ((m = /^(?:週末|例假日|假日|weekends?)/.exec(r))) return { len: m[0].length, set: [6, 0] };
+  m = new RegExp('^' + BIZ_PFX + '(' + BIZ_W + ')').exec(r);
+  if (m) {
+    let len = m[0].length;
+    const items = [[bizWdOf(m[1]), bizWdOf(m[1])]];
+    for (;;) {
+      const t = r.slice(len);
+      let mm = new RegExp('^ ?(?:-|至|到) ?' + BIZ_PFX + '?(' + BIZ_W + ')').exec(t); // 範圍：週一至週五、週一~五
+      if (mm) { items[items.length - 1][1] = bizWdOf(mm[1]); len += mm[0].length; continue; }
+      mm = new RegExp('^(?: ?(?:,|/|和|及|與|&) ?' + BIZ_PFX + '?|' + BIZ_PFX + ')(' + BIZ_W + ')').exec(t); // 清單：週一、三、五
+      if (!mm) mm = new RegExp('^(' + BIZ_W + ')').exec(t); // 連寫：週六日、週一二
+      if (mm) { const d = bizWdOf(mm[1]); items.push([d, d]); len += mm[0].length; continue; }
+      break;
+    }
+    return { len, set: bizUnion([], items) };
+  }
+  // 英文：Mon-Fri、Sat, Sun、Monday
+  if (prev && /[a-z]/.test(prev)) return null; // 英文單字的中間不算
+  m = /^([a-z]+)\.?/.exec(r);
+  if (m && BIZ_EN[m[1]] !== undefined) {
+    let len = m[0].length;
+    const items = [[BIZ_EN[m[1]], BIZ_EN[m[1]]]];
+    for (;;) {
+      const t = r.slice(len);
+      let mm = /^ ?(?:-|to|until|through|thru) ?([a-z]+)\.?/.exec(t);
+      if (mm && BIZ_EN[mm[1]] !== undefined) { items[items.length - 1][1] = BIZ_EN[mm[1]]; len += mm[0].length; continue; }
+      mm = /^ ?(?:,|\/|&|and) ?([a-z]+)\.?/.exec(t);
+      if (mm && BIZ_EN[mm[1]] !== undefined) { items.push([BIZ_EN[mm[1]], BIZ_EN[mm[1]]]); len += mm[0].length; continue; }
+      break;
+    }
+    return { len, set: bizUnion([], items) };
+  }
+  return null;
+}
+
+// ---- 3. 辨識「時間」：11:00、11點、11點半、下午9點、9pm、隔天2點；「時間範圍」：11:00-14:00、11:00至14:00 ----
+const BIZ_TPFX = '(?:上午|早上|早晨|清晨|凌晨|中午|正午|下午|午後|傍晚|晚上|夜間|夜晚|深夜|半夜|翌日|隔天|隔日|次日|翌|明天|明日)';
+const BIZ_T = '((?:' + BIZ_TPFX + ' ?){0,2})(\\d{1,2})(?:: ?(\\d{2})(?!\\d)| ?[點点時时] ?(?:(\\d{1,2}) ?分?|(半))?|(?= ?(?:am|pm|a\\.m\\.|p\\.m\\.)))(?: ?(am|pm|a\\.m\\.|p\\.m\\.))?';
+const BIZ_RANGE_RE = new RegExp('^' + BIZ_T + ' ?(?:-|至|到|to|until|till) ?' + BIZ_T);
+function bizTimeMin(g, inheritPM) { // g = [前綴, 時, 分, 點後的分, 半, am/pm]；傳回「從 00:00 起算的分鐘數」，看不懂傳回 null
+  const word = (g[0] || '').replace(/ /g, '');
+  let h = parseInt(g[1], 10);
+  const m = g[2] ? parseInt(g[2], 10) : g[3] ? parseInt(g[3], 10) : g[4] ? 30 : 0;
+  if (!(h >= 0 && h <= 29) || m > 59) return null;
+  const ap = g[5] ? g[5].charAt(0) : '';
+  const next = /翌|隔|次日|明/.test(word) ? 1440 : 0;
+  if (ap === 'p') { if (h < 12) h += 12; }
+  else if (ap === 'a') { if (h === 12) h = 0; }
+  else if (/上午|早上|早晨|清晨|凌晨/.test(word)) { if (h === 12) h = 0; }
+  else if (/中午|正午/.test(word)) { if (h >= 1 && h <= 6) h += 12; }
+  else if (/下午|午後/.test(word)) { if (h < 12) h += 12; }
+  else if (/傍晚|晚上|夜間|夜晚/.test(word)) { if (h < 12) h += 12; else if (h === 12) h = 24; }
+  else if (/深夜|半夜/.test(word)) { if (h >= 6 && h < 12) h += 12; else if (h === 12) h = 24; }
+  else if (inheritPM && h < 12) h += 12;
+  return h * 60 + m + next;
+}
+function bizPM(g) { const w = (g[0] || '').replace(/ /g, ''); return g[5] === 'pm' || g[5] === 'p.m.' || /下午|午後|傍晚|晚上|夜間|夜晚/.test(w); }
+function bizMatchRange(r) {
+  const m = BIZ_RANGE_RE.exec(r);
+  if (!m) return null;
+  const a = m.slice(1, 7), b = m.slice(7, 13);
+  const bHasMark = !!((b[0] || '').trim() || b[5]);
+  const s = bizTimeMin(a, false);
+  let e = bizTimeMin(b, !bHasMark && bizPM(a));
+  if (s === null || e === null) return null;
+  if (e <= s) { if (e === s && s !== 0) return null; e += 1440; } // 結束比開始早（或同為 00:00）= 跨夜／24 小時
+  if (s === 0 && e === 1439) e = 1440; // 00:00-23:59 就是整天
+  if (e === 23 * 60 + 59) e = 1440; // 23:59 打烊就當作到午夜
+  if (e - s > 1440 || s >= 2 * 1440) return null;
+  return { len: m[0].length, s, e };
+}
+
+// ---- 4. 把整段文字切成「記號」：時間範圍、星期、休息字眼、24 小時、第幾個週幾…；看不懂的字會被略過 ----
+function bizTokAt(r, prev) {
+  let m;
+  if ((m = /^(?:全年無休|營業無休|無公休|沒有公休|不公休|不休息|天天營業|無休)/.exec(r))) return { t: 'norest', len: m[0].length };
+  if ((m = /^(?:不定休|不定期|不固定|隨機公休|臨時公休|依公告|依官方公告|另行公告|請洽|請電洽|詳見官網|依官網|以官網為準|隔週[一二三四五六日天]?|隔周[一二三四五六日天]?)/.exec(r))) return { t: 'irreg', len: m[0].length };
+  if ((m = /^(?:國定假日|國定|連假|過年|春節|農曆|除夕|元旦|端午|中秋|清明|特殊節日)/.exec(r))) return { t: 'holiday', len: m[0].length };
+  m = new RegExp('^第 ?([1-5一二三四五](?: ?(?:,|和|及|與|&) ?第? ?[1-5一二三四五])*) ?(?:個|个)? ?' + BIZ_PFX + ' ?(' + BIZ_W + ')').exec(r);
+  if (m) return { t: 'nth', len: m[0].length, ns: (m[1].match(/[1-5一二三四五]/g) || []).map(bizNumOf), last: false, wd: bizWdOf(m[2]) };
+  m = new RegExp('^最後 ?(?:一 ?)?(?:個|个)? ?' + BIZ_PFX + ' ?(' + BIZ_W + ')').exec(r);
+  if (m) return { t: 'nth', len: m[0].length, ns: [], last: true, wd: bizWdOf(m[1]) };
+  if (!(prev && /\d/.test(prev)) && (m = /^(?:24 ?(?:小時|小时)|24 ?(?:hours?|hrs?|h)(?![a-z])|24\/7|全天候|全天營業|全日營業|整天營業|不打烊|通宵營業|通宵)/.exec(r))) return { t: 'h24', len: m[0].length };
+  if ((m = /^(?:午休時間|午休|中休|中場休息|午間休息|休息時間|休憩時間|休憩|break)/.exec(r))) return { t: 'break', len: m[0].length, word: m[0] };
+  if (!(prev && /[a-z]/.test(prev)) && (m = /^(?:休息日|休息中|休息|公休日|公休|店休日|店休|定休日|定休|休館日|休館|休業|休假日|休假|歇業|暫停營業|不營業|closed|day off|休)/.exec(r))) return { t: 'rest', len: m[0].length, word: m[0] };
+  if (!(prev && /\d/.test(prev))) {
+    const rg = bizMatchRange(r);
+    if (rg) return { t: 'range', len: rg.len, s: rg.s, e: rg.e };
+  }
+  const d = bizMatchDays(r, prev);
+  if (d) return { t: 'days', len: d.len, set: d.set };
+  return null;
+}
+function bizTokenize(s) {
+  const toks = [];
+  let i = 0, pre = '';
+  while (i < s.length) {
+    const t = bizTokAt(s.slice(i), i > 0 ? s.charAt(i - 1) : '');
+    if (t && t.len > 0) { t.pre = pre; toks.push(t); i += t.len; pre = ''; }
+    else { pre += s.charAt(i); i++; }
+  }
+  return { toks, tail: pre };
+}
+function bizTight(pre) { // 兩個記號之間只隔著標點、空白、「每」「的」之類，就算「緊連著」
+  return /^[\s:,;()\[\]\/&]*$/.test(String(pre || '').replace(/\b(?:on|every|each)\b/g, '').replace(/每個|每|的|是|為/g, ''));
+}
+
+// ---- 5. 休息日：每週固定（週一）、每月第幾個週幾（第1、3個週二／最後一個週三）、不定休、國定假日 ----
+function bizNewRest() { return { weekly: [false, false, false, false, false, false, false], nth: [], none: false, irregular: false, holiday: false }; }
+function bizAddRestDays(rest, set) { set.forEach(d => { rest.weekly[d] = true; }); }
+function bizParseRestField(str, rest) {
+  const s = bizNorm(str);
+  if (!s) return rest;
+  bizTokenize(s).toks.forEach(tk => {
+    if (tk.t === 'days') bizAddRestDays(rest, tk.set);
+    else if (tk.t === 'nth') rest.nth.push({ wd: tk.wd, ns: tk.ns, last: tk.last });
+    else if (tk.t === 'holiday') rest.holiday = true;
+    else if (tk.t === 'irreg') rest.irregular = true;
+    else if (tk.t === 'norest') rest.none = true;
+  });
+  return rest;
+}
+function bizIsRest(rest, wd, dom, dim) {
+  if (rest.weekly[wd]) return true;
+  const nth = Math.ceil(dom / 7), isLast = dom + 7 > dim;
+  return rest.nth.some(r => r.wd === wd && ((r.ns.indexOf(nth) >= 0) || (r.last && isLast)));
+}
+
+// ---- 6. 解讀營業時間文字 → { def: 每天都一樣的時段, byDay: 指定星期的時段, breaks: 午休, rest: 休息日, ok: 有沒有看懂 } ----
+function bizParseSchedule(timesStr, restStr) {
+  const p = { def: [], byDay: {}, breaks: [], rest: bizNewRest(), closedAll: false, ok: false, text: '' };
+  const s = bizNorm(timesStr);
+  p.text = s;
+  if (s) {
+    const tk = bizTokenize(s), toks = tk.toks, n = toks.length;
+    const isRef = k => k >= 0 && k < n && (toks[k].t === 'days' || toks[k].t === 'nth' || toks[k].t === 'holiday');
+    const isRng = k => k >= 0 && k < n && toks[k].t === 'range';
+    // (a) 休息字眼綁到旁邊的星期：「週一公休」「公休：週一、週二」「除週一外」
+    for (let k = 0; k < n; k++) {
+      const x = toks[k];
+      if ((x.t === 'days' || x.t === 'nth') && /除$/.test(String(x.pre).trim())) x.rest = true;
+      if (x.t !== 'rest') continue;
+      let any = false, j = k - 1, link = x;
+      while (isRef(j) && bizTight(link.pre)) { toks[j].rest = true; any = true; link = toks[j]; j--; }
+      if (!any) { j = k + 1; while (isRef(j) && bizTight(toks[j].pre)) { toks[j].rest = true; any = true; j++; } }
+      x.bound = any;
+    }
+    // (b) 午休：「14:00-17:00 午休」「休息 14:00-17:00」→ 這一段不算營業時間
+    for (let k = 0; k < n; k++) {
+      const x = toks[k];
+      const isBreakWord = x.t === 'break' || (x.t === 'rest' && !x.bound && /^(?:休息|休憩)/.test(x.word));
+      if (!isBreakWord) continue;
+      const pr = isRng(k - 1) && bizTight(x.pre) ? toks[k - 1] : null;
+      const nx = isRng(k + 1) && bizTight(toks[k + 1].pre) ? toks[k + 1] : null;
+      const inside = (a, b) => a.s <= b.s && b.e <= a.e;
+      if (pr && nx) { if (inside(pr, nx)) nx.isBreak = true; else if (inside(nx, pr)) pr.isBreak = true; } // 兩邊都有時間：被包在裡面的那段才是午休，否則只是分隔字
+      else if (pr) pr.isBreak = true;
+      else if (nx) nx.isBreak = true;
+      if (pr || nx) x.used = true;
+    }
+    // (c) 依序整理：星期 → 之後的時間算那幾天的；沒寫星期的時間 = 每天
+    let ctx = null, lastDays = -2, standalone = false;
+    toks.forEach((x, k) => {
+      if (x.t === 'days') {
+        if (x.rest) { bizAddRestDays(p.rest, x.set); }
+        else { ctx = (lastDays === k - 1 && bizTight(x.pre) && ctx) ? bizUnion(ctx, x.set.map(d => [d, d])) : x.set.slice(); lastDays = k; }
+      } else if (x.t === 'nth') { if (x.rest) p.rest.nth.push({ wd: x.wd, ns: x.ns, last: x.last }); }
+      else if (x.t === 'holiday') { if (x.rest) p.rest.holiday = true; }
+      else if (x.t === 'irreg') p.rest.irregular = true;
+      else if (x.t === 'norest') p.rest.none = true;
+      else if (x.t === 'rest') { if (!x.bound && !x.used && /^(?:公休|休息|休息中|休業|歇業|暫停營業|不營業|店休|休館|closed)$/.test(x.word)) standalone = true; }
+      else if (x.t === 'range' || x.t === 'h24') {
+        const iv = x.t === 'h24' ? [0, 1440] : [x.s, x.e];
+        if (x.isBreak) p.breaks.push({ ctx: ctx ? ctx.slice() : null, s: iv[0], e: iv[1] });
+        else if (ctx) ctx.forEach(d => { (p.byDay[d] = p.byDay[d] || []).push(iv); });
+        else p.def.push(iv);
+      }
+    });
+    p.ok = p.def.length > 0 || Object.keys(p.byDay).some(d => p.byDay[d].length > 0);
+    // 整段只有「公休」「暫停營業」這類字（沒有任何時間）→ 一律休息
+    if (!p.ok && standalone && s.replace(/[\s:,;()\[\]\/&]/g, '').length <= 8) p.closedAll = true;
+  }
+  bizParseRestField(restStr, p.rest);
+  return p;
+}
+const BIZ_CACHE = {};
+let bizCacheN = 0;
+function bizParseCached(timesStr, restStr) {
+  const key = String(timesStr == null ? '' : timesStr) + '\n' + String(restStr == null ? '' : restStr);
+  if (!Object.prototype.hasOwnProperty.call(BIZ_CACHE, key)) {
+    if (bizCacheN > 400) { Object.keys(BIZ_CACHE).forEach(k => { delete BIZ_CACHE[k]; }); bizCacheN = 0; }
+    BIZ_CACHE[key] = bizParseSchedule(timesStr, restStr);
+    bizCacheN++;
+  }
+  return BIZ_CACHE[key];
+}
+
+// ---- 7. 某個星期幾的營業時段（扣掉午休、合併重疊的）----
+function bizMerge(list) {
+  const a = list.map(x => [x[0], x[1]]).sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+  const out = [];
+  a.forEach(iv => {
+    const last = out[out.length - 1];
+    if (last && iv[0] <= last[1]) { if (iv[1] > last[1]) last[1] = iv[1]; } // 接在一起（含剛好銜接）就合併，24 小時營業不會在午夜被誤判成打烊
+    else out.push(iv);
+  });
+  return out;
+}
+function bizIntervalsFor(p, wd) {
+  const base = (p.byDay[wd] && p.byDay[wd].length) ? p.byDay[wd] : p.def;
+  let ivs = bizMerge(base);
+  p.breaks.forEach(b => {
+    if (b.ctx && b.ctx.indexOf(wd) < 0) return;
+    let bs = b.s, be = b.e;
+    if (be <= bs) be += 1440;
+    const cuts = [[bs, be], [bs + 1440, be + 1440]];
+    cuts.forEach(c => {
+      const next = [];
+      ivs.forEach(iv => {
+        if (c[1] <= iv[0] || c[0] >= iv[1]) { next.push(iv); return; }
+        if (iv[0] < c[0]) next.push([iv[0], c[0]]);
+        if (c[1] < iv[1]) next.push([c[1], iv[1]]);
+      });
+      ivs = next;
+    });
+  });
+  return ivs;
+}
+
+// ---- 8. 現在是什麼時間：用店家所在地的時區（沒指定就用裝置的時間）----
+function bizParts(date, tz) {
+  try {
+    if (tz) {
+      const f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+      const o = {};
+      f.formatToParts(date).forEach(x => { o[x.type] = x.value; });
+      let h = parseInt(o.hour, 10);
+      if (h === 24) h = 0;
+      const y = parseInt(o.year, 10), mo = parseInt(o.month, 10), d = parseInt(o.day, 10), mi = parseInt(o.minute, 10);
+      if (y > 0 && mo > 0 && d > 0 && h >= 0 && mi >= 0) return { y, m: mo, d, min: h * 60 + mi, tz };
+    }
+  } catch (e) { /* 這個瀏覽器不支援該時區 → 改用裝置時間 */ }
+  return { y: date.getFullYear(), m: date.getMonth() + 1, d: date.getDate(), min: date.getHours() * 60 + date.getMinutes(), tz: '' };
+}
+const BIZ_TZ_COUNTRY = {
+  '台灣': 'Asia/Taipei', '臺灣': 'Asia/Taipei', '中華民國': 'Asia/Taipei', 'taiwan': 'Asia/Taipei',
+  '日本': 'Asia/Tokyo', 'japan': 'Asia/Tokyo', '韓國': 'Asia/Seoul', '南韓': 'Asia/Seoul', '大韓民國': 'Asia/Seoul', 'korea': 'Asia/Seoul', 'south korea': 'Asia/Seoul',
+  '中國': 'Asia/Shanghai', '中國大陸': 'Asia/Shanghai', '大陸': 'Asia/Shanghai', 'china': 'Asia/Shanghai',
+  '香港': 'Asia/Hong_Kong', 'hong kong': 'Asia/Hong_Kong', '澳門': 'Asia/Macau', 'macau': 'Asia/Macau', 'macao': 'Asia/Macau',
+  '新加坡': 'Asia/Singapore', 'singapore': 'Asia/Singapore', '泰國': 'Asia/Bangkok', 'thailand': 'Asia/Bangkok', '越南': 'Asia/Ho_Chi_Minh', 'vietnam': 'Asia/Ho_Chi_Minh',
+  '馬來西亞': 'Asia/Kuala_Lumpur', 'malaysia': 'Asia/Kuala_Lumpur', '菲律賓': 'Asia/Manila', 'philippines': 'Asia/Manila',
+  '柬埔寨': 'Asia/Phnom_Penh', '寮國': 'Asia/Vientiane', '緬甸': 'Asia/Yangon', '印度': 'Asia/Kolkata', '尼泊爾': 'Asia/Kathmandu', '斯里蘭卡': 'Asia/Colombo',
+  '阿聯': 'Asia/Dubai', '阿聯酋': 'Asia/Dubai', '杜拜': 'Asia/Dubai', '土耳其': 'Europe/Istanbul',
+  '英國': 'Europe/London', 'uk': 'Europe/London', 'united kingdom': 'Europe/London', '法國': 'Europe/Paris', 'france': 'Europe/Paris', '德國': 'Europe/Berlin', 'germany': 'Europe/Berlin',
+  '義大利': 'Europe/Rome', 'italy': 'Europe/Rome', '西班牙': 'Europe/Madrid', 'spain': 'Europe/Madrid', '荷蘭': 'Europe/Amsterdam', '瑞士': 'Europe/Zurich', '奧地利': 'Europe/Vienna',
+  '捷克': 'Europe/Prague', '希臘': 'Europe/Athens', '冰島': 'Atlantic/Reykjavik', '比利時': 'Europe/Brussels', '葡萄牙': 'Europe/Lisbon', '丹麥': 'Europe/Copenhagen',
+  '瑞典': 'Europe/Stockholm', '挪威': 'Europe/Oslo', '芬蘭': 'Europe/Helsinki', '波蘭': 'Europe/Warsaw', '匈牙利': 'Europe/Budapest', '紐西蘭': 'Pacific/Auckland', '埃及': 'Africa/Cairo'
+};
+const BIZ_TZ_CITY = { // 跨好幾個時區的國家：只認幾個大家常去的城市，其他一律用裝置時間
+  '紐約': 'America/New_York', '華盛頓': 'America/New_York', '波士頓': 'America/New_York', '芝加哥': 'America/Chicago', '洛杉磯': 'America/Los_Angeles', '舊金山': 'America/Los_Angeles',
+  '西雅圖': 'America/Los_Angeles', '拉斯維加斯': 'America/Los_Angeles', '夏威夷': 'Pacific/Honolulu', '檀香山': 'Pacific/Honolulu',
+  '雪梨': 'Australia/Sydney', '墨爾本': 'Australia/Melbourne', '坎培拉': 'Australia/Sydney', '布里斯本': 'Australia/Brisbane', '伯斯': 'Australia/Perth',
+  '溫哥華': 'America/Vancouver', '多倫多': 'America/Toronto', '蒙特婁': 'America/Toronto'
+};
+function bizTzFor(country, city) {
+  const c = String(country == null ? '' : country).trim().toLowerCase().replace(/\s+/g, ' ');
+  const y = String(city == null ? '' : city).trim();
+  if (c && Object.prototype.hasOwnProperty.call(BIZ_TZ_COUNTRY, c)) return BIZ_TZ_COUNTRY[c];
+  if (y && Object.prototype.hasOwnProperty.call(BIZ_TZ_CITY, y)) return BIZ_TZ_CITY[y];
+  return '';
+}
+
+// ---- 9. 判斷：把「昨天～之後一週」每個營業日的時段攤開成一條時間軸，看現在落在哪 ----
+function bizEvaluate(p, parts) {
+  const base = Date.UTC(parts.y, parts.m - 1, parts.d);
+  const all = [];
+  let restToday = false;
+  for (let k = -1; k <= 8; k++) { // -1：昨天營業到今天凌晨的跨夜時段也要算；+8：找下一次營業
+    const dt = new Date(base + k * 86400000);
+    const dom = dt.getUTCDate();
+    const dim = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 0)).getUTCDate();
+    const rest = bizIsRest(p.rest, dt.getUTCDay(), dom, dim);
+    if (k === 0) restToday = rest;
+    if (rest || p.closedAll) continue; // 休息日整天沒有營業（前一晚跨夜到凌晨的時段屬於前一個營業日，不受影響）
+    bizIntervalsFor(p, dt.getUTCDay()).forEach(iv => { all.push([k * 1440 + iv[0], k * 1440 + iv[1]]); });
+  }
+  const line = bizMerge(all);
+  const now = parts.min;
+  let cur = null, next = null;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i][0] <= now && now < line[i][1]) { cur = line[i]; break; }
+    if (line[i][0] > now) { next = line[i]; break; }
+  }
+  return { cur, next, restToday, wd0: new Date(base).getUTCDay() };
+}
+function bizHM(abs) { const m = ((abs % 1440) + 1440) % 1440; return (m < 600 ? '0' : '') + Math.floor(m / 60) + ':' + (m % 60 < 10 ? '0' : '') + (m % 60); }
+function bizDur(min) {
+  if (min < 60) return min + ' 分鐘';
+  const h = Math.floor(min / 60), m = min % 60;
+  return h + ' 小時' + (m ? ' ' + m + ' 分鐘' : '');
+}
+function bizDayLabel(abs, wd0) { const k = Math.floor(abs / 1440); return k <= 0 ? '今天' : k === 1 ? '明天' : '週' + BIZ_WD_CHARS.charAt((wd0 + k) % 7); }
+
+// ---- 10. 對外的主函式：checkBusinessStatus(營業時間文字, { rest: 休息日文字, now: Date, tz: 時區, soonMin: 緩衝分鐘數 }) ----
+function checkBusinessStatus(scheduleStr, opts) {
+  opts = opts || {};
+  const soon = typeof opts.soonMin === 'number' ? opts.soonMin : BIZ_SOON_MIN;
+  const mk = (key, detail, extra) => Object.assign({ key, text: BIZ_STATES[key].text, emoji: BIZ_STATES[key].emoji, color: BIZ_STATES[key].color, detail: detail || '', parsed: false, tz: '', until: null, nextAt: null }, extra || {});
+  try {
+    const p = bizParseCached(scheduleStr, opts.rest);
+    const parts = bizParts(opts.now && typeof opts.now.getTime === 'function' && !isNaN(opts.now.getTime()) ? opts.now : new Date(), opts.tz); // 不用 instanceof Date：不同視窗（iframe）的 Date 也認得
+    const ev = bizEvaluate(p, parts);
+    const x = { parsed: p.ok || p.closedAll, tz: parts.tz, p };
+    if (!p.ok && !p.closedAll) {
+      if (ev.restToday) return mk('closed', '今日公休', x);
+      return mk('unknown', String(scheduleStr == null ? '' : scheduleStr).trim() ? '營業時間的寫法看不懂（可以寫成 11:00-14:00, 17:00-21:00）' : '還沒有填營業時間', x);
+    }
+    if (p.closedAll) return mk('closed', '標示為休息／暫停營業', x);
+    if (ev.cur) {
+      const left = ev.cur[1] - parts.min;
+      const tomorrow = ev.cur[1] >= 1440 ? '（隔天）' : '';
+      x.until = ev.cur[1];
+      if (left <= soon) return mk('closing', bizHM(ev.cur[1]) + tomorrow + ' 打烊，剩 ' + bizDur(left), x);
+      if (left > 2 * 1440) return mk('open', '24 小時營業中', x); // 連續營業好幾天（24 小時營業）就不倒數
+      return mk('open', '營業到 ' + bizHM(ev.cur[1]) + tomorrow + '，還有 ' + bizDur(left), x);
+    }
+    if (ev.next) {
+      const wait = ev.next[0] - parts.min;
+      x.nextAt = ev.next[0];
+      const when = bizDayLabel(ev.next[0], ev.wd0) + ' ' + bizHM(ev.next[0]);
+      if (wait <= soon) return mk('opening', when + ' 開始營業，還有 ' + bizDur(wait), x);
+      return mk('closed', (ev.restToday ? '今日公休，' : '') + when + ' 開始營業', x);
+    }
+    return mk('closed', ev.restToday ? '今日公休' : '近期沒有營業時段', x);
+  } catch (e) {
+    return mk('unknown', '營業時間讀取失敗');
+  }
+}
+
+// ---- 11. 把「系統怎麼讀你寫的營業時間」用白話寫出來（表單與詳情視窗會顯示，讓你確認有沒有讀錯）----
+function bizDescribe(p) {
+  if (!p) return '';
+  if (p.closedAll) return '標示為休息／暫停營業';
+  const parts = [];
+  if (p.ok) {
+    const order = [1, 2, 3, 4, 5, 6, 0];
+    const fmt = ivs => ivs.map(iv => (iv[0] === 0 && iv[1] === 1440) ? '24 小時' : bizHM(iv[0]) + '–' + (iv[1] > 1440 ? '隔天' : '') + bizHM(iv[1])).join('、');
+    const labels = order.map(wd => p.rest.weekly[wd] ? '休' : (fmt(bizIntervalsFor(p, wd)) || '休'));
+    const groups = [];
+    order.forEach((wd, i) => {
+      const g = groups[groups.length - 1];
+      if (g && g.label === labels[i]) g.days.push(wd); else groups.push({ label: labels[i], days: [wd] });
+    });
+    if (groups.length === 1 && groups[0].label !== '休') parts.push('每天 ' + groups[0].label);
+    else groups.forEach(g => {
+      const n = g.days.map(d => '週' + BIZ_WD_CHARS.charAt(d));
+      const name = n.length === 1 ? n[0] : n.length === 2 ? n.join('、') : n[0] + '～' + n[n.length - 1];
+      parts.push(g.label === '休' ? name + '休' : name + ' ' + g.label);
+    });
+  } else if (p.rest.weekly.some(Boolean)) {
+    parts.push('還沒有營業時段');
+  }
+  p.rest.nth.forEach(r => { parts.push('每月' + (r.last ? '最後一個' : '第' + r.ns.join('、') + '個') + '週' + BIZ_WD_CHARS.charAt(r.wd) + '休'); });
+  if (p.rest.irregular) parts.push('營業日或時間不固定（出發前請先確認）');
+  if (p.rest.holiday) parts.push('另有國定假日／過年等特殊休息日（出發前請先確認）');
+  return parts.join('；');
+}
+/* ===== BIZ-ENGINE-END ===== */
+/* ===== BIZ-UI-BEGIN（營業狀態的畫面：清單、詳情視窗、地圖氣泡、編輯表單；每 30 秒與切回頁面時自動更新）===== */
+function bizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+// 舊版把「🟢 營業中」這類狀態直接存在營業資訊文字裡（存下來就不會變）；現在狀態是即時算的，顯示時把那段過期的狀態字拿掉
+function bizLegacyText(openHours) {
+  return String(openHours == null ? '' : openHours).replace(/^\s*(?:🟢|⚪|⚫|🔴|🟡|🟠)\s*(?:營業中|休息中|今日公休|即將打烊|即將營業)?\s*\|?\s*/, '').trim();
+}
+// 這個項目的營業時間／休息日文字（匯入的 Excel／CSV 只有一段「營業資訊」，沒有分開的欄位，就用那一段）
+function bizSource(item) {
+  const d = (item && item.hoursDetail) || {};
+  const times = String(d.times == null ? '' : d.times).trim();
+  const rest = String(d.restDays == null ? '' : d.restDays).trim();
+  if (times || rest) return { times, rest, legacy: false };
+  return { times: bizLegacyText(item && item.openHours), rest: '', legacy: true };
+}
+function bizSummary(item) {
+  const s = bizSource(item);
+  if (s.legacy) return s.times;
+  return s.times + (s.rest ? (s.times ? ' ' : '') + '(' + s.rest + '休)' : '');
+}
+function bizItemStatus(item, date) {
+  const s = bizSource(item);
+  return checkBusinessStatus(s.times, { rest: s.rest, now: date || new Date(), tz: bizTzFor(item && item.country, item && item.city) });
+}
+function bizBadge(st) { return '<span class="biz-badge ' + st.color + '" data-biz-badge>' + st.emoji + ' ' + st.text + '</span>'; }
+function bizTitle(st) { return st.emoji + ' ' + st.text + (st.detail ? '｜' + st.detail : ''); }
+function bizCellHtml(item) {
+  const st = bizItemStatus(item), sum = bizSummary(item);
+  return bizBadge(st) + (sum ? ' <span class="biz-sum">' + bizEsc(sum) + '</span>' : '');
+}
+function bizLine(item) { // 地圖氣泡用的純文字（呼叫的人要自己 escape）：只放狀態；營業時間另外一行，氣泡才不會比原版寬
+  const st = bizItemStatus(item);
+  return st.emoji + ' ' + st.text;
+}
+// 「依哪個時間判斷」：店家在國外就用當地時間，其他用這台裝置的時間
+function bizBasisText(item, st, now) {
+  const parts = bizParts(now, st.tz);
+  const clock = bizHM(parts.min);
+  return st.tz ? '以「' + bizEsc(String(item.country || item.city || '').trim() || st.tz) + '」當地時間判斷（現在當地 ' + clock + '）' : '以這台裝置的時間判斷（現在 ' + clock + '）';
+}
+function bizStatusBlock(item, st, now) {
+  return bizBadge(st) + (st.detail ? ' <span>' + bizEsc(st.detail) + '</span>' : '') + '<div class="biz-hint" style="margin-top:2px">' + bizBasisText(item, st, now) + '</div>';
+}
+// 不重畫整個表格，只更新每一格的狀態字與顏色
+function bizRefreshAll() {
+  try {
+    const now = new Date();
+    const list = (typeof wishItems !== 'undefined' && Array.isArray(wishItems)) ? wishItems : [];
+    document.querySelectorAll('[data-biz-id]').forEach(el => {
+      const it = list.find(x => String(x.id) === el.getAttribute('data-biz-id'));
+      if (!it) return;
+      const st = bizItemStatus(it, now);
+      const b = el.querySelector('[data-biz-badge]');
+      if (b) {
+        const txt = st.emoji + ' ' + st.text, cls = 'biz-badge ' + st.color;
+        if (b.textContent !== txt) b.textContent = txt;
+        if (b.className !== cls) b.className = cls;
+      }
+      const tt = bizTitle(st);
+      if (el.title !== tt) el.title = tt;
+    });
+    const box = document.getElementById('hoursModalStatus'), modal = document.getElementById('hoursDetailModal');
+    if (box && modal && !modal.classList.contains('hidden') && window.__bizModalItem) box.innerHTML = bizStatusBlock(window.__bizModalItem, bizItemStatus(window.__bizModalItem, now), now);
+    if (typeof bizFormPreview === 'function') bizFormPreview();
+  } catch (e) { /* 更新失敗不影響其他功能 */ }
+}
+// 編輯表單：一邊打營業時間，一邊顯示「系統怎麼讀」與「現在的狀態」，讀錯了馬上看得到
+function bizFormPreview() {
+  const box = document.getElementById('formHourLive');
+  if (!box) return;
+  const val = id => String((document.getElementById(id) || {}).value || '').trim();
+  const times = val('formHourTimes'), rest = val('formHourRestDays');
+  if (!times && !rest) { box.innerHTML = '<span class="biz-hint">填了營業時間後，這裡會顯示系統的判讀和「現在」的營業狀態（自動更新，不用再手動選）。</span>'; return; }
+  const now = new Date(), where = { country: val('formCountry'), city: val('formCity') };
+  const st = checkBusinessStatus(times, { rest, now, tz: bizTzFor(where.country, where.city) });
+  const desc = st.p ? bizDescribe(st.p) : '';
+  box.innerHTML = bizBadge(st) + ' <span class="biz-hint">' + bizEsc(st.detail) + '</span>'
+    + (desc ? '<div class="biz-hint" style="margin-top:2px">系統讀到的：' + bizEsc(desc) + '</div>' : '')
+    + '<div class="biz-hint">' + bizBasisText(where, st, now) + '</div>';
+}
+(function () {
+  try {
+    setInterval(bizRefreshAll, 30000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) bizRefreshAll(); });
+    window.addEventListener('focus', bizRefreshAll);
+    window.addEventListener('pageshow', bizRefreshAll);
+  } catch (e) { /* 不支援就不自動更新 */ }
+})();
+/* ===== BIZ-UI-END ===== */
+
     function syncSummaryFromHoursDetails() {
-      const status = document.getElementById('formHourTodayStatus')?.value || '';
-      const times = document.getElementById('formHourTimes')?.value || '';
-      const rest = document.getElementById('formHourRestDays')?.value || '';
-      
+      const times = (document.getElementById('formHourTimes')?.value || '').trim();
+      const rest = (document.getElementById('formHourRestDays')?.value || '').trim();
+
       let summaryParts = [];
-      if (status) summaryParts.push(status);
       if (times) summaryParts.push(times);
       if (rest) summaryParts.push(`(${rest}休)`);
-      
+
       document.getElementById('formOpenHoursSummary').value = summaryParts.join(' | ') || '';
+      bizFormPreview();
     }
 
     function toggleHoursFormDetails() {
@@ -1626,15 +2154,28 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
       } else if (val === 'preset_brunch') {
         document.getElementById('formHourTimes').value = '08:00-15:00';
         document.getElementById('formHourRestDays').value = '';
+      } else if (val === 'preset_bar') {
+        document.getElementById('formHourTimes').value = '20:00-02:00';
+        document.getElementById('formHourRestDays').value = '週日';
+      } else if (val === 'preset_24h') {
+        document.getElementById('formHourTimes').value = '24小時';
+        document.getElementById('formHourRestDays').value = '';
+      } else if (val === 'preset_split') {
+        document.getElementById('formHourTimes').value = '週一至週五 11:00-21:00; 週六日 10:00-22:00';
+        document.getElementById('formHourRestDays').value = '';
       }
       syncSummaryFromHoursDetails();
     }
 
     function showHoursDetail(item) {
       const d = item.hoursDetail || {};
+      const src = bizSource(item);
+      const now = new Date();
+      const st = bizItemStatus(item, now);
+      const desc = st.p ? bizDescribe(st.p) : '';
+      window.__bizModalItem = item;
       const fields = [
-        { label: '今日營業狀態', val: d.todayStatus },
-        { label: '營業時間', val: d.times },
+        { label: '營業時間', val: d.times || (src.legacy ? src.times : '') },
         { label: '休息日', val: d.restDays },
         { label: '最後入場', val: d.lastOrder },
         { label: '聯絡電話', val: d.phone },
@@ -1645,28 +2186,36 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
         { label: '營業異動', val: d.changes },
         { label: '更新時間', val: d.updatedDate }
       ];
-      
+      const row = (label, inner) => `<div class="flex flex-col border-b border-slate-100 dark:border-slate-700 pb-2"><span class="text-[10px] text-slate-400 mb-0.5">${label}</span><span class="text-slate-800 dark:text-slate-200 text-sm">${inner}</span></div>`;
+
       let html = '<div class="space-y-3">';
       let hasAny = false;
       fields.forEach(f => {
-        if (f.val) {
-          hasAny = true;
-          let v = f.val;
-          if (f.label === '聯絡電話') v = `<a href="tel:${v}" class="text-emerald-600 hover:underline font-bold">${v}</a>`;
-          if (f.label === '官網社群') v = `<a href="${v}" target="_blank" class="text-emerald-600 hover:underline break-all">${v} <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>`;
-          
-          let stColor = 'text-slate-800 dark:text-slate-200';
-          if (f.label === '今日營業狀態') {
-            if(v.includes('🟢')) stColor = 'text-emerald-600 font-bold';
-            else if(v.includes('⚫')) stColor = 'text-slate-500 font-bold';
-          }
-          html += `<div class="flex flex-col border-b border-slate-100 dark:border-slate-700 pb-2"><span class="text-[10px] text-slate-400 mb-0.5">${f.label}</span><span class="${stColor} text-sm">${v}</span></div>`;
-        }
+        if (!f.val) return;
+        hasAny = true;
       });
+      if (hasAny) {
+        // 狀態不是存起來的，是依「營業時間＋休息日＋現在的時間」即時算的
+        html += row('目前營業狀態', `<span id="hoursModalStatus">${bizStatusBlock(item, st, now)}</span>`);
+        fields.forEach(f => {
+          if (!f.val) return;
+          let v = bizEsc(f.val);
+          if (f.label === '聯絡電話') v = `<a href="tel:${bizEsc(f.val)}" class="text-emerald-600 hover:underline font-bold">${v}</a>`;
+          if (f.label === '官網社群') {
+            const w = String(f.val).trim();
+            const href = /^https?:\/\//i.test(w) ? w : (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(w) ? 'https://' + w : '');
+            if (href) v = `<a href="${bizEsc(href)}" target="_blank" rel="noopener" class="text-emerald-600 hover:underline break-all">${v} <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>`;
+          }
+          html += row(f.label, v);
+          if (f.label === '休息日' || (f.label === '營業時間' && !d.restDays)) {
+            if (desc) html += row('系統判讀', bizEsc(desc));
+          }
+        });
+      }
       html += '</div>';
-      
+
       if (!hasAny) html = '<div class="text-center text-slate-400 py-6">尚無詳細營業資訊</div>';
-      
+
       document.getElementById('hoursModalItemName').textContent = item.name + ' - 營業資訊';
       document.getElementById('hoursModalContent').innerHTML = html;
       document.getElementById('hoursDetailModal').classList.remove('hidden');
@@ -1695,7 +2244,7 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
           document.getElementById('formCity').value = item.city || '';
           document.getElementById('formDetailPlace').value = item.detailPlace || '';
           
-          document.getElementById('formOpenHoursSummary').value = item.openHours || '';
+          // 營業資訊摘要在最後由 syncSummaryFromHoursDetails() 依營業時間與休息日重算（不再帶出舊的手動狀態）
           const d = item.hoursDetail || {};
           document.getElementById('formHourTodayStatus').value = d.todayStatus || '';
           document.getElementById('formHourTimes').value = d.times || '';
@@ -1708,6 +2257,7 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
           document.getElementById('formHourSpecialTime').value = d.specialTime || '';
           document.getElementById('formHourChanges').value = d.changes || '';
           document.getElementById('formHourUpdatedDate').value = d.updatedDate || '';
+          { const bs = bizSource(item); if (bs.legacy && bs.times) document.getElementById('formHourTimes').value = bs.times; } // 匯入的舊資料只有一段文字 → 放進「營業時間」
           
           document.getElementById('formReason').value = item.reason || '';
           document.getElementById('formNotes').value = item.notes || '';
@@ -1716,6 +2266,12 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
           document.getElementById('formProposer').value = item.proposer || '';
           document.getElementById('formSuggestDate').value = item.suggestDate || '';
           document.getElementById('formStatus').value = item.status || '待去';
+          // 預計時間：原本編輯時不會帶出來（存檔時就被清空）→ 用原文放進「補充文字」，沒改動就原樣保留
+          document.getElementById('formTargetYear').value = '';
+          document.getElementById('formTargetMonth').value = '';
+          document.getElementById('formTargetDay').value = '';
+          document.getElementById('formTargetCustom').value = item.targetTime || '';
+          updateFormTargetPreview();
           
           document.getElementById('formCompletedDate').value = item.completedDate || '';
           document.getElementById('formCompletedTime').value = item.completedTime || '';
@@ -1733,6 +2289,7 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
         document.getElementById('itemModalTitle').textContent = '新增項目';
         document.getElementById('formSuggestDate').value = new Date().toISOString().split('T')[0];
       }
+      syncSummaryFromHoursDetails();
       toggleCompletionFieldsInForm();
       document.getElementById('itemModal').classList.remove('hidden');
     }
@@ -1847,7 +2404,11 @@ window.__MARKER_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYA
 
       if (id) {
         const idx = wishItems.findIndex(i => i.id === parseInt(id));
-        if (idx !== -1) wishItems[idx] = item;
+        if (idx !== -1) {
+          // LINE 轉入的標記與 LINE 流水號（sn／snp）、紀錄者、LINE 傳送時間：表單蓋不到，編輯時原樣保留
+          ['sn', 'snp', 'lineKey', 'draftId', 'recorder', 'suggestTime', 'importedAt', 'lineMsgId'].forEach(k => { if (wishItems[idx][k] !== undefined) item[k] = wishItems[idx][k]; });
+          wishItems[idx] = item;
+        }
         showToast('項目已更新');
       } else {
         wishItems.unshift(item);
@@ -2236,7 +2797,7 @@ function statJump(status) {
     return `<div style="min-width:180px;font-size:12px;line-height:1.5"><div style="font-weight:700;font-size:14px">${esc(i.name)}</div>`
       +row('分類',i.category)+row('地址／商家',i.detailPlace)+row('地區',[i.country,i.city].filter(Boolean).join(' › '))
       +(stars?`<div style="margin-top:2px"><span style="color:#64748b">推薦指數</span> <span style="color:#f59e0b">${stars}</span></div>`:'')
-      +row('狀態',i.status)+row('營業資訊',i.openHours)
+      +row('狀態',i.status)+row('營業狀態',bizLine(i))+row('營業資訊',bizSummary(i))
       +`<button onclick="openItemModal(${i.id})" style="margin-top:8px;padding:3px 10px;border-radius:8px;border:1px solid #a7f3d0;background:#ecfdf5;color:#047857;font-weight:700;font-size:12px;cursor:pointer">編輯項目</button></div>`;
   }
   window.initLeaflet=function(){
@@ -2255,7 +2816,7 @@ function statJump(status) {
     if(!leafletMap||!cluster)return;
     cluster.clearLayers();
     mapMarkers=[];
-    lastData.filter(hasXY).forEach(i=>{const m=L.marker([parseFloat(i.lat),parseFloat(i.lng)],{title:i.name});m.bindPopup(popup(i));m.bindTooltip(i.name);cluster.addLayer(m);mapMarkers.push(m)});
+    lastData.filter(hasXY).forEach(i=>{const m=L.marker([parseFloat(i.lat),parseFloat(i.lng)],{title:i.name});m.bindPopup(()=>popup(i));m.bindTooltip(i.name);cluster.addLayer(m);mapMarkers.push(m)});
     lastData.filter(i=>canGeocode(i)&&!queue.includes(i.id)).forEach(i=>queue.push(i.id));
     setStatus();runQueue();
   };
