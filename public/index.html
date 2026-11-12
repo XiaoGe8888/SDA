@@ -122,6 +122,19 @@ body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--t);-
 .fm-step.done{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
 .fm-hint{margin-top:8px;font-size:11px;line-height:1.6;color:var(--t5)}
 .fm-hint b{color:var(--br)}
+.fm-tip{display:grid;gap:3px;margin-bottom:7px;padding:8px 10px;border-radius:10px;background:var(--sur);border:1px solid var(--bdr)}
+.fm-tip div{opacity:.72}
+.fm-tip div.on{opacity:1;font-weight:700;color:var(--bd)}
+.fm-more{position:relative;font-size:11px;line-height:1.6}
+.fm-more summary{cursor:pointer;color:var(--bd);font-weight:700;padding:4px 0;min-height:18px}
+/* 展開時浮在表單上方（不推擠下面的表單與底部按鈕，小螢幕也不會被擠壞）；最高 34% 螢幕高度，超過就在裡面捲動；再點一次那一行收起 */
+.fm-more-body{position:absolute;left:-10px;right:-10px;top:100%;z-index:6;box-sizing:border-box;max-height:34vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 10px 10px;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;box-shadow:0 8px 24px rgba(92,75,55,.18)}
+.fm-tip .fm-more div{opacity:1;font-weight:400;color:var(--bd)}
+.fm-tip .fm-more .fm-more-t{margin-top:8px;font-weight:700}
+.fm-tip .fm-more .fm-more-t:first-child{margin-top:4px}
+.fm-tip .fm-more .fm-more-l{margin-top:2px}
+/* 矮螢幕（高度 760px 以下，例如小手機、手機瀏覽器上下有工具列、LINE 內建瀏覽器）：最上方的說明縮短，把空間還給下面的填寫區——只顯示目前模式那一句（另一種模式的說明點「適用場景與特點」看），間距也縮小 */
+@media(max-height:760px){.fm-tip .fm-tip-s:not(.on),.fm-tip .fm-tip-d:not(.on){display:none}.fm-bar{padding:8px 16px 6px}.fm-steps{margin-top:6px}.fm-hint{margin-top:6px}.fm-tip{margin-bottom:5px;padding:6px 10px}}
 .fm-note{display:none;font-size:12px;line-height:1.65;color:var(--bd);background:var(--crm);border:1px solid var(--amb);border-radius:11px;padding:9px 12px}
 .fm-note.has{display:block;margin-top:8px}
 .fm-ctrl,.fm-note{max-width:680px;margin-left:auto;margin-right:auto}
@@ -340,6 +353,12 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
 .st-tabs::-webkit-scrollbar{display:none}
 .st-tab{padding:8px 14px;border-radius:12px;background:var(--sur);border:1px solid var(--bdr);font-size:12px;font-weight:900;color:var(--t5);cursor:pointer;white-space:nowrap;transition:.2s;outline:none}
 .st-tab.active{background:var(--br);color:#fff;border-color:var(--br)}
+/* 統計中心的分類列／期間列：單排、可左右平順滑動、不顯示原生捲軸（選中的那顆只換底色） */
+.dash-row{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding-bottom:8px;position:relative;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;-ms-overflow-style:none}
+.dash-row::-webkit-scrollbar{display:none;width:0;height:0}
+.dash-chip{flex:0 0 auto;padding:8px 14px;border-radius:20px;border:1px solid var(--bdr);background:var(--bg);color:var(--bd);font-family:inherit;font-size:13px;font-weight:900;line-height:1.2;cursor:pointer;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background .15s,color .15s,border-color .15s}
+.dash-chip[aria-selected="true"]{background:var(--bd);border-color:var(--bd);color:#fff}
+.dash-chip:focus-visible{outline:2px solid var(--br);outline-offset:-2px}
 .st-search{width:100%;padding:10px 14px 10px 38px;border:1px solid var(--bdr);border-radius:12px;background:var(--sur);font-family:inherit;font-size:13px;font-weight:700;color:var(--t);outline:none;margin-bottom:16px}
 .st-s-wrap{position:relative}
 .st-s-wrap i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--t5);font-size:16px;pointer-events:none}
@@ -440,6 +459,27 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
 .tool-btn:hover{background:var(--bd)}
 .tool-btn:disabled{background:var(--t4);cursor:not-allowed;box-shadow:none}
 .box-shake{animation:shake .5s ease-in-out infinite}
+/* 骰子／剪刀石頭布（v26.9.0） */
+.dice-stage{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;min-height:74px;margin-bottom:14px}
+.dice{width:64px;height:64px;border-radius:14px;background:#fff;border:1.5px solid var(--bdr);box-shadow:0 4px 10px rgba(0,0,0,.08),inset 0 -3px 0 rgba(0,0,0,.05);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px}
+.dice i{display:block;width:100%;height:100%}
+.dice i.p::before{content:'';display:block;width:11px;height:11px;border-radius:50%;background:var(--bd);margin:auto}
+.dice.rolling{animation:diceRoll .45s linear infinite}
+@keyframes diceRoll{0%{transform:rotate(0) translateY(0)}25%{transform:rotate(14deg) translateY(-6px)}50%{transform:rotate(-10deg) translateY(0)}75%{transform:rotate(8deg) translateY(-4px)}100%{transform:rotate(0) translateY(0)}}
+.dice-n{padding:7px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;min-height:36px;touch-action:manipulation}
+.dice-n.on{background:var(--br);color:#fff;border-color:var(--br)}
+.rps-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:320px;margin:0 auto 14px}
+.rps-btn{padding:12px 6px;border:1.5px solid var(--bdr);border-radius:16px;background:var(--bg);font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:84px;touch-action:manipulation}
+.rps-btn .e{font-size:34px;line-height:1}
+.rps-btn .n{font-size:12px;font-weight:900;color:var(--bd)}
+.rps-btn:disabled{opacity:.55;cursor:not-allowed}
+.rps-arena{display:flex;align-items:center;justify-content:center;gap:14px;min-height:92px;margin-bottom:4px}
+.rps-side{text-align:center}
+.rps-side .e{font-size:52px;line-height:1.1}
+.rps-side .t{font-size:11px;color:var(--t5);font-weight:700}
+.rps-vs{font-weight:900;color:var(--t5);font-size:13px}
+.rps-count{font-size:26px;font-weight:900;color:var(--br);font-family:'Noto Serif TC',serif}
+@media (prefers-reduced-motion:reduce){.dice.rolling{animation:none}}
 @keyframes shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-5px) rotate(-5deg)}75%{transform:translateX(5px) rotate(5deg)}}
 .res-pop{font-size:20px;font-weight:900;color:var(--bd);font-family:'Noto Serif TC',serif;margin-top:20px;min-height:30px;text-align:center;animation:popIn .3s cubic-bezier(.2,2,.4,1)}
 @keyframes popIn{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -1639,7 +1679,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-11-05f';
+const BUILD_ID='2026-11-12e';
 // 標語：首頁最上方與「設定 → 關於」都用這一行（改這裡兩處一起變）
 const APP_SLOGAN='記錄每一刻，感受每一種生活';
 // --- Anthropic API Helper ---
@@ -1958,13 +1998,22 @@ function dashFmt(n){ n=Number(n)||0; return n.toLocaleString('en-US',{maximumFra
 function dashRank(map,n){ return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,n||10); }
 function dashBar(label,val,max,color,suffix){ const w=max?Math.round(val/max*100):0; return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;width:78px;color:var(--bd);font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+label+'</span><div style="flex:1;height:8px;background:var(--crm);border-radius:5px;overflow:hidden"><div style="height:100%;width:'+w+'%;background:'+(color||'var(--amb)')+'"></div></div><span style="font-size:11px;color:var(--t5);min-width:30px;text-align:right">'+(suffix!==undefined?suffix:val)+'</span></div>'; }
 let dashPeriod='month', dashScopeMod='all', dashCur='';
+const DASH_PERIOD_NAME={today:'今日',week:'本週',month:'本月',quarter:'本季',year:'本年',all:'全部'};
+// 統計中心的分類列（順序固定）：全館、飲料、美食、交通、分帳、集點卡、待去清單
+//   集點卡和待去清單沒有金額：全館的花費合計不會把它們算進去，它們在自己的分類裡看次數、點數、狀態、分布
+const DASH_SCOPES=[['all','🌐 全館'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳'],['sticker','🌟 集點卡'],['wish','🗺️ 待去清單']];
+function dashScopeOk(m){ return DASH_SCOPES.some(function(a){return a[0]===m;}); }
 function dashSetPeriod(p){ dashPeriod=p; renderDashboardBody(); }
-function dashSetScopeMod(m){ dashScopeMod=m; renderDashboardBody(); }
+function dashSetScopeMod(m){
+  if(!dashScopeOk(m))return;
+  dashScopeMod=m; renderDashboardBody();
+  const b=document.getElementById('dash-body'); if(b)b.scrollTop=0; // 換一個分類就從頭看，不會停在上一個分類捲到一半的位置
+}
 function dashSetCur(c,ctx){ dashCur=c; if(ctx==='drink')renderStats(); else if(ctx==='food')renderFoodStats(); else if(ctx==='travel')renderTravelStats(); else renderDashboardBody(); }
 function closeDashboard(){ const el=document.getElementById('dash-overlay'); if(el)el.remove(); document.body.style.overflow=''; }
 function openDashboard(scope,period){
   closeDashboard();
-  if(scope) dashScopeMod=scope;
+  if(scope) dashScopeMod=dashScopeOk(scope)?scope:'all';
   if(period) dashPeriod=period;
   const ov=document.createElement('div'); ov.id='dash-overlay';
   ov.style.cssText='position:fixed;inset:0;z-index:350;background:var(--bg);display:flex;flex-direction:column';
@@ -1973,23 +2022,43 @@ function openDashboard(scope,period){
     '<button type="button" onclick="closeDashboard()" style="width:32px;height:32px;border-radius:50%;background:#efe3d5;border:none;color:#9b8c7a;cursor:pointer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="pointer-events:none"><line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/><line x1="17.5" y1="6.5" x2="6.5" y2="17.5"/></svg></button>'+
   '</div>'+
   '<div style="padding:10px 14px 0;flex-shrink:0">'+
-    '<div id="dash-period" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px"></div>'+
-    '<div id="dash-scope" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px"></div>'+
+    '<div id="dash-period" class="dash-row" role="group" aria-label="統計期間" onwheel="dashRowWheel(event,this)"></div>'+
+    '<div id="dash-scope" class="dash-row" role="tablist" aria-label="統計分類" onwheel="dashRowWheel(event,this)"></div>'+
   '</div>'+
   '<div id="dash-body" style="flex:1;overflow-y:auto;padding:8px 16px 34px"></div>';
   document.body.appendChild(ov); document.body.style.overflow='hidden';
   renderDashboardBody();
 }
+// 分類列／期間列共用：重畫時保留目前的左右位置，並把「選中的那一顆」平順捲到看得見的位置
+function dashFillRow(el,html,center){
+  if(!el)return;
+  const keep=el.scrollLeft;
+  el.innerHTML=html;
+  el.style.scrollBehavior='auto'; el.scrollLeft=keep; el.style.scrollBehavior=''; // 重畫時不要跳回最左邊
+  if(center)dashCenterActive(el);
+}
+function dashCenterActive(el){
+  const on=el.querySelector('[aria-selected="true"],[aria-pressed="true"]'); if(!on)return;
+  let to=on.offsetLeft-(el.clientWidth-on.offsetWidth)/2;
+  to=Math.max(0,Math.min(el.scrollWidth-el.clientWidth,to));
+  if(Math.abs(to-el.scrollLeft)<2)return;
+  try{el.scrollTo({left:to,behavior:'smooth'});}catch(_){el.scrollLeft=to;}
+}
+// 原生捲軸藏起來以後，用滑鼠滾輪的人也要能左右捲：把上下滾動轉成左右滾動（手機用手指滑本來就可以）
+function dashRowWheel(ev,el){
+  if(!el||el.scrollWidth<=el.clientWidth+1)return;
+  if(Math.abs(ev.deltaX)>=Math.abs(ev.deltaY))return;
+  el.style.scrollBehavior='auto'; el.scrollLeft+=ev.deltaY; el.style.scrollBehavior='';
+  ev.preventDefault();
+}
 function renderDashChips(){
-  const pe=document.getElementById('dash-period');
-  if(pe) pe.innerHTML=[['today','今日'],['week','本週'],['month','本月'],['quarter','本季'],['year','本年'],['all','全部']].map(function(a){var k=a[0],t=a[1];var on=dashPeriod===k;return '<button type="button" onclick="dashSetPeriod(\''+k+'\')" style="flex:0 0 auto;padding:7px 14px;border-radius:20px;border:1px solid '+(on?'var(--br)':'var(--bdr)')+';background:'+(on?'var(--br)':'var(--bg)')+';color:'+(on?'#fff':'var(--t5)')+';font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">'+t+'</button>';}).join('');
-  const se=document.getElementById('dash-scope');
-  if(se) se.innerHTML=[['all','🌐 全館'],['drink','🧋 飲料'],['food','🍱 美食'],['travel','🚆 交通'],['split','🧾 分帳']].map(function(a){var k=a[0],t=a[1];var on=dashScopeMod===k;return '<button type="button" onclick="dashSetScopeMod(\''+k+'\')" style="flex:0 0 auto;padding:6px 12px;border-radius:20px;border:1px solid '+(on?'var(--bd)':'var(--bdr)')+';background:'+(on?'var(--bd)':'var(--bg)')+';color:'+(on?'#fff':'var(--t5)')+';font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">'+t+'</button>';}).join('');
+  dashFillRow(document.getElementById('dash-period'),[['today','今日'],['week','本週'],['month','本月'],['quarter','本季'],['year','本年'],['all','全部']].map(function(a){var k=a[0],t=a[1];var on=dashPeriod===k;return '<button type="button" aria-pressed="'+(on?'true':'false')+'" onclick="dashSetPeriod(\''+k+'\')" style="flex:0 0 auto;padding:7px 14px;border-radius:20px;border:1px solid '+(on?'var(--br)':'var(--bdr)')+';background:'+(on?'var(--br)':'var(--bg)')+';color:'+(on?'#fff':'var(--t5)')+';font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">'+t+'</button>';}).join(''),true);
+  dashFillRow(document.getElementById('dash-scope'),DASH_SCOPES.map(function(a){var k=a[0],t=a[1];var on=dashScopeMod===k;return '<button type="button" role="tab" class="dash-chip" data-scope="'+k+'" aria-selected="'+(on?'true':'false')+'" onclick="dashSetScopeMod(\''+k+'\')">'+t+'</button>';}).join(''),true);
 }
 function renderDashboardBody(){
   renderDashChips();
   const el=document.getElementById('dash-body'); if(!el)return;
-  el.innerHTML=buildRichStatsHTML();
+  el.innerHTML=(dashScopeMod==='sticker')?buildStickerStatsHTML():(dashScopeMod==='wish')?buildWishStatsHTML():buildRichStatsHTML();
 }
 function buildRichStatsHTML(boxId){
   boxId=boxId||'dash-ai-box';
@@ -2047,6 +2116,7 @@ function buildRichStatsHTML(boxId){
     const legend=Object.entries(byMod).sort((a,b)=>b[1]-a[1]).map(e=>MODMETA[e[0]].label+' '+Math.round(e[1]/tot*100)+'%（'+primaryCur+dashFmt(e[1])+'）').join('<br>');
     modShareHtml=sec('🧩 模組花費占比')+(Object.keys(byMod).length?'<div style="display:flex;height:12px;border-radius:7px;overflow:hidden;margin:10px 0 8px;background:var(--crm)">'+segs+'</div><div style="font-size:12px;color:var(--t5);line-height:1.9">'+legend+'</div>':ndRow);
   }
+  const otherModHtml=(dashScopeMod==='all')?dashOtherModulesHTML():'';
   // ===== 排行榜 =====
   const brands={},names={},cats={},itemMax={},brandAmt={};
   spend.forEach(r=>{ if(r.brand)brands[r.brand]=(brands[r.brand]||0)+1; if(r.name)names[r.name]=(names[r.name]||0)+1; if(r.category)cats[r.category]=(cats[r.category]||0)+1; if(r.currency===primaryCur){ const k=r.name||'(未命名)'; if(!itemMax[k]||r.amount>itemMax[k])itemMax[k]=r.amount; if(r.brand)brandAmt[r.brand]=(brandAmt[r.brand]||0)+r.amount; } });
@@ -2238,7 +2308,183 @@ function buildRichStatsHTML(boxId){
     +'<div style="font-size:11px;font-weight:900;color:var(--t5);margin:12px 0 2px">誰請誰（付款者 → 受益人）</div>'+treatList;
 
   const periodName={today:'今日',week:'本週',month:'本月',quarter:'本季',year:'本年',all:'全部'}[dashPeriod];
-  return topBanner+curChips+'<div class="sec-ttl">💰 '+periodName+'概況</div><div style="margin-top:10px">'+kpiHtml+'</div>'+cmpHtml+financeHtml+modShareHtml+structHtml+rankHtml+loyaltyHtml+personHtml+payHtml+prefHtml+timeHtml+heatHtml+trendHtml+weekTrendHtml+quarterTrendHtml+yearTrendHtml+activeDateHtml+regionHtml+aiHtml;
+  return topBanner+curChips+'<div class="sec-ttl">💰 '+periodName+'概況</div><div style="margin-top:10px">'+kpiHtml+'</div>'+cmpHtml+financeHtml+modShareHtml+otherModHtml+structHtml+rankHtml+loyaltyHtml+personHtml+payHtml+prefHtml+timeHtml+heatHtml+trendHtml+weekTrendHtml+quarterTrendHtml+yearTrendHtml+activeDateHtml+regionHtml+aiHtml;
+}
+// ===== 統計中心：🌟 集點卡、🗺️ 待去清單 兩個分類 =====
+//   這兩個模組沒有金額，所以不併進全館的花費合計；各自在自己的分類裡看次數、點數、狀態、分布。
+//   資料一律「只讀取」，抓不到（還沒宣告、格式不對）就當作沒有資料，不會讓統計中心整個打不開。
+function dashSafeArr(f){ try{ const v=f(); return Array.isArray(v)?v.filter(function(x){return x&&typeof x==='object';}):[]; }catch(_){ return []; } }
+function dashNum(v){ const x=Number(v); return isFinite(x)?x:0; }
+function dashSum(list,f){ return list.reduce(function(s,x){return s+f(x);},0); }
+function dashSec(t){ return '<div class="sec-ttl" style="margin-top:18px">'+t+'</div>'; }
+function dashSub(t){ return '<div style="font-size:11px;font-weight:900;color:var(--t5);margin:12px 0 2px">'+t+'</div>'; }
+function dashNote(t){ return '<div style="font-size:12px;color:var(--t5);padding:8px 0">'+t+'</div>'; }
+function dashBanner(t){ return '<div style="text-align:center;padding:12px 14px;color:var(--t5);font-size:12px;line-height:1.7;background:var(--crm);border-radius:12px;margin-bottom:4px">'+t+'</div>'; }
+function dashKpiGrid(cards){
+  return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">'+cards.map(function(c){
+    return '<div class="dash-kpi" style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:12px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center"><div style="font-size:10px;color:var(--t5);font-weight:900">'+c[0]+'</div><div style="font-size:16px;font-weight:900;color:var(--bd);font-family:\'Noto Serif TC\',serif;margin-top:2px">'+c[1]+'</div>'+(c[2]?'<div style="font-size:9px;color:var(--t5);margin-top:1px">'+c[2]+'</div>':'')+'</div>';
+  }).join('')+'</div>';
+}
+function dashRankHTML(map,fmt,n){
+  const ent=dashRank(map,n||10);
+  if(!ent.length)return dashNote('尚無資料');
+  return ent.map(function(e,i){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:12px"><span style="color:var(--bd)"><b style="color:var(--t5)">'+(i+1)+'.</b> '+splitEsc(String(e[0]))+'</span><span style="color:var(--br);font-weight:900">'+fmt(e[1])+'</span></div>'; }).join('');
+}
+// 分布長條：預設依數量由多到少；給了 keys 就照 keys 的順序（沒有出現的略過）
+function dashBarsHTML(map,color,unit,keys){
+  let ent=keys?keys.filter(function(k){return map[k];}).map(function(k){return [k,map[k]];}):Object.entries(map).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  if(!ent.length)return dashNote('尚無資料');
+  const mx=Math.max.apply(null,ent.map(function(e){return e[1];}).concat([1]));
+  return ent.map(function(e){ return dashBar(splitEsc(String(e[0])),e[1],mx,color,dashFmt(e[1])+(unit||'')); }).join('');
+}
+function dashMonthKeys(n){
+  const now=new Date(), out=[];
+  for(let i=n-1;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); out.push(d.getFullYear()+'-'+p2(d.getMonth()+1)); }
+  return out;
+}
+// 近幾個月的直條圖；series = [{name,color,map:{'2026-11':數字}}]，一個月裡有幾個系列就並排幾條
+function dashTrendHTML(title,months,series){
+  const mx=Math.max.apply(null,[1].concat(series.reduce(function(a,s){return a.concat(months.map(function(m){return s.map[m]||0;}));},[])));
+  const cols=months.map(function(m){
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="display:flex;align-items:flex-end;gap:2px;height:100px;width:100%">'+series.map(function(s){
+      const v=s.map[m]||0, h=v?Math.round(v/mx*80)+4:2;
+      return '<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;height:100%"><div style="font-size:9px;color:var(--t5)">'+(v?dashFmt(v):'')+'</div><div style="width:100%;height:'+h+'px;background:'+s.color+';border-radius:4px 4px 0 0"></div></div>';
+    }).join('')+'</div><div style="font-size:9px;color:var(--t5)">'+m.slice(5)+'月</div></div>';
+  }).join('');
+  const legend=series.length>1?'<div style="font-size:11px;color:var(--t5);margin-top:6px">'+series.map(function(s){ return '<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+s.color+';margin-right:4px"></span>'+s.name; }).join('　')+'</div>':'';
+  const empty=series.every(function(s){return months.every(function(m){return !(s.map[m]||0);});});
+  return dashSec(title)+'<div style="display:flex;gap:6px;margin-top:10px;padding:0 2px">'+cols+'</div>'+legend+(empty?dashNote('尚無資料'):'');
+}
+
+// ---------- 🌟 集點卡（乖寶寶集點卡 + 互助集點卡）----------
+function buildStickerStatsHTML(){
+  const kids=dashSafeArr(function(){return stickerKids;});
+  const evAll=dashSafeArr(function(){return stickerEvents;}), rdAll=dashSafeArr(function(){return stickerRedemptions;});
+  const mEvAll=dashSafeArr(function(){return mutualEvents;}), mRdAll=dashSafeArr(function(){return mutualRedemptions;});
+  const inP=function(x){ return dashInPeriod(x.date,dashPeriod); };
+  const ev=evAll.filter(inP), rd=rdAll.filter(inP), mEv=mEvAll.filter(inP), mRd=mRdAll.filter(inP);
+  const pName=DASH_PERIOD_NAME[dashPeriod]||'';
+  const totalAll=evAll.length+rdAll.length+mEvAll.length+mRdAll.length;
+  const totalIn=ev.length+rd.length+mEv.length+mRd.length;
+  const pts=function(e){ return dashNum(e.points); }, amt=function(e){ return dashNum(e.amount); };
+  let html='';
+  if(!totalAll) html+=dashBanner('📭 目前還沒有任何集點卡紀錄。到「🌟 集點卡」加點後，這裡就會自動產生統計。');
+  else if(!totalIn) html+=dashBanner('⏳ 這個期間沒有集點卡紀錄；你共有 <b style="color:var(--br)">'+totalAll+'</b> 筆，切到「<b style="color:var(--br)">全部</b>」或「本年」即可看到完整數據。');
+
+  // ===== 乖寶寶集點卡 =====
+  const gain=ev.filter(function(e){return pts(e)>0;}), lose=ev.filter(function(e){return pts(e)<0;});
+  const gainPts=dashSum(gain,pts), losePts=-dashSum(lose,pts), redPts=dashSum(rd,pts);
+  let balAll=0; kids.forEach(function(k){ try{ balAll+=stickerBalance(k.id); }catch(_){} });
+  html+='<div class="sec-ttl">🌟 乖寶寶集點卡・'+pName+'</div>'
+    +dashKpiGrid([['加點次數',gain.length+' 次'],['獲得點數','+'+dashFmt(gainPts)],['扣點點數',losePts?'-'+dashFmt(losePts):'0'],['兌換次數',rd.length+' 次'],['兌換用掉',dashFmt(redPts)+' 點'],['目前餘額',dashFmt(balAll),'不受期間影響']]);
+  const kidRows=kids.map(function(k){
+    const mine=ev.filter(function(e){return e.kidId===k.id;});
+    let bal=0; try{ bal=stickerBalance(k.id); }catch(_){}
+    return {name:String(k.name||'（未命名）'),gain:dashSum(mine.filter(function(e){return pts(e)>0;}),pts),lose:-dashSum(mine.filter(function(e){return pts(e)<0;}),pts),red:dashSum(rd.filter(function(r){return r.kidId===k.id;}),pts),bal:bal};
+  }).sort(function(a,b){return b.gain-a.gain;});
+  html+=dashSub('各孩子（'+pName+'獲得點數）');
+  if(kidRows.length){
+    const mx=Math.max.apply(null,kidRows.map(function(r){return r.gain;}).concat([0]));
+    html+=kidRows.map(function(r){ return dashBar(splitEsc(r.name),r.gain,mx,'#f59e0b','+'+dashFmt(r.gain)); }).join('')
+      +dashSub('各孩子目前餘額')
+      +kidRows.map(function(r){ return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:12px"><span style="color:var(--bd)">'+splitEsc(r.name)+'<span style="color:var(--t5)">　'+pName+'：獲得 +'+dashFmt(r.gain)+(r.lose?'・扣 -'+dashFmt(r.lose):'')+(r.red?'・兌換 '+dashFmt(r.red):'')+'</span></span><span style="color:var(--br);font-weight:900;white-space:nowrap">'+dashFmt(r.bal)+' 點</span></div>'; }).join('');
+  } else html+=dashNote('尚無資料：還沒有新增任何孩子');
+  const bhCnt={}, bhPts={}, loseWhy={}, recCnt={}, rwCnt={};
+  gain.forEach(function(e){ const k=String(e.behaviorName||'（未命名行為）'); bhCnt[k]=(bhCnt[k]||0)+1; bhPts[k]=(bhPts[k]||0)+pts(e); });
+  lose.forEach(function(e){ const k=String(e.behaviorName||'（未命名行為）'); loseWhy[k]=(loseWhy[k]||0)+1; });
+  ev.forEach(function(e){ if(e.recorder)recCnt[e.recorder]=(recCnt[e.recorder]||0)+1; });
+  rd.forEach(function(r){ const k=String(r.rewardName||'（未命名獎勵）'); rwCnt[k]=(rwCnt[k]||0)+1; });
+  html+=dashSub('最常加點的行為 TOP10（次數）')+dashRankHTML(bhCnt,function(v){return v+' 次';})
+    +dashSub('點數最多的行為 TOP10（點數）')+dashRankHTML(bhPts,function(v){return '+'+dashFmt(v);});
+  if(lose.length) html+=dashSub('扣點原因 TOP10（次數）')+dashRankHTML(loseWhy,function(v){return v+' 次';});
+  html+=dashSub('誰記得最多（紀錄者）')+dashRankHTML(recCnt,function(v){return v+' 次';},5)
+    +dashSub('兌換的獎勵 TOP10')+dashRankHTML(rwCnt,function(v){return v+' 次';});
+  const months=dashMonthKeys(6), gM={}, mM={};
+  evAll.forEach(function(e){ const p=pts(e); if(p>0){ const m=String(e.date||'').slice(0,7); gM[m]=(gM[m]||0)+p; } });
+  html+=dashTrendHTML('📈 月趨勢（近 6 個月・獲得點數）',months,[{name:'獲得點數',color:'#f59e0b',map:gM}]);
+
+  // ===== 互助集點卡 =====
+  const mGain=mEv.filter(function(e){return amt(e)>0;}), mLose=mEv.filter(function(e){return amt(e)<0;});
+  const mGainPts=dashSum(mGain,amt), mLosePts=-dashSum(mLose,amt), mRedPts=dashSum(mRd,pts);
+  let mBal=0; try{ mBal=mutualBalance(); }catch(_){}
+  html+='<div class="sec-ttl" style="margin-top:28px">💑 互助集點卡・'+pName+'</div>'
+    +dashKpiGrid([['加點次數',mGain.length+' 次'],['加點總和','+'+dashFmt(mGainPts)],['扣點總和',mLosePts?'-'+dashFmt(mLosePts):'0'],['兌換次數',mRd.length+' 次'],['兌換用掉',dashFmt(mRedPts)+' 點'],['目前共同點數',dashFmt(mBal),'不受期間影響']]);
+  const actGain={}, actLose={}, mRw={}, mWho={};
+  mGain.forEach(function(e){ const k=String(e.actor||'（未填）'); actGain[k]=(actGain[k]||0)+amt(e); });
+  mLose.forEach(function(e){ const k=String(e.actor||'（未填）'); actLose[k]=(actLose[k]||0)-amt(e); });
+  mRd.forEach(function(r){ const k=String(r.rewardName||'（未命名獎勵）'); mRw[k]=(mRw[k]||0)+1; if(r.redeemer)mWho[r.redeemer]=(mWho[r.redeemer]||0)+1; });
+  html+=dashSub('誰加的點最多（點數）')+dashRankHTML(actGain,function(v){return '+'+dashFmt(v);},5);
+  if(mLose.length) html+=dashSub('誰扣的點最多（點數）')+dashRankHTML(actLose,function(v){return '-'+dashFmt(v);},5);
+  html+=dashSub('兌換的獎勵 TOP10')+dashRankHTML(mRw,function(v){return v+' 次';})
+    +dashSub('誰兌換得最多')+dashRankHTML(mWho,function(v){return v+' 次';},5);
+  mEvAll.forEach(function(e){ const a=amt(e); if(a>0){ const m=String(e.date||'').slice(0,7); mM[m]=(mM[m]||0)+a; } });
+  html+=dashTrendHTML('📈 月趨勢（近 6 個月・加點總和）',months,[{name:'加點總和',color:'#ec4899',map:mM}]);
+  return html;
+}
+
+// ---------- 🗺️ 待去清單 ----------
+function buildWishStatsHTML(){
+  const items=dashSafeArr(function(){return wishReadItems();});
+  const pName=DASH_PERIOD_NAME[dashPeriod]||'';
+  const ST=['待去','已安排','已完成','暫不去','取消'];
+  const cnt=function(s){ return items.filter(function(x){return x.status===s;}).length; };
+  const total=items.length, valid=total-cnt('取消');
+  const newIn=items.filter(function(x){return dashInPeriod(x.suggestDate,dashPeriod);});
+  const doneIn=items.filter(function(x){return x.status==='已完成'&&dashInPeriod(x.completedDate,dashPeriod);});
+  let html='';
+  if(!total) html+=dashBanner('📭 待去清單目前是空的。到「🗺️ 待去清單」新增想去的地方後，這裡就會自動產生統計。');
+  else if(!newIn.length&&!doneIn.length) html+=dashBanner('⏳ 這個期間沒有新增或完成的項目；清單共有 <b style="color:var(--br)">'+total+'</b> 項，切到「<b style="color:var(--br)">全部</b>」或「本年」即可看到完整數據。');
+
+  html+='<div class="sec-ttl">🗺️ 目前清單・不受期間影響</div>'
+    +dashKpiGrid([['全部項目',total+' 項'],['待去',cnt('待去')+' 項'],['已安排',cnt('已安排')+' 項'],['已完成',cnt('已完成')+' 項'],['暫不去',cnt('暫不去')+' 項'],['取消',cnt('取消')+' 項']]);
+  const rate=valid>0?Math.round(cnt('已完成')/valid*100):0;
+  html+=dashSub('完成率（已完成 ÷ 沒有取消的項目）')+(valid>0?dashBar('完成率',rate,100,'#16a34a',rate+'%'):dashNote('尚無資料'));
+
+  const rated=newIn.filter(function(x){return dashNum(x.rating)>0;});
+  const avg=rated.length?dashSum(rated,function(x){return dashNum(x.rating);})/rated.length:0;
+  html+=dashSec('🗓️ '+pName+'概況')
+    +dashKpiGrid([['新增項目',newIn.length+' 項','依提議日期'],['完成項目',doneIn.length+' 項','依完成日期'],['平均推薦指數',rated.length?avg.toFixed(1)+' ★':'尚無資料','依新增項目']]);
+
+  const by=function(f){ const m={}; newIn.forEach(function(x){ const k=f(x); if(k)m[k]=(m[k]||0)+1; }); return m; };
+  const stMap={}; ST.forEach(function(s){ const c=newIn.filter(function(x){return x.status===s;}).length; if(c)stMap[s]=c; });
+  const STARS=['★★★★★','★★★★','★★★','★★','★'], rtMap={};
+  rated.forEach(function(x){ const k=STARS[5-Math.max(1,Math.min(5,Math.round(dashNum(x.rating))))]; rtMap[k]=(rtMap[k]||0)+1; });
+  html+=dashSec('📊 '+pName+'新增項目的分布')
+    +dashSub('目前的狀態')+dashBarsHTML(stMap,'#8b5cf6',' 項',ST)
+    +dashSub('分類')+dashBarsHTML(by(function(x){return x.category;}),'#f59e0b',' 項')
+    +dashSub('國家')+dashBarsHTML(by(function(x){return x.country;}),'#3b82f6',' 項')
+    +dashSub('城市')+dashBarsHTML(by(function(x){return x.city;}),'#0ea5e9',' 項')
+    +dashSub('推薦指數')+dashBarsHTML(rtMap,'#ef4444',' 項',STARS)
+    +dashSub('誰提議的')+dashBarsHTML(by(function(x){return x.proposer;}),'#34d399',' 項')
+    +dashSub('消息來源')+dashBarsHTML(by(function(x){return x.source;}),'#a78bfa',' 項');
+
+  const months=dashMonthKeys(6), nM={}, dM={};
+  items.forEach(function(x){
+    const m=String(x.suggestDate||'').slice(0,7); if(m)nM[m]=(nM[m]||0)+1;
+    if(x.status==='已完成'){ const c=String(x.completedDate||'').slice(0,7); if(c)dM[c]=(dM[c]||0)+1; }
+  });
+  html+=dashTrendHTML('📈 月趨勢（近 6 個月）',months,[{name:'新增',color:'#f59e0b',map:nM},{name:'完成',color:'#16a34a',map:dM}]);
+  return html;
+}
+
+// ---------- 全館最後的一小塊：集點卡、待去清單 的概況（點一下跳到各自的分類）----------
+function dashOtherModulesHTML(){
+  const inP=function(x){ return dashInPeriod(x.date,dashPeriod); };
+  const stkIn=dashSafeArr(function(){return stickerEvents;}).filter(inP).filter(function(e){return dashNum(e.points)>0;}).length+dashSafeArr(function(){return mutualEvents;}).filter(inP).filter(function(e){return dashNum(e.amount)>0;}).length;
+  const stkRd=dashSafeArr(function(){return stickerRedemptions;}).filter(inP).length+dashSafeArr(function(){return mutualRedemptions;}).filter(inP).length;
+  const items=dashSafeArr(function(){return wishReadItems();});
+  const c=function(s){ return items.filter(function(x){return x.status===s;}).length; };
+  const newIn=items.filter(function(x){return dashInPeriod(x.suggestDate,dashPeriod);}).length;
+  const pName=(dashPeriod==='all')?'累計':(DASH_PERIOD_NAME[dashPeriod]||'');
+  const card=function(scope,title,lines){
+    return '<button type="button" data-goto="'+scope+'" onclick="dashSetScopeMod(\''+scope+'\')" style="flex:1;min-width:0;text-align:left;background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:12px;font-family:inherit;cursor:pointer;touch-action:manipulation"><div style="font-size:12px;font-weight:900;color:var(--bd)">'+title+'</div>'+lines.map(function(l){ return '<div style="font-size:11px;color:var(--t5);margin-top:3px">'+l+'</div>'; }).join('')+'<div style="font-size:11px;font-weight:900;color:var(--br);margin-top:6px">看詳細統計 ›</div></button>';
+  };
+  return dashSec('🧩 其他模組概況')
+    +'<div style="display:flex;gap:8px;margin-top:10px">'
+    +card('sticker','🌟 集點卡',[pName+'加點 '+stkIn+' 次',pName+'兌換 '+stkRd+' 次'])
+    +card('wish','🗺️ 待去清單',['待去 '+c('待去')+'・已安排 '+c('已安排'),'已完成 '+c('已完成')+'・'+pName+'新增 '+newIn])
+    +'</div>'
+    +'<div style="font-size:10px;color:var(--t5);margin-top:6px;line-height:1.6">全館的花費合計只算有花錢的 4 個模組；集點卡和待去清單沒有金額，所以另外列在這裡。</div>';
 }
 async function genDashInsight(scope, period, boxId){
   scope=scope||dashScopeMod; period=period||dashPeriod; boxId=boxId||'dash-ai-box';
@@ -2504,11 +2750,11 @@ function snPreviewDraft(d){
 const DRAFT_LS_KEY='line_drafts';
 const DRAFT_KINDS={drink:{icon:'🧋',name:'飲料'},food:{icon:'🍱',name:'美食'},travel:{icon:'🚆',name:'交通'},split:{icon:'🧾',name:'分帳'},sticker:{icon:'🌟',name:'集點卡'},wish:{icon:'📍',name:'待去清單'}};
 const DRAFT_LABELS={date:'日期',time:'時間',area:'地點',brand:'品牌',drink:'飲品',category:'類別',size:'SIZE',topping:'加料',sugar:'甜度',ice:'冰塊',payment:'付款方式',currency:'幣別',amount:'金額',drinker:'飲用者',eater:'用餐者',recorder:'紀錄者',note:'備註',rating:'評分',dish:'餐點',cuisine:'菜系',portion:'份量',spicy:'辣度',diningType:'用餐方式',type:'交通類型',company:'公司',no:'班次／編號',depPort:'出發地',arrPort:'到達地',transitPort:'經停',depTime:'出發時間',arrTime:'到達時間',seat:'座位',vehicleType:'車種／機型',ticketPrice:'票價',
-  group:'分帳群組',entry:'類型',cat:'類別',desc:'品項',payer:'誰先付錢',participants:'分給誰',splitAll:'分給誰',customShares:'每人金額',card:'集點卡',kid:'孩子',behavior:'行為',points:'點數',dir:'加點／扣點',
+  group:'分帳群組',entry:'類型',cat:'類別',desc:'品項',payer:'誰先付錢',participants:'分給誰',splitAll:'分給誰',customShares:'每人金額',splitType:'如何分',card:'集點卡',kid:'孩子',behavior:'行為',points:'點數',dir:'加點／扣點',
   name:'項目名稱',country:'國家／地區',city:'城市／地區',detailPlace:'詳細地點／商家',reason:'推薦原因',notes:'備註',targetTime:'預計時間',suggestDate:'提議日期',suggestTime:'提議時間',status:'狀態'};
 const DRAFT_CORE={drink:['brand','drink','amount'],food:['brand','dish','amount'],travel:['type','date','depPort','arrPort','ticketPrice'],split:['group','desc','amount','payer'],sticker:['kid','behavior','points'],wish:['name','proposer']};
 const DRAFT_CIRCLED=['①','②','③','④','⑤','⑥','⑦','⑧'];
-const DRAFT_LABELS_KIND={drink:{brand:'品牌名稱',drink:'飲品名稱',category:'飲品類別',size:'規格（SIZE）',topping:'加料',payment:'支付方式'},food:{brand:'店家名稱',dish:'餐點名稱',category:'用餐類別',payment:'支付方式'},travel:{payment:'付款方式'},split:{payment:'付款方式'},sticker:{note:'原因／備註'},wish:{category:'分類',source:'來源',proposer:'提議者',rating:'推薦指數'}};
+const DRAFT_LABELS_KIND={drink:{brand:'品牌名稱',drink:'飲品名稱',category:'飲品類別',size:'規格（SIZE）',topping:'加料',payment:'支付方式',country:'國家',payer:'付款者'},food:{brand:'店家名稱',dish:'餐點名稱',category:'用餐類別',payment:'支付方式'},travel:{payment:'付款方式'},split:{payment:'付款方式'},sticker:{note:'原因／備註'},wish:{category:'分類',source:'來源',proposer:'提議者',rating:'推薦指數'}};
 function draftLabel(kind,k){return (DRAFT_LABELS_KIND[kind]&&DRAFT_LABELS_KIND[kind][k])||DRAFT_LABELS[k]||k;}
 function dEsc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function drEl(id){return document.getElementById(id);}
@@ -2842,6 +3088,12 @@ function draftApplyDrink(d,m){
   if(draftValidTime(f.time)){setTimeValue(p,f.time);st=true;}
   m.put('time',[p+'-time-text',p+'-time-h',p+'-time-m'],st);
   if(!st)draftBadValue(m,f,'time',[p+'-time-text',p+'-time-h',p+'-time-m'],'時間');
+  // V10.3：國家（LINE 旗艦版會問；下拉選單是臺灣／中國，其他國家用「自訂」帶入）
+  if(f.country!==undefined&&f.country!==null&&String(f.country).trim()!==''){
+    const cv=String(f.country).trim();
+    setCountry(p,cv);
+    m.put('country',[p+'-country'],(cv==='臺灣'||cv==='中國')?true:'custom',{value:cv,customNote:'國家「'+cv+'」不在下拉選項裡，已用自訂內容帶入，請確認'});
+  }else m.put('country',[p+'-country'],'skip');
   m.put('area',[p+'-area'],dSetText(p+'-area',f.area));
   m.put('brand',[p+'-brand'],dSetText(p+'-brand',f.brand));
   m.put('drink',[p+'-drink'],dSetText(p+'-drink',f.drink));
@@ -2858,6 +3110,8 @@ function draftApplyDrink(d,m){
   m.put('payment',[p+'-pay'],dSetSel(p+'-pay',f.payment,true),{def:true,value:f.payment});
   draftApplyPerson(d,m,'drinker',p+'-drinker',f.drinker);
   handleDrinkerChange(p);
+  // V10.3：付款者（LINE 旗艦版會問）；沒提到就維持表單的預設值
+  if(f.payer){const rp=dSetSel(p+'-payer',f.payer,true);m.put('payer',[p+'-payer'],rp,{value:f.payer,customNote:'付款者「'+f.payer+'」不是 App 帳號，已用自訂內容帶入，請確認付款者'});}
   draftApplyRecorder(d,m,p+'-recorder',f);
   m.put('note',[p+'-note'],dSetText(p+'-note',f.note));
   st=false;
@@ -3083,6 +3337,28 @@ function draftApplySplit(d,m,opts){
     m.put('participants',['se-parts'],'skip',{def:true,defNote:'LINE 沒提到，這是表單原本的預設（全部成員均分）'});
   }
   if(pids){t.participantIds=pids;renderPartChecks();if(t.splitType==='custom')renderCustomShares();}
+  // V10.4：如何分。自訂金額：名字都對得上成員、人數和「分給誰」一致、總和等於金額，才整組帶入；任何一項對不上就維持均分並標「待確認」，不替使用者硬湊數字
+  if(f.splitType==='custom'){
+    const cs=(f.customShares&&typeof f.customShares==='object'&&!Array.isArray(f.customShares))?f.customShares:null;
+    const cids=[],cvals={},cmiss=[],cbad=[];let csum=0;
+    if(cs)Object.keys(cs).forEach(function(n){
+      const mm=byName(n),v=Number(cs[n]);
+      if(!mm)cmiss.push(n); // 群組成員裡找不到這個名字
+      else if(isFinite(v)&&v>=0){if(cids.indexOf(mm.id)<0){cids.push(mm.id);cvals[mm.id]=v;csum+=v;}}
+      else cbad.push(n); // 找得到人，但金額不是有效的數字（負數、文字…）
+    });
+    const camt=Number(f.amount)||0;
+    const same=cids.length===t.participantIds.length&&cids.every(function(id){return t.participantIds.indexOf(id)>=0;});
+    if(cids.length&&!cmiss.length&&!cbad.length&&same&&Math.abs(csum-camt)<0.005){
+      t.customShares=cvals;setSplitType('custom');
+      m.put('splitType',['se-eq','se-cu'],true);
+      m.put('customShares',['se-custom'],true);
+    }else{
+      m.force('splitType',['se-eq','se-cu'],'LINE 提到「自訂金額」，但'+(!cs?'沒有帶每個人的金額':(cmiss.length?'群組成員裡找不到「'+cmiss.join('、')+'」':(cbad.length?'「'+cbad.join('、')+'」的金額不是有效的數字':(!same?'分攤的人和各自金額的名單不一致':'每個人的金額加起來和總金額對不上'))))+'，先維持均分，請自己調整');
+    }
+  }else if(f.splitType==='equal'){
+    m.put('splitType',['se-eq','se-cu'],true);
+  }
   // 紀錄者：表單原本沒有這一欄，只有從 LINE 草稿開出來的表單才加上（個人流水號要用到）
   const noteFg=drEl('se-note')?drEl('se-note').closest('.fg'):null;
   if(noteFg){
@@ -3792,10 +4068,10 @@ function lcRenderSpecs(){return lcRenderDraftSection()+lcRenderSpecs0();}
 //   自動跳出卡片不代表自動儲存：沒有人按【確認新增】，就不會有任何紀錄。
 // ============================================================
 const DRAFT_CARD_ORDER={
-  drink:['date','time','area','brand','drink','category','size','topping','sugar','ice','amount','payment','drinker','recorder','rating','note'],
+  drink:['date','time','country','area','brand','drink','category','size','topping','sugar','ice','amount','payment','drinker','payer','recorder','rating','note'],
   food:['date','time','brand','dish','category','cuisine','portion','spicy','diningType','amount','payment','eater','recorder','rating','note'],
   travel:['type','date','company','no','depPort','arrPort','transitPort','depTime','arrTime','seat','vehicleType','ticketPrice','payment','recorder','note'],
-  split:['group','entry','date','time','cat','desc','amount','payer','payment','participants','note','recorder'],
+  split:['group','entry','date','time','cat','desc','amount','payer','payment','splitType','participants','customShares','note','recorder'],
   sticker:['card','kid','behavior','points','date','time','note','recorder'],
   wish:['category','name','country','city','detailPlace','reason','notes','source','proposer','targetTime','suggestDate','rating','status','recorder']
 };
@@ -3806,7 +4082,11 @@ function draftCardVal(kind,k,f,d){
     if(Array.isArray(v)&&v.length)return v.join('、');
     return f.splitAll?'全部成員均分':'全部成員均分（預設）';
   }
+  if(kind==='split'&&k==='customShares'){ // V10.4：每個人各自的金額（名字＝金額）
+    return v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).map(function(n){return n+' '+v[n];}).join('、'):'';
+  }
   if(v===undefined||v===null||v===''||typeof v==='object')return '';
+  if(kind==='split'&&k==='splitType')return v==='custom'?'✏️ 自訂金額':'⚖️ 均分';
   if(k==='date'||k==='suggestDate'){ // 日期顯示成 年/月/日（待去清單的提議日期後面接 LINE 傳送時間）
     const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v));
     let s=m?(m[1]+'/'+m[2]+'/'+m[3]):String(v);
@@ -4160,14 +4440,14 @@ const IL = {normal:'正常冰',more:'多冰',less:'少冰',micro:'微冰',no_ice
 const SL = {'0':'無糖','0.5':'0.5分糖','1':'一分糖','2':'二分糖','3':'微糖','5':'半糖','7':'少糖','10':'全糖'};
 
 // --- 版本資訊與更新紀錄 ---
-const APP_VERSION = '26.8.0'; // ⚙️ 系統層版本：適用範圍無法明確劃分模組的改動（資料管理中心、完整備份與還原、首頁生活工具入口、回收桶、返回首頁、首頁全館總覽、開場動畫、選單與權限設定、單人／雙人表單模式、雲端同步等）
+const APP_VERSION = '26.10.2'; // ⚙️ 系統層版本：適用範圍無法明確劃分模組的改動（資料管理中心、完整備份與還原、首頁生活工具入口、回收桶、返回首頁、首頁全館總覽、統計中心、開場動畫、選單與權限設定、單人／雙人表單模式、雲端同步等）
 const DRINK_VERSION = '22.7.0'; // 🧋 飲料模組獨立版本：沿用原全域版本號接續計算，僅飲料專屬功能變動計入
 const FOOD_VERSION = '6.4.0'; // 🍱 美食模組獨立版本：僅美食專屬功能變動計入，下次美食更新即為 V6 系列
 const TRAVEL_VERSION = '1.3.0'; // ✈️🚢 航班/船班模組獨立版本：全新模組，從 V1.0.0 起算
 const SPLIT_VERSION = '1.1.0'; // 🧾 分帳模組獨立版本（V1.1.0：LINE 草稿、資料卡片與 LINE 流水號）
 const STICKER_VERSION = '1.1.0'; // 🌟 集點卡模組獨立版本（含乖寶寶、互助兩張卡）；V1.1.0：LINE 草稿、資料卡片與 LINE 流水號
 const WISHLIST_VERSION = '1.2.0'; // 🗺️ 待去清單模組獨立版本：全新模組，從 V1.0.0 起算；V1.1.0：LINE 草稿、資料卡片與 LINE 流水號；V1.2.0：營業狀態改成依營業時間與現在時間自動判斷（跨夜、多段班、即將打烊／即將營業、國外當地時間）
-const LINE_VERSION = '10.2.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉，V7為可管理的選單／關鍵字／群組權限，V8為統一的「紀錄／查詢＋三版本」操作與可靠同步，V9為LINE訊息自動帶入網頁表單（待確認草稿），V10為資料卡片與LINE轉入紀錄的新流水號（最大號+1、編輯鎖定、依紀錄年份），V10.1為分帳／集點卡／待去清單也納入同一套LINE草稿與資料卡片流程（新增LINE-SPL／LINE-PTS／LINE-WSH流水號），V10.1.1為「LINE紀錄」頁（原名「LINE記帳」，V10.1.1起統一改稱「LINE紀錄」）讀取失敗與LINE暫存資料遺失等修復，V10.2.0為「LINE紀錄」頁每一筆新增「更改」（先開表單、儲存才匯入）與「刪除」（先確認、伺服器確認後才消失），原本的「匯入」維持
+const LINE_VERSION = '10.9.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉，V7為可管理的選單／關鍵字／群組權限，V8為統一的「紀錄／查詢＋三版本」操作與可靠同步，V9為LINE訊息自動帶入網頁表單（待確認草稿），V10為資料卡片與LINE轉入紀錄的新流水號（最大號+1、編輯鎖定、依紀錄年份），V10.1為分帳／集點卡／待去清單也納入同一套LINE草稿與資料卡片流程（新增LINE-SPL／LINE-PTS／LINE-WSH流水號），V10.1.1為「LINE紀錄」頁（原名「LINE記帳」，V10.1.1起統一改稱「LINE紀錄」）讀取失敗與LINE暫存資料遺失等修復，V10.2.0為「LINE紀錄」頁每一筆新增「更改」（先開表單、儲存才匯入）與「刪除」（先確認、伺服器確認後才消失），原本的「匯入」維持，V10.3.0為LINE紀錄入口整合成四種版本（簡易／標準／進階／旗艦）：新增進階版一次一題的問答、飲料旗艦版依網頁表單全部欄位逐項建檔、所有版本支援照片辨識、統一的「確認送出／返回修改／取消紀錄」確認畫面、新增診斷指令「機器人版本」，V10.4.0為分帳／集點卡／待去清單也納入四種紀錄版本（含分帳自訂金額）、功能選單改成「點哪個只顯示哪個」、LINE上8個生活工具、後台選單與版本規格頁更新，V10.5.0為隱藏按鈕（按下去聊天室不多一句話）、「工具」改成3×3九宮格、工具直接在LINE玩（新的回覆說法、轉盤與轉瓶子點一下就有結果）、奇遇羅盤／驚喜製造所從待去清單抽並回店家圖卡（營業狀態＋Google地圖按鈕）、後台選單可設定排版與九宮格小字，V10.5.1為依「問答提示詞更新」改寫四種紀錄版本的名稱與說明（簡易版＝輕享紀錄、進階版＝動態問答紀錄）、進階／旗艦版列出實際會問的欄位清單、表單模式補上適用場景與特點，V10.6.0為剪刀石頭布分成兩種玩法：新增「🤖 自動剪刀石頭布」（一鍵自動對決：點一下就出結果，你和小秘書各自隨機出拳，回「你出了／小秘書出／結果」三行）、手動出拳（互動對決）的按鈕順序改成 ✊ 石頭、✌️ 剪刀、✋ 布且結果改用同一種三行格式、「工具」九宮格變成 10 格（9 個工具＋返回主選單）、已存過選單設定的人更新後自動補上新格子，V10.7.0為分帳／集點卡／待去清單的版本說明卡開放在群組、多人聊天室（只看說明，卡片註明「要記錄請到 1 對 1」；記錄仍只在 1 對 1），V10.8.0為LINE官方帳號管理頁登入密碼加上錯誤次數限制與鎖定（同一來源連續輸錯5次先鎖10分鐘、記錄最近失敗嘗試），V10.9.0為「工具」選單的剪刀石頭布從2格（✌️剪刀石頭布=手動出拳要再選一次、🤖自動剪刀石頭布=一鍵出結果）拆成4格——✌️剪刀、✊石頭、✋布、🤖自動，每格點了就直接出結果不用再選一次，已存過選單設定的人更新後自動把原本「剪刀石頭布」那格拆成剪刀／石頭／布3格（自動剪刀石頭布維持在最後），打字「猜拳」「剪刀石頭布」仍維持原來跳3顆按鈕選的互動對決
 
 // 版本治理規範（僅供未來判定版本號／更新提示策略參考，本身不觸發版本變更）：
 // 1. Major：重大架構改版或不向下相容的 Breaking Change（如資料結構不相容、核心引擎重寫）。
@@ -4195,6 +4475,140 @@ const UPDATE_POLICY = {
 const DEV_ORDER_POLICY = ['紀錄日常','數據統計','生活工具','設定'];
 
 const CHANGELOG = [
+  {
+    version:'⚙️ LINE整合 V10.9.0', type:'Minor', date:'2026/11/12',
+    items:[
+      'LINE整合：「工具」選單的剪刀石頭布，從 2 格改成 4 格——✌️ 剪刀、✊ 石頭、✋ 布、🤖 自動，每一格點了就直接出結果（你出哪一拳、小秘書隨機出哪一拳、誰贏），不用像以前「✌️ 剪刀石頭布」那一格一樣，按了還要再選一次石頭／剪刀／布',
+      'LINE整合：已經在後台存過選單設定的人，更新後會自動把原本「✌️ 剪刀石頭布」（手動出拳）那一格拆成「剪刀」「石頭」「布」3 格（排在原來的位置，自動剪刀石頭布維持在最後；如果原本這一格被停用，拆出來的 3 格也會一起維持停用；但如果只是改過名稱、圖示或小提示字，拆出來的 3 格會是系統預設的新文字，不會保留原來改過的字）。只有整個刪掉這一格的人，更新後才不會多出新格子。「工具」九宮格從 10 格（9 個工具＋返回主選單）變成 12 格（11 個工具＋返回主選單，仍是 4 列）',
+      'LINE整合：打字「猜拳」或「剪刀石頭布」沒有改——還是先跳出 ✊ 石頭／✌️ 剪刀／✋ 布 3 顆按鈕讓你選，選了才判勝負；打「自動剪刀石頭布」「自動猜拳」也沒有改。後台「功能權限」仍然只有「剪刀石頭布」「自動剪刀石頭布」兩個開關——新的剪刀／石頭／布 3 格共用「剪刀石頭布」這個開關，關掉就 3 格一起不見',
+      'LINE整合：沒有動到的——猜拳的勝負判斷、亂數、結果文字格式、「再來一局」按鈕都沒有改；網頁「生活工具」裡的剪刀石頭布（跟機器猜拳）是完全不同的功能，沒有改；其他 7 個工具（奇遇羅盤、驚喜製造所、轉盤、拋硬幣、轉瓶子、隨機盒子、骰子）都沒有改',
+    ],
+    reason:'LINE「工具」選單把剪刀石頭布拆成剪刀／石頭／布／自動 4 個各自一鍵出結果的格子，方便直接玩任何一種拳，屬於調整顯示方式的新增功能、向下相容（舊設定自動補上新格子、打字指令與權限開關都沒變），故列為 Minor，LINE整合版本由 V10.8.0 升至 V10.9.0；系統層版本不變。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.8.0', type:'Minor', date:'2026/11/12',
+    items:[
+      'LINE整合：「LINE官方帳號」管理頁的登入密碼加上防護。同一個來源（IP）連續輸錯管理密碼達 5 次，會先鎖定 10 分鐘——鎖定期間，就算之後輸入的是對的密碼，也會先被擋下來，畫面會顯示「輸入錯誤太多次，請於 X 分鐘後再試一次」；登入成功會把這個來源的錯誤次數清空',
+      'LINE整合：每一次輸錯都會留下一筆紀錄（時間、來源 IP、當時第幾次、有沒有因此被鎖定），最近 20 筆會留著，登入成功後可以在「🧪 測試與設定」分頁的「🔐 登入保護」看到，方便確認是不是自己打錯，還是有人在亂猜',
+      'LINE整合：這組防護只看「送到伺服器的來源」，同一個人、同一個網路下打錯 5 次就會被鎖，換一個網路（IP）不受之前的影響；5 次與 10 分鐘是先定的數字，之後要調整隨時都可以說',
+      'LINE整合：沒有動到的——密碼本身仍是 Cloudflare 的 LINE_ADMIN_PASSWORD（忘記只能在 Cloudflare 重新設定一組新的，這個防護不會也不能把忘記的密碼找回來）；管理頁其他所有功能、LINE 機器人的對話行為、1 對 1／群組的任何紀錄或版本說明卡都沒有改',
+    ],
+    reason:'管理密碼登入加上錯誤次數限制與鎖定，屬於新增的安全防護（不改任何既有功能、資料或記錄流程），故列為 Minor，LINE整合版本由 V10.7.0 升至 V10.8.0；系統層版本不變。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.7.0', type:'Minor', date:'2026/11/12',
+    items:[
+      'LINE整合：分帳、集點卡、待去清單的「版本說明卡」，現在在群組、多人聊天室也看得到了（以前群組只會回「請到 1 對 1」或「還沒有被授權」）。在群組輸入「紀錄分帳」「紀錄集點卡」「紀錄待去清單」（或「新增待去地點」），或從「日常小秘書」先選版本、再選這三個功能，會出現和 1 對 1 一樣的四張卡（🟢 輕享紀錄、🟡 智慧辨識紀錄、🟠 動態問答紀錄、🔵 完整資料紀錄，操作方式、範例、規則都一樣），但只能看說明：卡片上沒有「選這個版本」的按鈕，每一張都註明「要記錄請到 1 對 1 聊天室（私訊我）」，下面只有一顆「↩️ 功能選單」',
+      'LINE整合：記錄本身還是只在 1 對 1：這三個功能的四種版本要對照你自己的分帳群組與成員、孩子與行為、待去清單，為了保護個人資料，群組裡不讀、不顯示任何人的清單，說明卡上也沒有任何個人資料（卡片內容只跟功能有關）。看說明不需要群組被授權（集點卡、待去清單預設要管理員授權群組才能用，說明卡不受影響）；功能被停用、或管理員限定了可用的人時，還是會用白話說明原因，不裝作能用。在群組看說明，也不會動到你在 1 對 1（或別的聊天室）記到一半的紀錄',
+      'LINE整合：1 對 1 完全沒有改（版本卡、按鈕、問答流程、草稿、流水號都一樣）。群組裡原本就能用的流程也沒有動：直接輸入「分帳」「記一筆分帳」仍然是原本的「快速記錄」（輸入「晚餐 1200 AA」會建立一張待確認草稿）；直接輸入「集點卡」「待去清單」，在還沒授權的群組仍然是原本的「請管理員授權」提示，授權之後走原本的流程。這幾項要不要也改成只准在 1 對 1，已列入後台「版本規格」的待確認清單，等你決定',
+      'LINE整合：看不到 LINE 身分的群組成員（沒同意官方帳號服務條款）的情況沒有改變；後台「版本規格」的說明文字同步更新（分帳、集點卡、待去清單各版本的備註，以及待確認清單新增「分帳在群組的快速記錄」一條）',
+    ],
+    reason:'分帳、集點卡、待去清單的版本說明卡開放在群組、多人聊天室「只看說明」，屬於新增顯示功能（不改任何資料與記錄流程），故列為 Minor，LINE整合版本由 V10.6.0 升至 V10.7.0；各網頁模組本身的功能沒有改變，版本號不動；系統層版本不變。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.6.0', type:'Minor', date:'2026/11/12',
+    items:[
+      'LINE整合：剪刀石頭布分成兩種玩法。「🤖 自動剪刀石頭布」（一鍵自動對決）：點一下就直接出結果，不用再按出拳——你的拳和小秘書的拳都由程式隨機出（兩邊各自獨立、每種拳機率相同），一次回覆就判完勝負，格式固定是「✌️ 剪刀石頭布（自動對決）／你出了：✌️ 剪刀／小秘書出：✊ 石頭／結果：小秘書獲勝！」（結果也可能是「你獲勝！」「平手！」）；結果下面有「🤖 再來一局」按鈕，再按一次就再來一局',
+      'LINE整合：手動出拳（互動對決）：點「✌️ 剪刀石頭布」，LINE 對話框下方彈出 [ ✊ 石頭 ] [ ✌️ 剪刀 ] [ ✋ 布 ] 三顆按鈕（順序依你的規格），按下去之後小秘書才隨機出拳並判勝負（不會偷看你出什麼）；結果改用和自動對決同一種三行格式，標題寫「（互動對決）」，結果下面還是三顆出拳按鈕，可以一直再玩。原本「你出 … 我出 …！哎呀，被你贏了！」那種一句話的結果，改成「結果：你獲勝！／小秘書獲勝！／平手！」',
+      'LINE整合：「工具」九宮格多一格「🤖 自動剪刀石頭布」（小字「一鍵出結果」），原本那一格圖示由 ✂️ 改成 ✌️、小字改成「自己出拳」；9 個工具加「返回主選單」共 10 格，九宮格變成 4 列（最後一列只有「返回主選單」）。打字也行：「自動剪刀石頭布」「自動猜拳」＝自動對決，「剪刀石頭布」「猜拳」＝手動出拳；在等你出拳的時候改按（或打）「自動剪刀石頭布」，會直接出自動對決的結果並結束等待。後台「功能權限」多了「自動剪刀石頭布」，可以和「剪刀石頭布」分開開關（1 對 1／群組）；想回到 3×3，把這一格停用就好（打字還是能用）',
+      'LINE整合：已經在後台存過選單設定的人，更新後會自動補上「🤖 自動剪刀石頭布」這一格（排在最後一個工具後面）和預設關鍵字「自動猜拳」；「剪刀石頭布」格子的圖示、小字如果還是舊預設（✂️、來一局）就換成新的，自己改過的圖示、小字、名稱、排序都不動。補上的內容在你到後台按「儲存」之前只是載入時補的，不會偷偷寫進去；按了儲存之後就是你自己的設定——把這一格刪掉再存，不會又被補回來',
+      'LINE整合：沒有動到的——網頁「生活工具」裡的剪刀石頭布（跟機器猜拳）、其他 7 個工具（奇遇羅盤、驚喜製造所、轉盤、拋硬幣、轉瓶子、隨機盒子、骰子）、四種紀錄版本、查詢、草稿、流水號、照片辨識都沒有改；所有工具的亂數仍是公平亂數',
+    ],
+    reason:'新增「自動剪刀石頭布」（一鍵自動對決）這個新玩法與九宮格格子，並調整手動出拳的按鈕順序與結果格式，屬於新增功能，故列為 Minor，LINE整合版本由 V10.5.1 升至 V10.6.0；各網頁模組本身的功能沒有改變，版本號不動。',
+  },
+  {
+    version:'26.10.2', type:'Patch', date:'2026/11/12',
+    items:[
+      '選單與權限設定：後台「LINE官方帳號」選單分頁的說明文字更新——「畫面顯示規則」與「有新版的建議選單」提示裡，「工具」由 8 項改成 9 項、九宮格改成「9 個工具＋返回主選單」（對應 LINE整合 V10.6.0 新增的「自動剪刀石頭布」）；選單、關鍵字、權限的功能本身沒有改',
+    ],
+    reason:'後台說明文字更新（沒有新增或移除功能，不改任何資料），故列為 Patch，系統層版本由 v26.10.1 升至 v26.10.2；各網頁模組本身的功能沒有改變，版本號不動。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.5.1', type:'Patch', date:'2026/11/12',
+    items:[
+      'LINE整合：四種紀錄版本的名稱與說明依「問答提示詞更新」改寫——🟢 簡易版改稱「輕享紀錄」、🟠 進階版改稱「動態問答紀錄」（🟡 標準版＝智慧辨識紀錄、🔵 旗艦版＝完整資料紀錄不變）。各版本的「操作方式」「範例」「規則」改成你提供的新文字：簡易版、標準版的規則標題改為「規則」，進階版、旗艦版維持「互動規則」；旗艦版你這次沒有給新的規則，維持原本那一段。首頁的版本卡、六個功能各自的版本卡、選好版本後的說明訊息、後台版本規格頁，都從同一份文字產生，所以一起換',
+      'LINE整合：🟠 進階版、🔵 旗艦版多一行「會問哪些欄位」的編號清單——不是手寫的，是直接從該功能實際的表單欄位產生（順序就是問答的順序），所以說明和實際問的一定一致。例如 🧋 飲料進階版最多 8 題（品牌名稱、品項名稱、SIZE／容量、加料選擇、甜度、冰塊、支付方式、金額），旗艦版共 19 題（從日期、時間、國家一路問到備註）；有條件才問的欄位會註明（集點卡的孩子、行為只有乖寶寶集點卡才問；分帳的「各自金額」只有選「自訂金額」才問）；幣別沒填的預設也寫在清單裡（飲料、美食是新臺幣 TWD，分帳是該分帳群組的幣別）。和你貼的飲料範例清單相比，實際表單還會問「日期」「時間」，「行政區．地點」在網頁表單是同一欄，幣別與金額是兩題，「客製化標籤」就是「甜度」「冰塊」兩題，所以清單照實際表單寫；問答流程本身沒有改',
+      'LINE整合：🍱 美食、🚆 交通的旗艦版還沒開放（要先逐欄核對網頁表單），版本卡片上的旗艦版改成誠實寫「目前尚未開放」，不再列出一串看起來可以用的欄位',
+      'LINE整合：表單模式提醒更新——雙表單模式那一句補上「核心在連貫性與資料關聯性」；後台版本規格頁新增單表單、雙表單的「適用場景」與「欄位與介面特點」。你原稿裡的資料庫用語（主表、主鍵／外鍵）和「只有姓名／ID、金額／項目、備註」，這個 App 沒有這樣的設計，所以改寫成白話——只新增 1 筆紀錄、只關聯用戶 A、欄位沿用該功能原本的表單——避免說錯',
+      'LINE整合：沒有動到的——問答流程本身（問哪些題、什麼順序、確認送出、草稿、流水號）、照片辨識、查詢、工具、選單都沒有改，只更新顯示的說明文字',
+    ],
+    reason:'更新提示與說明文字（沒有新增或移除功能，問答流程不變），故列為 Patch，LINE整合版本由 V10.5.0 升至 V10.5.1；各網頁模組本身的功能沒有改變，版本號不動。',
+  },
+  {
+    version:'26.10.1', type:'Patch', date:'2026/11/12',
+    items:[
+      '單人雙人表單：表單最上方的「表單模式提醒」更新——雙表單模式那一句補上「核心在連貫性與資料關聯性」，下面新增可展開的「適用場景與特點」（預設收起、只多一行小字；點開後說明浮在表單上面、不會把表單往下推，再點一次收起；內容是單表單、雙表單各自的適用場景與介面特點），文字和 LINE 後台版本規格頁一致。畫面高度 760px 以下的小螢幕（多數手機瀏覽器）會自動縮短最上方的說明（只顯示目前模式那一句、間距縮小），把空間留給下面的填寫區；另一種模式的說明點「適用場景與特點」就看得到。表單的欄位、步驟、儲存方式都沒有改',
+      '選單與權限設定：後台「LINE官方帳號」版本規格頁的「四種紀錄版本與操作方式」跟著 LINE 的新說明（輕享紀錄、動態問答紀錄、進階與旗艦的欄位編號清單）；「表單模式提醒」改名為「表單模式設定與應用」，並顯示單表單、雙表單的適用場景與介面特點（對應 LINE整合 V10.5.1）',
+    ],
+    reason:'網頁表單的說明文字與後台規格頁的顯示更新（沒有新增或移除功能，不改任何資料），故列為 Patch，系統層版本由 v26.10.0 升至 v26.10.1；各網頁模組本身的功能沒有改變，版本號不動。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.5.0', type:'Minor', date:'2026/11/11',
+    items:[
+      'LINE整合：「工具」選單改成 3×3 九宮格——一張卡片、8 個工具加最後一格「🔙 返回主選單」，每格是白底淺灰的小方塊（上面工具圖示、中間名稱、下面小字，例如奇遇羅盤→選地點、驚喜製造所→選店家），不用漸層。格子按下去是「隱藏指令」，聊天室不會多出一句你說的話，直接看到結果；「紀錄」「功能選單」等其他選單維持原本的清單樣子',
+      'LINE整合：按鈕改成隱藏指令（postback）——工具的「再玩一次」「出拳」「取消」等按鈕按下去，聊天室不會再多一句你說的話。伺服器收到後當成「你打了那串字」，走和打字完全相同的流程（同樣的權限檢查、同樣的名稱對應），所以打字和按按鈕一定得到一樣的結果；格式不認得的隱藏指令直接略過（不回覆、不報錯）；按鈕要送的字超過 LINE 的長度上限時，自動退回一般按鈕',
+      'LINE整合：工具全程留在 LINE 裡玩，回覆改成新的說法——拋硬幣「叮！硬幣落地了，結果是：🪙 正面」；骰子「喀啦喀啦... 你擲出了：🎲 4 點！」（多顆會列出每顆與合計）；剪刀石頭布出現 ✌️ ✊ ✋ 三顆按鈕，結果像「你出 ✌️ 剪刀　我出 ✊ 石頭！嘿嘿，你輸囉～再玩一次嗎？」，可以一直按著再玩；隨機盒子「搖一搖... 📦 打開盒子！」。轉盤、轉瓶子不用先輸入清單——點一下就用內建的選項（誰買單、今晚吃大餐、回家洗洗睡…／左手邊的人、最晚到的人…）轉出結果，想用自己的選項再按「✍️ 自己輸入選項」。所有工具仍是公平亂數（每個選項機率相同）',
+      'LINE整合：奇遇羅盤（選地點）、驚喜製造所（選店家）——點一下就從「你的待去清單」（只抽狀態是「待去」或「已安排」的項目）隨機抽一個，回一張店家圖卡：店名、營業狀態（🟢 營業中／🟡 即將打烊／🟠 即將營業／🔴 休息中／⚪ 資訊未提供）、地址、營業時間、分類、推薦指數、原因、預計時間、狀態，以及「🗺️ 在 Google 地圖開啟」按鈕。營業狀態和網頁待去清單用同一套判斷引擎（依營業時間與現在時間自動算，跨夜、多段班、公休日都處理；LINE 上沒填國家的項目一律用台北時間），資料沒填的欄位寫「資訊未提供」，不亂猜。卡片下面有「🔄 再抽一次」「📒 改從我的紀錄抽」（你的飲料／美食紀錄裡的地點與店家）「✍️ 自己輸入」',
+      'LINE整合：待去清單只在「跟我的 1 對 1 聊天室、已綁定同步碼」時才會被抽（群組裡不公開你的個人清單）；群組、還沒綁定、清單裡沒有「待去」或「已安排」的項目、「待去清單」被管理員停用時，會用白話講原因，並改成請你輸入自己的清單，不會回一張空的卡片。奇遇羅盤和驚喜製造所目前抽的是同一份清單（待去清單沒有「地點／店家」之分），差別只在卡片上方的標題；卡片送不出去時（例如 LINE 拒絕卡片格式）自動改傳純文字版，同樣有按鈕',
+      'LINE整合：沒有動到的——分帳、集點卡、待去清單的四種紀錄版本、查詢、草稿、流水號、照片辨識都沒有改；各工具的開關與權限（1對1／群組）沿用原本「後台 → 功能權限」的設定；舊的選單設定自動套用預設排版（只有「工具」是九宮格），之前自己改過的選單不會被覆蓋',
+    ],
+    reason:'新增功能（工具九宮格、隱藏按鈕、店家圖卡、新的回覆說法），向下相容：舊的選單設定自動套用預設排版、舊的按鈕與打字指令照常可用，沒有改動任何紀錄資料，故列為 Minor，LINE整合版本由 V10.4.0 升至 V10.5.0；各網頁模組本身的功能沒有改變，版本號不動。',
+  },
+  {
+    version:'26.10.0', type:'Minor', date:'2026/11/11',
+    items:[
+      '統計中心：分類選單從 5 項擴充為 7 項，順序固定為 🌐 全館、🧋 飲料、🍱 美食、🚆 交通、🧾 分帳、🌟 集點卡、🗺️ 待去清單。因為項目變多，改成「單排、左右平順滑動」的分頁列：原生捲軸隱藏，手機上不會擠成兩排或把字縮小，電腦上滑鼠滾輪也能左右捲；選到的那一顆換成深色底白字並自動捲到畫面中間，沒選到的文字也用夠深的顏色（對比約 8:1，容易閱讀），切換分類時內容從頂端開始。不用漸層、不做彈跳動畫；期間（本月／今年／全部…）那一列也一樣隱藏捲軸',
+      '統計中心：新增 🌟 集點卡 統計——乖寶寶（加點次數、獲得／扣除／兌換點數、目前餘額、每個孩子的比較、行為排行、扣點原因、記錄者、獎勵兌換、近 6 個月趨勢）與互助（加點／扣點次數與總和、誰加最多、誰兌換最多、獎勵、趨勢）；依所選期間篩選，餘額一律是目前的實際餘額，不受期間影響',
+      '統計中心：新增 🗺️ 待去清單 統計——目前清單的總數與各狀態（待去、已安排、已完成、暫不去、取消）、完成率（已完成 ÷ 沒有取消的項目）；所選期間內新增（依提議日期）與完成（依完成日期）的數量、平均推薦指數；狀態／分類／國家／城市／推薦指數／提議者／消息來源的分布，以及近 6 個月「新增 vs 完成」趨勢',
+      '統計中心：「🌐 全館」最下方多一塊「🧩 其他模組概況」，顯示集點卡與待去清單的重點數字，點一下直接跳到那個分類；全館的花費合計仍然只算飲料、美食、交通、分帳四個有金額的模組（集點卡、待去清單沒有金額），畫面上有註明。資料只讀取、不修改；某個模組還沒有資料、資料壞掉或讀不到時，該分類顯示說明，其他分類與整個統計中心照常使用',
+      '選單與權限設定：後台「LINE官方帳號 → 選單設定」每個主選單可以選排版（清單／九宮格）、每個子選單可以填九宮格格子上的小字；版本規格頁的 8 個工具說明改成新的玩法（對應 LINE整合 V10.5.0）',
+    ],
+    reason:'統計中心是跨模組的系統功能，這次新增兩個分類與其統計畫面（新增功能、向下相容，只讀取既有資料、沒有改動任何紀錄），故列為 Minor，系統層版本由 v26.9.0 升至 v26.10.0；集點卡與待去清單模組本身的功能沒有改變，版本號不動。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.4.0', type:'Minor', date:'2026/11/06',
+    items:[
+      'LINE整合：分帳、集點卡、待去清單也有四種紀錄版本了——🟢 簡易版（快速紀錄）、🟡 標準版（智慧辨識紀錄）、🟠 進階版（情境式問答紀錄）、🔵 旗艦版（完整資料紀錄），和飲料、美食、交通同一套：直接輸入文字、拍照、上傳照片、貼上文字或圖片都行，已經辨識到的欄位不重問，最後一律進「請確認這筆紀錄」的確認畫面，按「確認送出」之前不會寫入任何資料。從「紀錄」選單，或傳「紀錄分帳」「紀錄集點卡」「紀錄待去清單」（後面可以接版本名稱）都能進去；欄位完全沿用網頁各自的表單，沒有另外造欄位',
+      'LINE整合：這三個功能的紀錄只有一條路——按「確認送出」後，網頁「待確認草稿」多一張草稿，到網頁按【確認新增】才正式儲存並產生流水號（LINE-SPL／LINE-PTS／LINE-WSH）。所以四種版本只在「1 對 1 聊天室、已綁定同步碼並同步過一次、草稿模式開著」時使用；群組聊天室、還沒綁定、沒開草稿模式、讀不到網頁資料時，分帳和集點卡維持原本的流程、待去清單說明需要的條件，一律先講原因，不假裝能用',
+      'LINE整合：分帳——問分帳群組、支出或收入、日期、時間、類別、品項、金額、幣別、誰先付錢、付款方式、如何分（均分／自訂金額）、分給誰、紀錄者、備註。簡易版輸入「品項＋金額」，缺的必要資訊（分帳群組、誰先付錢）會補問，沒說「分給誰」就留空並標「待確認」（網頁表單預設全部成員均分）。群組與成員都對照你網頁上的資料；只有一個分帳群組時自動帶入並標示「預設」；旗艦版沒指定幣別時用該群組的幣別（群組沒設定則為新臺幣 TWD）',
+      'LINE整合：分帳的「自訂金額」——旗艦版可以一人一筆金額（寫法：小格 800、小明 1600），總和必須等於總金額；中途改了總金額，原本填的各自金額會清掉並明講，確認送出前請你重填。網頁的資料卡片多顯示「如何分」與「每人金額」，按【確認新增】就照每個人的金額建立支出。LINE 帶來的名單對不上（人不在群組裡、人數和「分給誰」不一致、金額不是有效的數字、加總不等於金額）時不硬湊——退回「均分」、標「待確認」並寫出原因，由你在網頁確認後才存',
+      'LINE整合：集點卡——問集點卡種類（乖寶寶／互助）、孩子、行為、點數、日期、時間、紀錄者、原因；孩子與行為對照你的清單，也能輸入清單以外的行為。簡易版輸入「孩子＋行為」，點數用該行為在 App 裡設定的點數；簡易版需要至少有一個孩子，只用互助集點卡的人請用標準版以上',
+      'LINE整合：待去清單——問分類、項目名稱、國家、城市、詳細地點、推薦原因、備註、來源、推薦指數（3～5 顆星）、提議者、提議日期、狀態、預計時間、紀錄者。簡易版輸入「地點名稱」；提議者是網頁待去清單的必填欄位，沒說的話每個版本都會問一次；提議日期沒填就用 LINE 傳送的日期，旗艦版沒填的推薦指數（網頁預設 5 顆星）與狀態（預設「待去」）也會在確認畫面上寫出來',
+      'LINE整合：照片辨識也用在這三個功能，但只有照片上有清楚的文字（收據、帳單、截圖、手寫便條）才有用，一般生活照會回報「看不出來」，不猜；不保存照片原檔。LINE 這邊標的「待確認」原因（例如日期是暫用的、分給誰沒提到）會一併帶到網頁草稿的資料卡片，到網頁不會掉',
+      'LINE整合：四種版本的說明文字統一——每個版本都先列「支援輸入：直接輸入文字／拍照／上傳照片／貼上文字或圖片」，再寫操作方式、範例與注意事項：簡易版以最快速完成為優先、標準版未提及的內容絕不臆測、進階版一次只問一個欄位、旗艦版依完整表單順序逐項確認，金額沒寫幣別時預設新臺幣 (TWD)（分帳旗艦版是該群組的幣別）；範例與欄位舉例依各功能換成自己的。選「單表單／雙表單模式」時的提醒文字也換成新的說明',
+      'LINE整合：功能選單改成「點哪個只顯示哪個」——「功能選單」只列第一層（紀錄、集點卡、待去清單、設備管理中心、工具）；「紀錄」只列美食紀錄、飲料紀錄、交通紀錄、分帳、集點卡、待去清單；「集點卡」「待去清單」「設備管理中心」各自只出現自己；「工具」只列奇遇羅盤（選地點）、驚喜製造所（選店家）、轉盤、拋硬幣、轉瓶子、隨機盒子、骰子、剪刀石頭布。卡片上每個按鈕，打字輸入同樣的字也一定認得；沒授權的群組只看到「紀錄」「工具」。這是設定、不是寫死在程式裡：後台新增或停用選單項目，選單就自動出現或消失，不用改程式',
+      'LINE整合：LINE 上可以玩 8 個生活工具——奇遇羅盤（選地點）與驚喜製造所（選店家）只從「你自己的」飲料／美食紀錄抽（沒綁定同步碼就改成自己輸入）；轉盤、拋硬幣、轉瓶子、隨機盒子、骰子（1～6 顆）、剪刀石頭布都是真亂數。群組裡玩的結果直接回在群組，不用群組授權、不會私訊；工具不會寫入任何紀錄；後台可以分別停用。「設備管理中心」目前還沒有功能內容，點進去會誠實說明「待確認」，不假裝有功能',
+      'LINE整合：後台管理頁——「選單」分頁新增顯示規則說明、樣式切換（只列第一層／全部展開的舊樣子）、「尚未放進選單的功能」清單（選主選單按「加入」就生效）；舊版（V10.3）存下來而且沒被改過的選單會自動換成新版，被你改過的原樣保留，後台提示「有新版的建議選單」，由你決定「套用」或「保留我的設定」（授權與權限都不受影響）。「版本規格」分頁改成六個功能（飲料、美食、交通、分帳、集點卡、待去清單）各自的四個版本，加上表單模式提醒、8 個工具與設備管理中心（待確認），分帳與集點卡標明「LINE 目前還沒有查詢」',
+    ],
+    reason:'分帳、集點卡、待去清單新增四種紀錄版本，LINE 功能選單改成逐層顯示並新增 8 個生活工具，屬 LINE 整合的新功能（向下相容：被你改過的舊選單設定原樣保留；草稿只多了「如何分」「每人金額」兩個欄位），故列為 Minor，由 V10.3.0 升至 V10.4.0；飲料、美食、交通、分帳、集點卡、待去清單網頁模組本身的操作與資料格式沒有變動，版本號維持；系統層版本升為 v26.9.0（生活工具新增兩個工具，見下一筆）。',
+  },
+  {
+    version:'26.9.0', type:'Minor', date:'2026/11/06',
+    items:[
+      '生活工具：新增兩個工具——🎲 骰子（選 1～6 顆，一鍵擲出，每顆骰子畫出對應的點數，顯示每顆點數與合計，近況記下最近幾次）與 ✊ 剪刀石頭布（點出拳跟機器猜拳，畫面顯示雙方的拳與勝負，累計勝／負／平戰績，可以「重置戰績」）。工具從 6 項變成 8 項，首頁卡片小字也跟著變成「8 項工具・隨機決定」；骰子與出拳都是真亂數（測試各擲 3000 次，分布都接近平均），使用者設了「減少動態效果」時不跑動畫、馬上出結果；戰績與近況只記在畫面上，不存任何資料',
+      '生活工具：「工具機率設定中心」多出骰子、剪刀石頭布兩條拉桿，預設機率改成 8 項合計 100%（喝什麼 22、喝哪裡 19、轉盤 15、擲硬幣 12、轉瓶子 9、骰子 8、剪刀石頭布 8、隨機盒子 7），「🎲 隨機推薦今天玩什麼」也會抽到這兩個工具；【恢復預設】【儲存設定】兩顆按鈕固定在設定中心的底部，拉桿變多了也不用捲到最下面才找得到',
+      '生活工具：已經存過機率的人不會被亂改——沒調整過（還是舊的 6 項預設）的換成新預設；自己調整過的保留原本的比例，新工具各給 6%、其餘依原比例縮小，總和仍是 100%；舊備份（只有 6 項機率）匯入時也會自動補上新工具；機率資料壞掉時退回預設，不會當機',
+      '生活工具：首頁入口和飲料裡的「生活工具」分頁是同一套程式，所以兩邊同時多了這兩個工具；只新增工具與機率，不寫入任何紀錄，飲料、美食、交通等既有資料都沒有動',
+    ],
+    reason:'生活工具新增兩個工具與 8 項機率（新增功能、向下相容：舊的機率設定會自動轉換，沒有改動任何紀錄資料），故列為 Minor，系統層版本由 v26.8.0 升至 v26.9.0；各網頁模組本身的功能沒有改變，版本號不動。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.3.0', type:'Minor', date:'2026/11/05',
+    items:[
+      'LINE整合：LINE 機器人「日常小秘書」改成四種紀錄版本——🟢 簡易版（輸入「品項 金額」）、🟡 標準版（用一句話描述，AI 自動拆成欄位）、🟠 進階版（機器人一次問一個欄位，只問必要的）、🔵 旗艦版（依網頁原始表單的全部欄位逐項建檔）。「紀錄」選單、功能關鍵字、直接輸入「進階版」等入口都統一成這四種；查詢仍維持簡易／標準／旗艦三種顯示詳細程度',
+      'LINE整合：飲料、美食、交通各自讀取自己的網頁表單欄位（不共用飲料欄位）。飲料四個版本都已完成；美食、交通先開放簡易／標準／進階三個版本，旗艦版要等網頁表單的欄位逐欄核對（美食的飽足感、回訪意願、付款者；交通各類型的專屬欄位）後，下一階段才開放，現在選旗艦版會說明原因並請改選其他版本，不會少問欄位。分帳、集點卡、待去清單的四版本還沒有改，維持原本流程',
+      'LINE整合：所有版本都支援文字與照片（拍照、相簿、上傳、貼上圖片在 LINE 都是圖片訊息）。照片由 AI 辨識，只填照片上看得到的欄位，品牌、價格、地點、日期看不清楚就留空或標「待確認」，不猜；照片太糊、與紀錄無關、過期或 AI 暫時不能用時會說明原因，改用文字輸入；不保存照片原檔，只保留你確認後的資料',
+      'LINE整合：統一的確認畫面——輸入完成後顯示「請確認這筆紀錄」，提供「確認送出／返回修改／取消紀錄」；按「確認送出」之前不會寫入任何資料，也不會產生流水號；「返回修改」依網頁表單的欄位順序列出全部欄位，點欄位名稱就能改；問答進行到一半按取消，已填的內容會先確認一次；流程進行到一半點到舊的版本按鈕也會先確認，不會把按鈕文字當成答案寫進欄位',
+      'LINE整合：進階版與旗艦版一次只問一個欄位；已從文字或照片辨識到的欄位不重問（不太確定的會請你確認）；必填欄位不能略過，選填欄位可以回答「無」「略過」「不知道」；旗艦版逐項確認全部欄位（可點「其餘略過」），沒填幣別時預設 NT$',
+      'LINE整合：確認送出之後——已綁定同步碼且開啟草稿模式的人，網頁收件匣會多一張「待確認草稿」，在網頁按【確認新增】才會產生流水號；沒有開草稿模式則直接寫入並自動同步到網頁（失敗會保留並自動重試）；還沒綁定同步碼的會先暫存在「LINE紀錄」，綁定後仍可匯入。連按兩次「確認送出」不會寫入兩筆',
+      'LINE整合：網頁端的待確認草稿——飲料草稿帶入表單時，多帶入「國家」與「付款者」兩個欄位（旗艦版會問；原本草稿沒有這兩欄，到網頁會掉），草稿的資料卡片也會顯示',
+      'LINE整合：網頁端的「LINE紀錄」——清單、匯入與更改認得新的「簡易版／進階版」標示，並優先使用四版本記下的網頁欄位（甜度、冰塊、國家、付款者、評分…），匯入時不會漏欄位；交通沒有提到的日期與出發時間維持空白，不拿傳訊息的日期代替',
+      'LINE整合：網頁端管理頁的「版本規格」分頁——紀錄改列四個版本，每個功能列出實際用到的欄位（由程式裡的表單定義產生）；還沒開放的項目標示「待確認」，不自己補欄位',
+      'LINE整合：四版本紀錄會記住是在哪個聊天室開始的——在群組開始的紀錄，回到 1 對 1 聊天室傳的話不會被當成答案，也不會被舊版問答誤讀或改動（私訊照一般訊息處理），回到群組可以接著填；群組裡每個人各自一個流程，紀錄者各自是自己',
+      'LINE整合：新增診斷指令——在官方帳號傳「機器人版本」，會回報目前上線的 LINE整合版本與 Build、四種紀錄版本、AI 辨識金鑰有沒有設定，以及你按「確認送出」之後資料會去哪裡；用瀏覽器打開 /api/health 也能看到版本。官方帳號看起來沒更新時，先用它確認新版程式有沒有真的上線（只回報版本與「有／沒有設定」，不會顯示任何金鑰、密碼或同步碼）',
+    ],
+    reason:'把 LINE 機器人的紀錄入口整合成四種版本，新增進階版、照片辨識與統一的確認畫面，屬 LINE 整合的新功能，故列為 Minor，由 V10.2.0 升至 V10.3.0；飲料、美食、交通網頁模組本身的操作與資料格式沒有變動，版本號維持；系統層版本（v26.8.0）不變。',
+  },
   {
     version:'🗺️ 待去清單 V1.2.0', type:'Minor', date:'2026/11/05',
     items:[
@@ -6360,11 +6774,13 @@ function mutualRemoveReward(id){mutualRewards=mutualRewards.filter(x=>x.id!==id)
 // ===== 📡 LINE官方帳號 × 智慧關鍵字辨識 × LINE群組使用權限（管理）=====
 // 設定存在伺服器（Cloudflare KV 的 line:config），LINE機器人每則訊息都會讀取；這裡的每個操作都會「立刻送到伺服器驗證並保存」，
 // 伺服器拒絕（例如關鍵字衝突、資料關聯錯誤）時，畫面上的資料不會被改動。管理密碼只存在這個分頁（sessionStorage），關掉就要重新輸入。
-let lc={cfg:null,functions:[],groups:[],users:[],specs:null,tab:'menus',fnFilter:'',kwSearch:''};
+let lc={cfg:null,functions:[],groups:[],users:[],specs:null,menuRules:null,loginGuard:null,tab:'menus',fnFilter:'',kwSearch:''};
 const LC_SCOPE=[['both','1對1＋群組'],['direct','只有1對1'],['group','只有群組']];
 const LC_TYPE=[['exact','精確（完全相同）'],['partial','部分（輸入前段，2字以上）'],['contains','包含（句子裡有）'],['fuzzy','模糊（相似就提示建議）']];
 const LC_TYPE_SHORT={exact:'精確',partial:'部分',contains:'包含',fuzzy:'模糊'};
 const LC_SCOPE_SHORT={both:'1對1＋群組',direct:'1對1',group:'群組'};
+const LC_LAYOUT=[['list','清單（按鈕一個接一個）'],['grid','九宮格（每列 3 格，最後一格是「返回主選單」）']]; // V10.5：主選單點進去之後的排版
+const LC_LAYOUT_SHORT={list:'清單',grid:'九宮格'};
 const LC_TABS=[['menus','📋 選單'],['kw','🔑 關鍵字'],['perm','🛡️ 群組與權限'],['spec','📑 版本規格'],['test','🧪 測試與設定']];
 function lcKey(){try{return sessionStorage.getItem('line_admin_key')||'';}catch(e){return '';}}
 function lcSetKey(v){try{sessionStorage.setItem('line_admin_key',v);}catch(e){}}
@@ -6435,7 +6851,8 @@ async function lcLoad(){
   body.innerHTML='<div style="padding:40px;text-align:center;color:var(--t5);font-size:13px">載入中…</div>';
   let r;
   try{r=await lcApi('GET','/api/line-config');}catch(e){body.innerHTML='<div style="padding:40px;text-align:center;color:#dc2626;font-size:13px">連不上伺服器，請確認網路後重試</div>';return;}
-  if(r.status===200){lc.cfg=r.json.config;lc.functions=r.json.functions||[];lc.groups=r.json.groups||[];lc.users=r.json.users||[];lc.specs=r.json.specs||null;lcRender();return;}
+  if(r.status===200){lc.cfg=r.json.config;lc.functions=r.json.functions||[];lc.groups=r.json.groups||[];lc.users=r.json.users||[];lc.specs=r.json.specs||null;lc.menuRules=r.json.menuRules||null;lc.loginGuard=r.json.loginGuard||null;lcRender();return;}
+  if(r.status===429){lcShowLogin((r.json&&r.json.message)||'嘗試太多次，請稍後再試。');return;}
   if(r.status===401){lcSetKey('');lcShowLogin('管理密碼不正確，請再試一次');return;}
   if(r.status===403){
     const t=document.getElementById('lc-tabs');if(t)t.innerHTML='';
@@ -6457,6 +6874,7 @@ async function lcCommit(mutator,okMsg){
     if(r.json.warnings&&r.json.warnings.length)toast('⚠️ '+r.json.warnings[0]);
     return true;
   }
+  if(r.status===429){lcShowLogin((r.json&&r.json.message)||'嘗試太多次，請稍後再試。');return false;}
   if(r.status===401){lcSetKey('');lcShowLogin('管理密碼已失效，請重新輸入');return false;}
   toast('⚠️ '+((r.json&&r.json.message)||'儲存失敗')+'（沒有套用）');
   lcRender();
@@ -6512,35 +6930,70 @@ function lcCtl(kind,id,first,last,enabled){
     +lcBtn(enabled?'🟢 啟用中':'⚪ 已停用','lcToggle('+k+')',{color:enabled?'#16a34a':'var(--t5)'})
     +lcBtn('✏️','lcEdit('+k+')')+lcBtn('🗑','lcDel('+k+')',{color:'#dc2626'})+'</div>';
 }
+// 功能選單顯示規則（V10.4）：輸入／點「功能選單」只列第一層；點主選單才看到它自己的子項目；主選單直接綁一個功能＝單一對應，直接執行
+function lcMenuPending(){const mr=lc.menuRules||{latest:2};const v=(lc.cfg&&lc.cfg.menu&&lc.cfg.menu.rulesV)||1;return v<(mr.latest||2);}
+async function lcMenuRules(action){
+  if(action==='apply'&&!lcConfirm('套用新版建議選單？\n\n會把「選單」和「關鍵字」換成新版預設（功能選單只列第一層：紀錄、集點卡、待去清單、設備管理中心、工具）。\n你自己改過、加過的選單和關鍵字會被取代；群組授權、權限、查詢與草稿設定都會保留。'))return;
+  let r;
+  try{r=await lcApi('POST','/api/line-config-menu-rules',{action});}catch(e){toast('⚠️ 連不上伺服器，沒有變更');return;}
+  if(r.status===200){lc.cfg=r.json.config;lc.menuRules=r.json.menuRules||lc.menuRules;lc.groups=r.json.groups||lc.groups;lc.users=r.json.users||lc.users;lcRender();toast(action==='apply'?'✅ 已套用新版建議選單':'✅ 已保留你的選單設定');return;}
+  if(r.status===429){lcShowLogin((r.json&&r.json.message)||'嘗試太多次，請稍後再試。');return;}
+  if(r.status===401){lcSetKey('');lcShowLogin('管理密碼已失效，請重新輸入');return;}
+  toast('⚠️ '+((r.json&&r.json.message)||'沒有成功')+'（沒有變更）');
+}
+function lcSetMenuStyle(v){lcCommit(c=>{c.menu=Object.assign({},c.menu,{style:v});},v==='collapsed'?'✅ 功能選單改成「只列第一層」':'✅ 功能選單改成「全部展開」');}
+function lcUnplaced(){
+  const c=lc.cfg,used=new Set();
+  c.subMenus.forEach(s=>used.add(s.functionId));c.mainMenus.forEach(m=>{if(m.functionId)used.add(m.functionId);});
+  return lc.functions.filter(f=>String(f.id).indexOf('menu')!==0&&!used.has(f.id));
+}
+function lcAddUnplaced(fnId){
+  const sel=document.getElementById('lc-unp-'+fnId),mainId=sel?sel.value:'';
+  const f=lc.functions.find(x=>x.id===fnId);
+  if(!mainId||!f){toast('請先選要加到哪個主選單');return;}
+  lcCommit(c=>{const n=c.subMenus.filter(s=>s.mainId===mainId).reduce((a,x)=>Math.max(a,x.order),0)+1;c.subMenus.push({id:lcId('s_'),mainId,name:f.label,emoji:'',order:n,enabled:true,functionId:fnId});},'✅ 已加進選單（顯示規則自動套用）');
+}
 function lcRenderMenus(){
   const c=lc.cfg;
   const mains=c.mainMenus.slice().sort((a,b)=>a.order-b.order);
+  const style=(c.menu&&c.menu.style)||'collapsed';
   let h='<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:10px">這裡決定 LINE「功能選單」長什麼樣子。每個操作都會立刻儲存並套用到 LINE。選單按鈕送出的文字＝「子選單名稱」，所以按按鈕和直接輸入名稱，一定進到同一個功能。</div>';
+  if(lcMenuPending())h+='<div id="lc-rules-banner" style="border:1px solid #fcd34d;background:#fffbeb;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#78350f;line-height:1.7"><b>🆕 有新版的建議選單</b><br>新版：功能選單只列第一層（紀錄、集點卡、待去清單、設備管理中心、工具）；點「紀錄」才看到美食／飲料／交通／分帳／集點卡／待去清單，點「工具」才看到 11 個工具。你的選單曾經自己改過，所以<b>沒有自動換掉</b>。<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+lcBtn('套用新版建議選單','lcMenuRules(\'apply\')',{pad:'8px 12px',fs:'12px',color:'#fff',bg:'var(--br)',bd:'var(--br)'})+lcBtn('保留我的設定','lcMenuRules(\'keep\')',{pad:'8px 12px',fs:'12px'})+'</div></div>';
+  h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--sur)"><div style="font-size:12px;font-weight:900;color:var(--bd);margin-bottom:4px">📐 畫面顯示規則</div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.8">輸入或點「功能選單」→ 只顯示第一層；輸入或點某個主選單 → 只顯示它自己的子項目（例如「紀錄」六項、「工具」十一項；「工具」預設用九宮格（11 個工具＋返回主選單，每列 3 格，共 4 列），按格子直接開始，每個主選單都能在「編輯」裡改成清單或九宮格）；主選單直接綁一個功能 → 單一對應，直接執行，不再多一層。新增子選單或主選單、勾選啟用，就會自動套用，不用改程式。</div>'
+    +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px"><span style="font-size:11px;color:var(--t5)">功能選單樣式：</span>'
+    +lcBtn('只列第一層（建議）','lcSetMenuStyle(\'collapsed\')',{color:style==='collapsed'?'#fff':'var(--t5)',bg:style==='collapsed'?'var(--br)':'var(--bg)',bd:style==='collapsed'?'var(--br)':'var(--bdr)'})
+    +lcBtn('全部展開（舊樣子）','lcSetMenuStyle(\'expanded\')',{color:style==='expanded'?'#fff':'var(--t5)',bg:style==='expanded'?'var(--br)':'var(--bg)',bd:style==='expanded'?'var(--br)':'var(--bdr)'})+'</div></div>';
   mains.forEach((m,i)=>{
     const subs=c.subMenus.filter(s=>s.mainId===m.id).sort((a,b)=>a.order-b.order);
     h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--sur);'+(m.enabled?'':'opacity:.65')+'">'
-      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px"><div style="flex:1;min-width:130px"><div style="font-size:14px;font-weight:900;color:var(--bd)">'+splitEsc((m.emoji||'')+' '+m.name)+'</div><div style="font-size:10px;color:var(--t5);margin-top:2px">主選單・'+LC_SCOPE_SHORT[m.scope]+(m.functionId?'・直接對應：'+splitEsc(lcFnLabel(m.functionId)):'')+'</div></div>'+lcCtl('main',m.id,i===0,i===mains.length-1,m.enabled)+'</div>';
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px"><div style="flex:1;min-width:130px"><div style="font-size:14px;font-weight:900;color:var(--bd)">'+splitEsc((m.emoji||'')+' '+m.name)+'</div><div style="font-size:10px;color:var(--t5);margin-top:2px">主選單・'+LC_SCOPE_SHORT[m.scope]+(m.functionId?'・直接對應：'+splitEsc(lcFnLabel(m.functionId)):'・排版：'+LC_LAYOUT_SHORT[m.layout==='grid'?'grid':'list'])+'</div></div>'+lcCtl('main',m.id,i===0,i===mains.length-1,m.enabled)+'</div>';
     subs.forEach((s,j)=>{
-      h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 0 7px 10px;border-top:1px dashed var(--bdr)'+(s.enabled?'':';opacity:.65')+'"><div style="flex:1;min-width:120px"><div style="font-size:13px;font-weight:700;color:var(--bd)">'+splitEsc((s.emoji||'')+' '+s.name)+'</div><div style="font-size:10px;color:var(--t5)">→ '+splitEsc(lcFnLabel(s.functionId))+'</div></div>'+lcCtl('sub',s.id,j===0,j===subs.length-1,s.enabled)+'</div>';
+      h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 0 7px 10px;border-top:1px dashed var(--bdr)'+(s.enabled?'':';opacity:.65')+'"><div style="flex:1;min-width:120px"><div style="font-size:13px;font-weight:700;color:var(--bd)">'+splitEsc((s.emoji||'')+' '+s.name)+'</div><div style="font-size:10px;color:var(--t5)">→ '+splitEsc(lcFnLabel(s.functionId))+(m.layout==='grid'&&s.hint?'・格子小字：'+splitEsc(s.hint):'')+'</div></div>'+lcCtl('sub',s.id,j===0,j===subs.length-1,s.enabled)+'</div>';
     });
     h+='<div style="margin-top:6px">'+lcBtn('＋ 新增子選單','lcAddSub(\''+m.id+'\')',{color:'var(--br)'})+'</div></div>';
   });
   h+=lcBtn('＋ 新增主選單','lcAddMain()',{pad:'10px 14px',fs:'13px',color:'var(--br)',bg:'var(--crm)'});
+  const un=lcUnplaced();
+  if(un.length){
+    h+='<div id="lc-unplaced" style="border:1px dashed var(--bdr);border-radius:12px;padding:10px 12px;margin-top:14px;background:var(--sur)"><div style="font-size:13px;font-weight:900;color:var(--bd);margin-bottom:4px">🧩 尚未放進選單的功能</div><div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:6px">這些功能目前沒有選單按鈕（直接輸入名稱一樣可以用）。選一個主選單再按「加入」，就會自動套用上面的顯示規則。</div>'
+      +un.map(f=>'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 0;border-top:1px dashed var(--bdr)"><span style="flex:1;min-width:110px;font-size:13px;font-weight:700;color:var(--bd)">'+splitEsc(f.label)+'</span><select id="lc-unp-'+f.id+'" style="'+LC_IN+';width:auto;flex:1;min-width:120px"><option value="">加到哪個主選單…</option>'+c.mainMenus.slice().sort((a,b)=>a.order-b.order).map(m=>'<option value="'+m.id+'">'+splitEsc((m.emoji||'')+' '+m.name)+'</option>').join('')+'</select>'+lcBtn('加入','lcAddUnplaced(\''+f.id+'\')',{color:'var(--br)'})+'</div>').join('')+'</div>';
+  }
   return h;
 }
-function lcMainFields(){return [{k:'name',label:'名稱',req:true,max:20},{k:'emoji',label:'圖示（表情符號，可留空）',max:8},{k:'scope',label:'顯示在哪種聊天室',type:'select',options:LC_SCOPE},{k:'functionId',label:'直接對應的功能（沒有子選單時，按鈕會執行這個功能）',type:'select',options:lcFnOptions(true)}];}
-function lcSubFields(){return [{k:'name',label:'名稱（也是按鈕送出的文字）',req:true,max:20},{k:'emoji',label:'圖示（可留空）',max:8},{k:'functionId',label:'對應功能',type:'select',options:lcFnOptions(false)}];}
+function lcMainFields(){return [{k:'name',label:'名稱',req:true,max:20},{k:'emoji',label:'圖示（表情符號，可留空）',max:8},{k:'scope',label:'顯示在哪種聊天室',type:'select',options:LC_SCOPE},{k:'layout',label:'點進這個主選單後的排版',type:'select',options:LC_LAYOUT,help:'九宮格＝一張卡片、每列 3 格，格子按下去就直接開始（不會在聊天室多一句話）；最後一格固定是「返回主選單」。「功能選單」那一層永遠是清單。格子上的小字在每個子選單的「編輯」裡設定。'},{k:'functionId',label:'直接對應的功能（沒有子選單時，按鈕會執行這個功能）',type:'select',options:lcFnOptions(true)}];}
+function lcSubFields(){return [{k:'name',label:'名稱（也是按鈕送出的文字）',req:true,max:20},{k:'emoji',label:'圖示（可留空）',max:8},{k:'hint',label:'小字說明（九宮格格子上的第二行字，最多 12 字，可留空）',max:12,help:'留空時：名稱如果有括號（例如「奇遇羅盤（選地點）」），括號裡的字會自動當小字；沒有括號就不顯示小字。主選單排版是「清單」時用不到。'},{k:'functionId',label:'對應功能',type:'select',options:lcFnOptions(false)}];}
 function lcAddMain(){
-  lcForm('新增主選單',lcMainFields(),{name:'',emoji:'',scope:'both',functionId:''},v=>lcCommit(c=>{const n=c.mainMenus.reduce((a,x)=>Math.max(a,x.order),0)+1;c.mainMenus.push({id:lcId('m_'),name:v.name,emoji:v.emoji,order:n,enabled:true,scope:v.scope,functionId:v.functionId||null});},'✅ 已新增主選單'));
+  lcForm('新增主選單',lcMainFields(),{name:'',emoji:'',scope:'both',layout:'list',functionId:''},v=>lcCommit(c=>{const n=c.mainMenus.reduce((a,x)=>Math.max(a,x.order),0)+1;c.mainMenus.push({id:lcId('m_'),name:v.name,emoji:v.emoji,order:n,enabled:true,scope:v.scope,functionId:v.functionId||null,layout:v.layout==='grid'?'grid':'list'});},'✅ 已新增主選單'));
 }
 function lcAddSub(mainId){
-  lcForm('新增子選單',lcSubFields(),{name:'',emoji:'',functionId:'drink'},v=>lcCommit(c=>{const n=c.subMenus.filter(s=>s.mainId===mainId).reduce((a,x)=>Math.max(a,x.order),0)+1;c.subMenus.push({id:lcId('s_'),mainId,name:v.name,emoji:v.emoji,order:n,enabled:true,functionId:v.functionId});},'✅ 已新增子選單'));
+  lcForm('新增子選單',lcSubFields(),{name:'',emoji:'',hint:'',functionId:'drink'},v=>lcCommit(c=>{const n=c.subMenus.filter(s=>s.mainId===mainId).reduce((a,x)=>Math.max(a,x.order),0)+1;c.subMenus.push({id:lcId('s_'),mainId,name:v.name,emoji:v.emoji,order:n,enabled:true,functionId:v.functionId,hint:v.hint||''});},'✅ 已新增子選單'));
 }
 function lcFind(c,kind,id){return (kind==='main'?c.mainMenus:kind==='sub'?c.subMenus:c.keywords).find(x=>x.id===id);}
 function lcEdit(kind,id){
   const cur=lcFind(lc.cfg,kind,id);if(!cur)return;
-  if(kind==='main')lcForm('編輯主選單',lcMainFields(),{name:cur.name,emoji:cur.emoji,scope:cur.scope,functionId:cur.functionId||''},v=>lcCommit(c=>{Object.assign(lcFind(c,'main',id),{name:v.name,emoji:v.emoji,scope:v.scope,functionId:v.functionId||null});}));
-  else if(kind==='sub')lcForm('編輯子選單',lcSubFields(),{name:cur.name,emoji:cur.emoji,functionId:cur.functionId},v=>lcCommit(c=>{Object.assign(lcFind(c,'sub',id),{name:v.name,emoji:v.emoji,functionId:v.functionId});}));
+  if(kind==='main')lcForm('編輯主選單',lcMainFields(),{name:cur.name,emoji:cur.emoji,scope:cur.scope,layout:cur.layout==='grid'?'grid':'list',functionId:cur.functionId||''},v=>lcCommit(c=>{Object.assign(lcFind(c,'main',id),{name:v.name,emoji:v.emoji,scope:v.scope,layout:v.layout==='grid'?'grid':'list',functionId:v.functionId||null});}));
+  else if(kind==='sub')lcForm('編輯子選單',lcSubFields(),{name:cur.name,emoji:cur.emoji,hint:cur.hint||'',functionId:cur.functionId},v=>lcCommit(c=>{Object.assign(lcFind(c,'sub',id),{name:v.name,emoji:v.emoji,hint:v.hint||'',functionId:v.functionId});}));
   else lcKwForm(cur);
 }
 function lcToggle(kind,id){
@@ -6679,9 +7132,23 @@ function lcRenderTest(){
     +'<div style="font-size:13px;font-weight:900;color:var(--bd);margin:18px 0 6px">🔎 查詢的預設版本</div>'
     +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:8px">使用者輸入沒有指定版本的查詢（例如「查詢飲料 2026年10月」）時：選「每次詢問」會先顯示版本選單；選某個版本則直接用該版本。</div>'
     +'<select id="lc-qd" onchange="lcSaveQueryDefault()" style="'+LC_IN+';margin-bottom:6px">'+[['','每次詢問（顯示簡易／標準／旗艦選單）'],['simple','簡易版'],['standard','標準版'],['flagship','旗艦版']].map(o=>'<option value="'+o[0]+'"'+(((lc.cfg.query||{}).defaultVersion||'')===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>'
+    +lcRenderLoginGuard()
     +'<div style="font-size:13px;font-weight:900;color:var(--bd);margin:18px 0 6px">♻️ 還原預設</div>'
     +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:8px">把選單、關鍵字、權限全部還原成系統預設值（群組授權也會清空）。</div>'
     +'<button onclick="lcReset()" style="width:100%;padding:10px;border:1px solid #fecaca;border-radius:10px;background:#fef2f2;color:#dc2626;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer">還原預設設定</button>';
+}
+// V10.8.0：登入保護現況——門檻、鎖定時間，與最近的失敗登入嘗試（時間、來源IP、第幾次、有沒有因此被鎖）
+function lcRenderLoginGuard(){
+  const g=lc.loginGuard||{failLimit:5,lockMinutes:10,log:[]};
+  const log=g.log||[];
+  const row=(x)=>'<div style="padding:5px 0;border-top:1px dashed var(--bdr);display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--t5)">'
+    +'<span>'+splitEsc(new Date(x.at).toLocaleString('zh-TW',{hour12:false}))+'</span>'
+    +'<span style="font-family:monospace">'+splitEsc(x.ip)+'</span>'
+    +'<span>第 '+x.count+' 次'+(x.locked?'（觸發鎖定）':'')+'</span></div>';
+  return '<div style="font-size:13px;font-weight:900;color:var(--bd);margin:18px 0 6px">🔐 登入保護</div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:8px">同一個來源（IP）連續輸錯管理密碼達 '+g.failLimit+' 次，會先鎖定 '+g.lockMinutes+' 分鐘——鎖定期間，連對的密碼也會先被擋下來。下面是最近的失敗登入嘗試：</div>'
+    +'<div style="border:1px solid var(--bdr);border-radius:10px;padding:8px 10px;background:var(--sur)">'
+    +(log.length?log.map(row).join(''):'<div style="font-size:11px;color:var(--t5);padding:4px 0">目前沒有失敗的登入紀錄</div>')+'</div>';
 }
 async function lcRunTest(){
   const text=(document.getElementById('lc-test-text')||{}).value||'';
@@ -6709,16 +7176,28 @@ function lcRenderSpecs0(){
   const sp=lc.specs;
   if(!sp)return '<div style="padding:24px;text-align:center;color:var(--t5);font-size:12px">沒有取得規格資料</div>';
   const st={confirmed:['✅ 已確認','#16a34a'],pending:['🚧 待確認','#dc2626'],default:['📌 預設（待你確認）','#ca8a04']};
-  const nm={simple:'簡易版',standard:'標準版',flagship:'旗艦版'};
+  const nm={simple:'簡易版',standard:'標準版',advanced:'進階版',flagship:'旗艦版'};
   const badge=s=>'<span style="font-size:10px;font-weight:900;color:'+st[s][1]+';white-space:nowrap">'+st[s][0]+'</span>';
   const row=(v,r)=>'<div style="padding:6px 0;border-top:1px dashed var(--bdr)"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:700;color:var(--bd)">'+nm[v]+'</span>'+badge(r.status)+'</div>'
     +(r.fields&&r.fields.length?'<div style="font-size:11px;color:var(--t5);line-height:1.6;margin-top:3px">欄位：'+r.fields.map(splitEsc).join('、')+'</div>':'')
     +(r.note?'<div style="font-size:10px;color:var(--t5);margin-top:2px;line-height:1.5">'+splitEsc(r.note)+'</div>':'')+'</div>';
-  let h='<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:10px">LINE「紀錄／查詢」三個版本實際用到的欄位。這份清單是由程式裡真正的表單定義產生的，不是手寫文件；<b>沒有確認的規格標示「待確認」，不會自己補欄位</b>。</div>';
+  let h='<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-bottom:10px">LINE「紀錄」四個版本、「查詢」三個版本實際用到的欄位。這份清單是由程式裡真正的表單定義產生的，不是手寫文件；<b>沒有確認的規格標示「待確認」，不會自己補欄位</b>。</div>';
+  if(sp.versions&&sp.versions.length){
+    h+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin:4px 0 6px">🧭 四種紀錄版本與操作方式</div>'
+      +sp.versions.map(v=>'<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--sur)"><div style="font-size:13px;font-weight:900;color:var(--bd)">'+splitEsc(v.emoji+' '+v.name+'｜'+v.tag)+'</div>'+(v.lines||[]).map(l=>'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-top:3px">'+splitEsc(l)+'</div>').join('')+'</div>').join('');
+  }
+  if(sp.formMode&&sp.formMode.length){
+    h+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin:12px 0 6px">📝 表單模式設定與應用</div><div style="border:1px solid var(--bdr);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--sur)">'+sp.formMode.map(l=>'<div style="font-size:11px;color:var(--t5);line-height:1.8;margin-top:2px">'+splitEsc(l)+'</div>').join('')
+      +(sp.formModeMore||[]).map(m=>'<div style="font-size:12px;font-weight:900;color:var(--bd);margin-top:10px">'+splitEsc(m.title)+'</div>'+(m.lines||[]).map(l=>'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin-top:3px">'+splitEsc(l)+'</div>').join('')).join('')+'</div>';
+  }
+  if(sp.tools&&sp.tools.length){
+    h+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin:12px 0 6px">🧰 工具與設備管理中心</div><div style="border:1px solid var(--bdr);border-radius:12px;padding:6px 12px;margin-bottom:10px;background:var(--sur)">'
+      +sp.tools.map((t,i)=>'<div style="padding:6px 0;'+(i?'border-top:1px dashed var(--bdr)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:700;color:var(--bd)">'+splitEsc(t.name)+'</span>'+badge(t.status)+'</div><div style="font-size:10px;color:var(--t5);margin-top:2px;line-height:1.5">'+splitEsc(t.note||'')+'</div></div>').join('')+'</div>';
+  }
   sp.modules.forEach(m=>{
     h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--sur)"><div style="font-size:14px;font-weight:900;color:var(--bd);margin-bottom:6px">'+splitEsc(m.name)+'</div>'
-      +'<div style="font-size:11px;font-weight:700;color:var(--t5);margin-bottom:2px">📝 紀錄</div>'+['simple','standard','flagship'].map(v=>row(v,m.record[v])).join('')
-      +'<div style="font-size:11px;font-weight:700;color:var(--t5);margin:10px 0 2px">🔎 查詢（條件：'+m.query.conditions.map(splitEsc).join('、')+'）</div>'+['simple','standard','flagship'].map(v=>row(v,m.query[v])).join('')+'</div>';
+      +'<div style="font-size:11px;font-weight:700;color:var(--t5);margin-bottom:2px">📝 紀錄</div>'+['simple','standard','advanced','flagship'].map(v=>row(v,m.record[v])).join('')
+      +(m.query?'<div style="font-size:11px;font-weight:700;color:var(--t5);margin:10px 0 2px">🔎 查詢（條件：'+m.query.conditions.map(splitEsc).join('、')+'）</div>'+['simple','standard','flagship'].map(v=>row(v,m.query[v])).join(''):'<div style="font-size:11px;color:var(--t5);margin:10px 0 0;line-height:1.6">🔎 查詢：LINE 目前還沒有這個功能的查詢（待確認要查什麼）</div>')+'</div>';
   });
   h+='<div style="font-size:13px;font-weight:900;color:var(--bd);margin:14px 0 6px">🚧 待確認項目</div><div style="border:1px solid #fecaca;background:#fef2f2;border-radius:12px;padding:10px 12px;font-size:12px;color:#7f1d1d;line-height:1.8">'+sp.pending.map((x,i)=>(i+1)+'. '+splitEsc(x)).join('<br>')+'</div>';
   return h;
@@ -6726,7 +7205,7 @@ function lcRenderSpecs0(){
 async function lcReset(){
   if(!lcConfirm('確定要還原成系統預設值嗎？\n\n你調整過的選單、關鍵字、權限、群組授權都會被清掉，無法復原。'))return;
   const r=await lcApi('POST','/api/line-config-reset',{});
-  if(r.status===200){lc.cfg=r.json.config;lc.groups=r.json.groups||[];lc.users=r.json.users||[];lcRender();toast('♻️ 已還原預設');}
+  if(r.status===200){lc.cfg=r.json.config;lc.groups=r.json.groups||[];lc.users=r.json.users||[];lc.menuRules=r.json.menuRules||lc.menuRules;lcRender();toast('♻️ 已還原預設');}
   else toast('⚠️ 還原失敗：'+((r.json&&r.json.message)||r.status));
 }
 
@@ -6831,7 +7310,7 @@ function lineLogRowHtml(r,catInfo,travelTypeInfo){
     +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'
     +'<div style="flex:1;min-width:0">'
     +'<div style="font-size:14px;font-weight:700;color:var(--bd);overflow-wrap:anywhere">'+splitEsc(lineLogText(r.item))+'</div>'
-    +'<div style="font-size:11px;color:var(--t5);margin-top:3px"><span style="color:'+ci.c+';font-weight:700">'+ciLabel+'</span>　'+(r.detailed?'<span style="color:var(--br);font-weight:700">✨'+(r.tier==='flagship'?'旗艦版':'標準版')+'・</span>':'')+(r.userName?splitEsc(lineLogText(r.userName))+'・':'')+(r.groupName?'👥'+splitEsc(lineLogText(r.groupName))+'・':'')+dstr+'</div>'
+    +'<div style="font-size:11px;color:var(--t5);margin-top:3px"><span style="color:'+ci.c+';font-weight:700">'+ciLabel+'</span>　'+(r.detailed?'<span style="color:var(--br);font-weight:700">✨'+lineTierName(r.tier)+'・</span>':'')+(r.userName?splitEsc(lineLogText(r.userName))+'・':'')+(r.groupName?'👥'+splitEsc(lineLogText(r.groupName))+'・':'')+dstr+'</div>'
     +'</div>'
     +'<div style="text-align:right;flex-shrink:0">'+right+'</div>'
     +'</div>'
@@ -6914,6 +7393,11 @@ function lineBusyLeave(id){delete lineRowBusy[String(id)];}
 // LINE顯示名稱 → App內部使用者名稱對照（drinker/payer/recorder要跟App一致，統計才不會把同一個人拆成兩筆）
 const APP_USER_NAME_MAP={'洪小格':'XiaoGe','yann':'XiaoYan'};
 function toAppUserName(n){ return APP_USER_NAME_MAP[n]||n||''; }
+// V10.3：LINE 紀錄上標示的版本名稱（舊紀錄只有 standard／flagship；四版本多了 simple／advanced）
+const LINE_TIER_NAME={simple:'簡易版',standard:'標準版',advanced:'進階版',flagship:'旗艦版'};
+function lineTierName(t){ return LINE_TIER_NAME[t]||'標準版'; }
+// V10.3：四版本記下的「網頁表單欄位」（值已經是網頁認得的：甜度 '5'、冰塊 'normal'、國家 '臺灣'…）；舊紀錄沒有，回傳 null
+function lineWebFields(r){ const W=r&&r.webFields; return (W&&typeof W==='object'&&!Array.isArray(W))?W:null; }
 async function lineImportSimple(id,targetModule){
   const r=lineLogCache.find(x=>String(x.id)===String(id));
   if(!r){toast('⚠️ 找不到這筆紀錄，請重新整理');return;}
@@ -6924,14 +7408,17 @@ async function lineImportSimple(id,targetModule){
 async function lineImportSimple0(r,targetModule){
   const dt=lineTsToDateTime(r.ts);
   const newId=uid();
+  const W=lineWebFields(r); // 有的欄位優先用四版本記下的網頁欄位，沒有的才用舊流程的預設
+  const w=function(k,d){return (W&&W[k]!==undefined&&W[k]!==null&&W[k]!==''?W[k]:d);};
+  const me=toAppUserName(r.userName);
   if(targetModule==='drink'){
     recs.unshift({
       id:newId,panel:'1',sn:'',snp:'',
-      date:dt.date,time:dt.time,country:'',area:'',
-      brand:r.brand||'',drink:r.item||'',category:'',size:r.size||'',topping:r.topping||'',
-      sugar:r.sugar||'',ice:r.ice||'',payment:r.payment||'',currency:'NT$',amount:Number(r.amount)||0,
-      drinker:toAppUserName(r.userName),payer:toAppUserName(r.userName),recorder:toAppUserName(r.userName),
-      note:(r.note?r.note+' · ':'')+'📱 LINE紀錄匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':''),ainote:'',rating:Number(r.rating)||0,
+      date:w('date',dt.date),time:w('time',dt.time),country:w('country',''),area:w('area',''),
+      brand:w('brand',r.brand||''),drink:w('drink',r.item||''),category:w('category',''),size:w('size',r.size||''),topping:w('topping',r.topping||''),
+      sugar:w('sugar',r.sugar||''),ice:w('ice',r.ice||''),payment:w('payment',r.payment||''),currency:w('currency','NT$'),amount:Number(w('amount',r.amount))||0,
+      drinker:w('drinker',me),payer:w('payer',me),recorder:w('recorder',me),
+      note:(r.note?r.note+' · ':'')+'📱 LINE紀錄匯入'+(r.detailed?'（'+lineTierName(r.tier)+'）':''),ainote:'',rating:Number(w('rating',r.rating))||0,
       source:'LINE',importedAt:Date.now(),lineMsgId:r.msgId||'',
     });
     recs.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
@@ -6939,24 +7426,24 @@ async function lineImportSimple0(r,targetModule){
   }else if(targetModule==='food'){
     meals.unshift({
       id:newId,panel:'1',sn:'',snp:'',
-      date:dt.date,time:dt.time,category:'',
-      brand:r.brand||'',dish:r.item||'',cuisine:r.cuisine||'',portion:r.portion||'中份',spicy:'',diningType:r.diningType||'',
-      satiety:'',revisit:'',rating:Number(r.rating)||0,payment:r.payment||'',currency:'NT$',amount:Number(r.amount)||0,
-      eater:toAppUserName(r.userName),payer:toAppUserName(r.userName),recorder:toAppUserName(r.userName),
-      note:(r.note?r.note+' · ':'')+'📱 LINE紀錄匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':''),ainote:'',
+      date:w('date',dt.date),time:w('time',dt.time),category:w('category',''),
+      brand:w('brand',r.brand||''),dish:w('dish',r.item||''),cuisine:w('cuisine',r.cuisine||''),portion:w('portion',r.portion||'中份'),spicy:w('spicy',''),diningType:w('diningType',r.diningType||''),
+      satiety:'',revisit:'',rating:Number(w('rating',r.rating))||0,payment:w('payment',r.payment||''),currency:w('currency','NT$'),amount:Number(w('amount',r.amount))||0,
+      eater:w('eater',me),payer:w('payer',me),recorder:w('recorder',me),
+      note:(r.note?r.note+' · ':'')+'📱 LINE紀錄匯入'+(r.detailed?'（'+lineTierName(r.tier)+'）':''),ainote:'',
       source:'LINE',importedAt:Date.now(),lineMsgId:r.msgId||'',
     });
     meals.sort((a,b)=>((b.date||'')+(b.time||''))<((a.date||'')+(a.time||''))?-1:1);
     if(!saveMeals())return;
   }else if(targetModule==='travel'){
     travels.unshift({
-      id:newId,panel:'a',type:r.transportType||'taxi',
-      date:dt.date,no:'',company:'',
-      depPort:r.depPort||'',arrPort:r.arrPort||'',transitPort:'',
-      depTime:dt.time,arrTime:'',duration:'',ticketPrice:Number(r.amount)||0,
-      vehicleType:'',regNo:'',seat:'',plateNo:'',
-      note:(r.note?r.note+' · ':'')+'📱 LINE紀錄匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':'')+(r.item?' · '+r.item:''),
-      recorder:toAppUserName(r.userName),payment:r.payment||'',
+      id:newId,panel:'a',type:w('type',r.transportType||'taxi'),
+      date:w('date',W?'':dt.date),no:w('no',''),company:w('company',''),
+      depPort:w('depPort',r.depPort||''),arrPort:w('arrPort',r.arrPort||''),transitPort:w('transitPort',''),
+      depTime:w('depTime',W?'':dt.time),arrTime:w('arrTime',''),duration:'',ticketPrice:Number(w('ticketPrice',r.amount))||0,
+      vehicleType:w('vehicleType',''),regNo:'',seat:w('seat',''),plateNo:'',
+      note:(r.note?r.note+' · ':'')+'📱 LINE紀錄匯入'+(r.detailed?'（'+lineTierName(r.tier)+'）':'')+(!W&&r.item?' · '+r.item:''),
+      recorder:w('recorder',me),payment:w('payment',r.payment||''),
       source:'LINE',importedAt:Date.now(),lineMsgId:r.msgId||'',
     });
     travels.sort((a,b)=>(b.date||'')<(a.date||'')?-1:1);
@@ -7149,10 +7636,20 @@ function lineNormChoice(v,codes,table){
 }
 // 和匯入寫進紀錄的備註一樣的標示
 function lineImportNote(r){
-  return (r.note?r.note+' · ':'')+'📱 LINE紀錄匯入'+(r.detailed?'（'+(r.tier==='flagship'?'旗艦版':'標準版')+'）':'');
+  return (r.note?r.note+' · ':'')+'📱 LINE紀錄匯入'+(r.detailed?'（'+lineTierName(r.tier)+'）':'');
 }
 // 把一筆 LINE紀錄整理成「表單欄位」（格式和 LINE 草稿的 fields 一樣，這樣可以直接用草稿帶入表單的那組程式）
+// V10.3：四版本記下的網頁欄位優先（國家、付款者、評分…不會在「更改」時掉掉）；備註仍用匯入備註，交通沒提到的日期、出發時間維持空白
 function lineEditFields(kind,r,dt,who){
+  const base=lineEditFields0(kind,r,dt,who);
+  const W=lineWebFields(r);
+  if(!W)return base;
+  const out=Object.assign({},base);
+  Object.keys(W).forEach(function(k){ if(k==='note')return; const v=W[k]; if(v!==undefined&&v!==null&&v!=='')out[k]=v; });
+  if(kind==='travel'){ if(!W.date)out.date=''; if(!W.depTime)out.depTime=''; out.note=lineImportNote(r); }
+  return out;
+}
+function lineEditFields0(kind,r,dt,who){
   const amt=Number(r.amount)||0;
   if(kind==='drink'){
     return {date:dt.date,time:dt.time,brand:r.brand||'',drink:r.item||'',size:r.size||'',topping:r.topping||'',
@@ -8003,7 +8500,26 @@ function fmMount(kind){
 }
 
 // ---------- 畫面更新 ----------
+// 表單模式提醒（使用者指定的用語；LINE 機器人舊流程的問句用的是同一段文字）
+const FM_TIP_SINGLE='單表單模式（只填寫用戶 A）：適用於單一對象的獨立紀錄、個人資料異動或單向操作。';
+const FM_TIP_DUAL='雙表單模式（只填寫用戶 A＋用戶B）：針對「一次填寫兩個人的紀錄（先填用戶 A，再填用戶 B）」，核心在連貫性與資料關聯性。';
+// 表單模式的補充說明（v26.10.1，使用者「表單模式設定與應用」；和 LINE 後台版本規格頁的「表單模式設定與應用」同一份文字）：預設收合，點「適用場景與特點」才展開。
+//   使用者原稿的資料庫用語（主表、主鍵／外鍵）和「僅用戶 A 欄位：姓名／ID、金額／項目、備註」這個 App 沒有這樣的設計，改寫成不會說錯的白話：只新增 1 筆紀錄、只關聯用戶 A、欄位沿用該功能原本的表單
+const FM_MORE=[
+  {t:'單表單模式（只填寫用戶 A）',l:['適用場景：個人日常紀錄（用戶 A 的個人消費、個人點數異動、簽到）、單人業務申請（個人資料修改、單人預約）。','欄位與介面特點：介面精簡，只填「用戶 A」一份表單，欄位就是該功能原本的表單；操作流暢，預設帶入目前操作者或選定的用戶 A；儲存時只新增 1 筆紀錄，只關聯用戶 A。']},
+  {t:'雙表單模式（只填寫用戶 A＋用戶B）',l:['常用於：雙人點數發放／扣除、轉帳紀錄、同房／同行登記、管理員一次性批次登錄兩位用戶資料。']}
+];
+function fmMoreHtml(){
+  return '<details class="fm-more"><summary>適用場景與特點</summary><div class="fm-more-body">'+FM_MORE.map(function(m){return '<div class="fm-more-t">'+dEsc(m.t)+'</div>'+m.l.map(function(x){return '<div class="fm-more-l">'+dEsc(x)+'</div>';}).join('');}).join('')+'</div></details>';
+}
+function fmTipHtml(kind){
+  const dual=FM_ST[kind].mode==='dual';
+  return '<div class="fm-tip"><div class="fm-tip-s'+(dual?'':' on')+'">'+dEsc(FM_TIP_SINGLE)+'</div><div class="fm-tip-d'+(dual?' on':'')+'">'+dEsc(FM_TIP_DUAL)+'</div>'+fmMoreHtml()+'</div>';
+}
 function fmHintHtml(kind){
+  return fmTipHtml(kind)+fmHintDetail(kind);
+}
+function fmHintDetail(kind){
   const c=FM_CFG[kind],st=FM_ST[kind],a=fmPerson(kind,'a')||fmDefaultName('a'),b=fmPerson(kind,'b');
   if(st.mode!=='dual')return '👤 <b>單人</b>：只填 ➊，「是誰」'+(currentUser?'自動帶入目前登入的 <b>':'預設帶入 <b>')+dEsc(fmDefaultName('a'))+'</b>；填完直接儲存。要一次記兩個人請按「👥 雙人」。';
   if(st.step===1)return '步驟 1／3：先填 <b>➊ '+dEsc(a)+'</b>（發起人）。這次共用的'+c.sharedLabel+'也在這裡填，下一步可以一鍵帶給 ➋。';
@@ -8038,7 +8554,7 @@ function fmRender(kind){
       s.classList.toggle('done',dual&&n<st.step);
     });
     const hint=bar.querySelector('.fm-hint');
-    if(hint)hint.innerHTML=fmHintHtml(kind);
+    if(hint){const wasOpen=!!(hint.querySelector('.fm-more')&&hint.querySelector('.fm-more').open);hint.innerHTML=fmHintHtml(kind);if(wasOpen){const dt=hint.querySelector('.fm-more');if(dt)dt.open=true;}}
   }
   const foot=fmEl('fm-foot-'+kind);
   if(foot&&dual){const f=fmFootHtml(kind);foot.className='fm-foot'+(f.two?' fm-two':'');foot.innerHTML=f.html;}
@@ -8081,6 +8597,8 @@ function fmOnOpen(kind,editing,editB){
     if(m)m.classList.toggle('fm-edit-b',!!(editing&&editB));
     fmCloseSheet('fm-confirm');fmCloseSheet('fm-receipt');
     fmApplyPersonRules(kind);
+    const bar0=fmEl('fm-bar-'+kind),more0=bar0&&bar0.querySelector('.fm-more');
+    if(more0)more0.open=false; // 每次開表單，「適用場景與特點」都回到預設收起（只有在同一次表單裡切換單人／雙人、換步驟時才保持使用者展開的狀態）
     fmRender(kind);
     fmScrollTop(kind);
   }catch(e){console.error('單人／雙人模式初始化失敗（不影響原本的表單）:',e);}
@@ -10802,7 +11320,7 @@ function importCSV(e){
 // --- Tools v2 (upgraded) ---
 let curTool='where';
 // Weight memory: track last 5 results per tool to avoid repeats
-const toolHistory={where:[],what:[],wheel:[],box:[]};
+const toolHistory={where:[],what:[],wheel:[],box:[],dice:[],rps:[]};
 function weightedRandom(opts,history){
   if(opts.length===1)return opts[0];
   const recent=history.slice(-Math.min(5,Math.floor(opts.length/2)));
@@ -10821,7 +11339,7 @@ function recordHistory(tool,result){
 let wheelCanvas=null,wheelCtx=null,wheelItems=[],wheelAngle=0,wheelSpinning=false,wheelTargetAngle=0,wheelAnimId=null;
 
 // --- 工具獨立機率系統 ---
-const TOOL_LABELS={where:'喝哪裡',what:'喝什麼',wheel:'轉盤',coin:'擲硬幣',bottle:'轉瓶子',box:'隨機盒子'};
+const TOOL_LABELS={where:'喝哪裡',what:'喝什麼',wheel:'轉盤',coin:'擲硬幣',bottle:'轉瓶子',box:'隨機盒子',dice:'骰子',rps:'剪刀石頭布'};
 // --- 地點工具(where)／內容工具(what) 依系統(currentModule)動態切換：標題、子標、分頁、placeholder、結果圖示、資料來源 ---
 const TOOL_SYS={
   drink:{whereT:'喝哪裡',whereS:'隨機選地點',wherePH:'每行一個地點',whereDef:['東區','信義區','天母','大安區','中山區'],
@@ -10834,9 +11352,30 @@ const TOOL_SYS={
 function curToolSys(){return TOOL_SYS[currentModule]||TOOL_SYS.drink;}
 function toolDataArr(){return currentModule==='food'?meals:currentModule==='travel'?travels:recs;}
 function toolLabel(t){const c=curToolSys();if(t==='where')return c.whereT;if(t==='what')return c.whatT;return TOOL_LABELS[t];}
-const TOOL_ORDER=['what','where','wheel','coin','bottle','box']; // 依預設機率排序
-const DEFAULT_TOOL_PROB={what:27,where:23,wheel:18,coin:14,bottle:10,box:8};
-let TOOL_PROB=JSON.parse(localStorage.getItem('boba_tool_prob')||'null')||{...DEFAULT_TOOL_PROB};
+const TOOL_ORDER=['what','where','wheel','coin','bottle','dice','rps','box']; // 依預設機率排序
+const DEFAULT_TOOL_PROB={what:22,where:19,wheel:15,coin:12,bottle:9,dice:8,rps:8,box:7}; // v26.9.0：8 項工具，總和 100
+const OLD_TOOL_PROB_V6={what:27,where:23,wheel:18,coin:14,bottle:10,box:8}; // v26.8.0 以前的預設（6 項工具）
+const NEW_TOOL_SHARE=6; // 使用者自己調過機率時，新工具各分到的百分比（其餘依原比例縮小，總和仍是 100）
+// 讀進來的機率設定可能是舊的（只有 6 項工具）：沒改過的換成新預設；改過的保留原本的比例，新工具各給 NEW_TOOL_SHARE%
+function normalizeToolProb(p){
+  if(!p||typeof p!=='object'||Array.isArray(p))return {...DEFAULT_TOOL_PROB};
+  const ok=k=>typeof p[k]==='number'&&isFinite(p[k])&&p[k]>=0;
+  const missing=TOOL_ORDER.filter(k=>!ok(k));
+  if(!missing.length)return TOOL_ORDER.reduce((o,k)=>{o[k]=p[k];return o;},{});
+  if(Object.keys(OLD_TOOL_PROB_V6).every(k=>p[k]===OLD_TOOL_PROB_V6[k])&&missing.every(k=>!(k in OLD_TOOL_PROB_V6)))return {...DEFAULT_TOOL_PROB};
+  const have=TOOL_ORDER.filter(ok);
+  const sum=have.reduce((s,k)=>s+p[k],0);
+  const rest=100-NEW_TOOL_SHARE*missing.length;
+  if(!have.length||sum<=0||rest<=0)return {...DEFAULT_TOOL_PROB};
+  const out={},fr=[];
+  let used=0;
+  have.forEach(k=>{const x=p[k]*rest/sum;out[k]=Math.floor(x);used+=out[k];fr.push([k,x-out[k]]);});
+  fr.sort((a,b)=>b[1]-a[1]);
+  for(let i=0;used<rest;i++,used++)out[fr[i%fr.length][0]]++; // 最大餘數法：讓總和剛好 100
+  missing.forEach(k=>{out[k]=NEW_TOOL_SHARE;});
+  return out;
+}
+let TOOL_PROB=normalizeToolProb((function(){try{return JSON.parse(localStorage.getItem('boba_tool_prob')||'null');}catch(_){return null;}})());
 function saveToolProb(){localStorage.setItem('boba_tool_prob',JSON.stringify(TOOL_PROB));}
 function toolProbTotal(){return Object.values(TOOL_PROB).reduce((a,b)=>a+b,0);}
 function pickToolByProbability(){
@@ -10905,6 +11444,20 @@ function renderTools(){
       <div class="tc-title">隨機盒子</div><div class="tc-sub">神秘驚喜</div>
       <div style="margin-top:6px;font-size:10px;font-weight:900;color:var(--amb);background:var(--crm);padding:2px 9px;border-radius:8px">出現機率：${TOOL_PROB.box}%</div>
     </div>
+    <div class="tool-card${curTool==='dice'?' active':''}" id="tool-card-dice" onclick="setTool('dice')">
+      <div class="tc-icon-wrap">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r=".6"/><circle cx="15.5" cy="8.5" r=".6"/><circle cx="12" cy="12" r=".6"/><circle cx="8.5" cy="15.5" r=".6"/><circle cx="15.5" cy="15.5" r=".6"/></svg>
+      </div>
+      <div class="tc-title">骰子</div><div class="tc-sub">擲出點數</div>
+      <div style="margin-top:6px;font-size:10px;font-weight:900;color:var(--amb);background:var(--crm);padding:2px 9px;border-radius:8px">出現機率：${TOOL_PROB.dice}%</div>
+    </div>
+    <div class="tool-card${curTool==='rps'?' active':''}" id="tool-card-rps" onclick="setTool('rps')">
+      <div class="tc-icon-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>
+      </div>
+      <div class="tc-title">剪刀石頭布</div><div class="tc-sub">跟機器猜拳</div>
+      <div style="margin-top:6px;font-size:10px;font-weight:900;color:var(--amb);background:var(--crm);padding:2px 9px;border-radius:8px">出現機率：${TOOL_PROB.rps}%</div>
+    </div>
   </div>
   <button onclick="openProbCenter()" style="width:100%;padding:12px;border:1px dashed var(--bdr);border-radius:12px;background:var(--sur);color:var(--t5);font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;margin-bottom:16px;touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:6px">
     ⚙️ 工具機率設定中心
@@ -10922,7 +11475,7 @@ function openProbCenter(){
   sheet.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;touch-action:manipulation';
   sheet.onclick=(e)=>{if(e.target===sheet)closeProbCenter();};
   sheet.innerHTML=`
-    <div style="background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;padding:20px;padding-bottom:env(safe-area-inset-bottom,20px)" onclick="event.stopPropagation()">
+    <div style="background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;padding:20px 20px 0" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div style="font-size:16px;font-weight:900;color:var(--bd);font-family:'Noto Serif TC',serif">⚙️ 工具機率設定中心</div>
         <button onclick="closeProbCenter()" type="button" style="width:30px;height:30px;border-radius:50%;background:#efe3d5;border:none;color:#9b8c7a;font-size:14px;cursor:pointer;touch-action:manipulation"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="pointer-events:none"><line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/><line x1="17.5" y1="6.5" x2="6.5" y2="17.5"/></svg></button>
@@ -10930,7 +11483,7 @@ function openProbCenter(){
       <div style="font-size:11px;color:var(--t5);margin-bottom:16px">每項工具可獨立設定出現機率，總和需為 100%</div>
       <div id="prob-sliders"></div>
       <div id="prob-total-display" style="text-align:center;padding:12px;border-radius:12px;margin:14px 0;font-size:14px;font-weight:900"></div>
-      <div style="display:flex;gap:10px">
+      <div style="display:flex;gap:10px;position:sticky;bottom:0;background:var(--bg);padding:10px 0 calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 10px -10px rgba(0,0,0,.18)">
         <button onclick="resetToolProb()" style="flex:1;padding:13px;border:1px solid var(--bdr);border-radius:13px;background:var(--sur);color:var(--t5);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">恢復預設</button>
         <button onclick="applyToolProb()" style="flex:2;padding:13px;border:none;border-radius:13px;background:var(--br);color:#fff;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;touch-action:manipulation">儲存設定</button>
       </div>
@@ -10997,6 +11550,8 @@ function renderToolArea(){
   else if(curTool==='coin')renderCoin(el);
   else if(curTool==='bottle')renderBottle(el);
   else if(curTool==='box')renderBox(el);
+  else if(curTool==='dice')renderDice(el);
+  else if(curTool==='rps')renderRps(el);
 }
 
 function renderWhere(el){
@@ -11350,6 +11905,145 @@ function openBox(){
   },650);
 }
 
+// ===== 🎲 骰子／✂️ 剪刀石頭布（系統層 v26.9.0；生活工具共用，首頁「🧰 生活工具」與各模組裡的工具頁都有）=====
+// 兩項都是「公平亂數」：用瀏覽器內建的安全亂數（crypto.getRandomValues，沒有的環境才退回 Math.random），每個結果機率相同；
+// 不套用其他工具那種「避免重複」的加權（骰子和猜拳本來就該每次獨立）。動畫只是演出，結果在動畫開始前就決定好了。
+function rndInt(n){
+  n=Math.max(1,Math.floor(n)||1);
+  try{
+    const c=window.crypto||window.msCrypto;
+    if(c&&c.getRandomValues){
+      const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;
+      let x;do{c.getRandomValues(a);x=a[0];}while(x>=lim);
+      return x%n;
+    }
+  }catch(_){}
+  return Math.floor(Math.random()*n);
+}
+function toolReduceMotion(){try{return !!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);}catch(_){return false;}}
+
+// --- 骰子：1～6 顆標準六面骰 ---
+let diceCount=1,diceBusy=false,diceLast=[],diceHistory=[];
+const DICE_PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}; // 3×3 格子裡哪幾格有點
+function diceFaceHtml(n,rolling){
+  const on=DICE_PIPS[n]||[];
+  let cells='';for(let i=0;i<9;i++)cells+='<i'+(on.indexOf(i)>=0?' class="p"':'')+'></i>';
+  return '<div class="dice'+(rolling?' rolling':'')+'" data-v="'+n+'" role="img" aria-label="'+n+' 點">'+cells+'</div>';
+}
+function diceStageHtml(vals,rolling){return vals.map(v=>diceFaceHtml(v,rolling)).join('');}
+function diceHistoryHtml(){
+  return diceHistory.length?'近況：'+diceHistory.slice(-5).map(h=>dEsc(h)).join(' · '):'';
+}
+function renderDice(el){
+  const vals=diceLast.length===diceCount?diceLast:Array.from({length:diceCount},()=>6);
+  el.innerHTML=`
+  <div style="width:100%;text-align:center">
+    <div style="font-size:12px;color:var(--t5);margin-bottom:12px">擲骰子，讓點數幫你決定！每個點數的機率都一樣。</div>
+    <div id="dice-count" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">
+      ${[1,2,3,4,5,6].map(n=>`<button type="button" class="dice-n${n===diceCount?' on':''}" data-n="${n}" onclick="setDiceCount(${n})">${n} 顆</button>`).join('')}
+    </div>
+    <div class="dice-stage" id="dice-stage">${diceStageHtml(vals,false)}</div>
+    <button class="tool-btn" id="dice-btn" onclick="rollDice()" style="width:100%;max-width:220px">🎲 擲骰子</button>
+    <div class="res-pop" id="dice-res" style="margin-top:14px;font-size:20px;min-height:28px"></div>
+    <div id="dice-hist" style="font-size:11px;color:var(--t5);min-height:18px;margin-top:6px">${diceHistoryHtml()}</div>
+  </div>`;
+}
+function setDiceCount(n){
+  if(diceBusy)return;
+  diceCount=Math.max(1,Math.min(6,Math.floor(Number(n))||1));
+  diceLast=[];
+  const el=document.getElementById('tool-area');
+  if(el&&curTool==='dice')renderDice(el);
+}
+function rollDice(){
+  if(diceBusy)return;
+  const vals=Array.from({length:diceCount},()=>rndInt(6)+1); // 先決定結果，動畫只是演出
+  diceBusy=true;
+  const btn=document.getElementById('dice-btn'),res=document.getElementById('dice-res');
+  if(btn)btn.disabled=true;
+  if(res)res.textContent='';
+  const finish=function(){
+    diceLast=vals;
+    const sum=vals.reduce((a,b)=>a+b,0);
+    const text=vals.length===1?vals[0]+' 點':vals.join(' + ')+' = '+sum;
+    diceHistory.push(vals.length===1?String(vals[0]):vals.join('+')+'='+sum);
+    if(diceHistory.length>10)diceHistory.shift();
+    diceBusy=false;
+    const st=document.getElementById('dice-stage'),r2=document.getElementById('dice-res'),b2=document.getElementById('dice-btn'),h2=document.getElementById('dice-hist');
+    if(st)st.innerHTML=diceStageHtml(vals,false);
+    if(r2)r2.textContent='🎲 '+text;
+    if(h2)h2.textContent=diceHistoryHtml();
+    if(b2)b2.disabled=false;
+  };
+  if(toolReduceMotion()){finish();return;}
+  let n=0;
+  const tick=function(){
+    const st=document.getElementById('dice-stage');
+    if(st)st.innerHTML=diceStageHtml(vals.map(()=>rndInt(6)+1),true);
+    n++;
+    if(n<9)setTimeout(tick,90);else finish();
+  };
+  tick();
+}
+
+// --- 剪刀石頭布：跟機器猜拳（機器完全隨機出，不看你出什麼）---
+const RPS_HANDS=[{e:String.fromCharCode(0x270C,0xFE0F),n:'剪刀'},{e:String.fromCharCode(0x270A),n:'石頭'},{e:String.fromCharCode(0x270B),n:'布'}]; // 0 剪刀、1 石頭、2 布
+let rpsBusy=false,rpsStats={win:0,lose:0,draw:0},rpsHistory=[];
+function rpsOutcome(me,cpu){ // 剪刀贏布、石頭贏剪刀、布贏石頭
+  if(me===cpu)return'draw';
+  return((me-cpu+3)%3===1)?'win':'lose';
+}
+function rpsStatHtml(){return '戰績：勝 '+rpsStats.win+'・負 '+rpsStats.lose+'・平 '+rpsStats.draw+(rpsHistory.length?'　近況：'+rpsHistory.slice(-5).join(' '):'');}
+function rpsSideHtml(who,hand){return '<div class="rps-side"><div class="e">'+hand+'</div><div class="t">'+who+'</div></div>';}
+function renderRps(el){
+  el.innerHTML=`
+  <div style="width:100%;text-align:center">
+    <div style="font-size:12px;color:var(--t5);margin-bottom:12px">跟機器猜拳！選一個出拳（機器完全隨機出，不會看你出什麼）</div>
+    <div class="rps-btns">${RPS_HANDS.map((h,i)=>`<button type="button" class="rps-btn" data-h="${i}" onclick="playRps(${i})"><span class="e">${h.e}</span><span class="n">${h.n}</span></button>`).join('')}</div>
+    <div class="rps-arena" id="rps-arena"><span style="font-size:12px;color:var(--t5)">出拳吧！</span></div>
+    <div class="res-pop" id="rps-res" style="margin-top:6px;font-size:20px;min-height:28px"></div>
+    <div id="rps-stat" style="font-size:11px;color:var(--t5);min-height:18px;margin-top:6px">${rpsStatHtml()}</div>
+    <button type="button" onclick="resetRpsStats()" style="margin-top:10px;padding:6px 12px;border:1px solid var(--bdr);border-radius:9px;background:var(--bg);color:var(--t5);font-family:inherit;font-size:11px;font-weight:900;cursor:pointer;min-height:32px;touch-action:manipulation">重置戰績</button>
+  </div>`;
+}
+function resetRpsStats(){
+  if(rpsBusy)return;
+  rpsStats={win:0,lose:0,draw:0};rpsHistory=[];
+  const s=document.getElementById('rps-stat');if(s)s.textContent=rpsStatHtml();
+}
+function playRps(me){
+  if(rpsBusy)return;
+  me=Math.floor(Number(me));
+  if(!(me>=0&&me<=2))return;
+  const cpu=rndInt(3); // 先決定機器出什麼，和你出什麼無關
+  rpsBusy=true;
+  document.querySelectorAll('.rps-btn').forEach(b=>{b.disabled=true;});
+  const arena=document.getElementById('rps-arena'),res=document.getElementById('rps-res');
+  if(res)res.textContent='';
+  const finish=function(){
+    const out=rpsOutcome(me,cpu);
+    rpsStats[out]++;
+    rpsHistory.push(out==='win'?'🟢':out==='lose'?'🔴':'⚪');
+    if(rpsHistory.length>10)rpsHistory.shift();
+    rpsBusy=false;
+    const a2=document.getElementById('rps-arena'),r2=document.getElementById('rps-res'),s2=document.getElementById('rps-stat');
+    if(a2)a2.innerHTML=rpsSideHtml('你：'+RPS_HANDS[me].n,RPS_HANDS[me].e)+'<div class="rps-vs">VS</div>'+rpsSideHtml('機器：'+RPS_HANDS[cpu].n,RPS_HANDS[cpu].e);
+    if(r2)r2.textContent=out==='win'?'🎉 你贏了！':out==='lose'?'😅 你輸了':'🤝 平手';
+    if(s2)s2.textContent=rpsStatHtml();
+    document.querySelectorAll('.rps-btn').forEach(b=>{b.disabled=false;});
+  };
+  if(toolReduceMotion()){finish();return;}
+  const words=['剪刀…','石頭…','布！'];
+  let i=0;
+  const step=function(){
+    const a=document.getElementById('rps-arena');
+    if(a)a.innerHTML='<div class="rps-count">'+words[i]+'</div>';
+    i++;
+    if(i<words.length)setTimeout(step,320);else setTimeout(finish,360);
+  };
+  step();
+}
+
 // --- Settings ---
 function renderSettings(){
   const page=document.getElementById('page-settings');
@@ -11664,7 +12358,7 @@ function toggleChangelog(){
 function detectChangeTag(text){
   if(/^待去清單/.test(text))return'wishlist';
   if(/^LINE整合|LINE Bot|LINE機器人/.test(text))return'line';
-  if(/^(首頁總覽|開場動畫|選單與權限設定|單人雙人表單|完整備份與還原|首頁生活工具|更新紀錄篩選)/.test(text))return'system'; // 首頁總覽、開場畫面、選單設定、完整備份與還原、首頁生活工具是跨模組的系統層功能：項目開頭寫這幾個詞，就算文字裡提到各模組的名字也歸系統（不然會被「飲料」「美食」這類字誤判）
+  if(/^(首頁總覽|統計中心|開場動畫|選單與權限設定|單人雙人表單|完整備份與還原|首頁生活工具|生活工具|更新紀錄篩選)/.test(text))return'system'; // 首頁總覽、開場畫面、選單設定、完整備份與還原、首頁生活工具是跨模組的系統層功能：項目開頭寫這幾個詞，就算文字裡提到各模組的名字也歸系統（不然會被「飲料」「美食」這類字誤判）
   const drinkKw=/飲料|飲品|飲用者|手搖|加料|甜度|冰塊/;
   const foodKw=/美食|餐點|用餐|菜系|辣度|飽足感|回訪意願|店家.*餐|食用/;
   const travelKw=/航班|船班|高鐵|火車|地鐵|捷運|打車|交通|班機|車次|登機|艙位|車廂|乘車|航空/;
@@ -11797,7 +12491,7 @@ function importData(e){
       } else {
         if(d.recs){recs=d.recs;saveRecords();}
         if(d.budget){monthlyBudget=d.budget;localStorage.setItem('boba_budget',d.budget);}
-        if(d.toolProb){TOOL_PROB=d.toolProb;saveToolProb();}
+        if(d.toolProb){TOOL_PROB=normalizeToolProb(d.toolProb);saveToolProb();}
       }
       showGlassToast(`✅ ${labelMap[mod]} JSON 資料匯入成功`,'success');
       renderSettings();
