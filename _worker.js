@@ -806,11 +806,7 @@ async function flagshipReprompt(session, token, replyToken) {
   }
   if (!session.mode) {
     const flow = FLAGSHIP_SCHEMAS[session.flow];
-    await lineReplyAsk(
-      token, replyToken,
-      '（接續剛剛的紀錄）\n' + flow.label + '：要用哪種模式？\n' + FORM_MODE_REMINDER + '\n\n要用哪一種？',
-      ['單表單模式', '雙表單模式']
-    );
+    await askFormMode(token, replyToken, '（接續剛剛的紀錄）\n' + flow.label + '：要用哪種模式？', '要用哪一種？', ['單表單模式', '雙表單模式']);
     return;
   }
   const flow = FLAGSHIP_SCHEMAS[session.flow];
@@ -824,7 +820,44 @@ async function flagshipReprompt(session, token, replyToken) {
 }
 
 // 表單模式提醒（使用者指定的用語；網頁新增紀錄表單最上方用的是同一段文字）
-const FORM_MODE_REMINDER = '單表單模式（只填寫用戶 A）：適用於單一對象的獨立紀錄、個人資料異動或單向操作。\n雙表單模式（只填寫用戶 A＋用戶B）：針對「一次填寫兩個人的紀錄（先填用戶 A，再填用戶 B）」，核心在連貫性與資料關聯性。';
+// v26.10.3：使用者說「選擇表單模式後沒有顯示提示」，網頁那邊補上一句「儲存後效果」粗體提醒（見 index.html 的 FM_TIP_SINGLE/DUAL）；
+//   使用者接著說「LINE也要顯示」——LINE 的一般文字訊息完全沒有粗體／顏色可以用，所以這裡拆成 FORM_MODE_TEXT 結構化資料，LINE 那三個問「要用哪種模式」的地方改送 Flex 卡片（askFormMode，見下面），
+//   「儲存後效果」那句用跟網頁一樣的顏色（#8b7355）＋粗體顯示，真的做到跟網頁一樣；FORM_MODE_REMINDER 這個純文字版留著不刪，給後台「版本規格頁」顯示、以及 Flex 卡片送失敗時的文字備援用。
+//   雙表單這句跟網頁同步改短（原本多補的「（帶同一個配對編號）」在較窄螢幕會多繞一行、擠掉填寫區版面，見 index.html FM_TIP_DUAL 旁的說明），改回貼近使用者原本的用語。
+const FORM_MODE_TEXT = {
+  single: { label: '單表單模式（只填寫用戶 A）', desc: '適用於單一對象的獨立紀錄、個人資料異動或單向操作。', hi: '儲存後只新增這 1 筆個人紀錄。' },
+  dual: { label: '雙表單模式（只填寫用戶 A＋用戶B）', desc: '針對「一次填寫兩個人的紀錄（先填用戶 A，再填用戶 B）」，核心在連貫性與資料關聯性。', hi: '單次儲存，雙方紀錄即時歸檔。' },
+};
+const FORM_MODE_REMINDER = FORM_MODE_TEXT.single.label + '：' + FORM_MODE_TEXT.single.desc + FORM_MODE_TEXT.single.hi + '\n' + FORM_MODE_TEXT.dual.label + '：' + FORM_MODE_TEXT.dual.desc + FORM_MODE_TEXT.dual.hi;
+// LINE Flex 卡片版的表單模式提醒：headingText 放最上面（可省略）、trailingText 放最下面（例如「要用哪一種？」，可省略），中間固定是單表單／雙表單各一段（說明＋粗體「儲存後效果」，顏色跟網頁 --br 一致）
+function formModeBubbleContents(headingText, trailingText) {
+  const body = [];
+  if (headingText) body.push({ type: 'text', text: headingText, size: 'sm', wrap: true, weight: 'bold', color: '#5c4b37' });
+  const block = (m, withTopMargin) => {
+    body.push({ type: 'text', text: m.label, size: 'sm', weight: 'bold', color: '#5c4b37', margin: withTopMargin ? 'md' : 'none' });
+    body.push({ type: 'text', text: m.desc, size: 'xs', wrap: true, color: '#5c4b37' });
+    body.push({ type: 'text', text: m.hi, size: 'xs', wrap: true, weight: 'bold', color: '#8b7355' });
+  };
+  block(FORM_MODE_TEXT.single, !!headingText);
+  body.push({ type: 'separator', margin: 'md' });
+  block(FORM_MODE_TEXT.dual, true);
+  if (trailingText) body.push({ type: 'text', text: trailingText, size: 'sm', wrap: true, weight: 'bold', color: '#5c4b37', margin: 'md' });
+  return { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'xs', paddingAll: '16px', backgroundColor: '#f5ede4', contents: body } };
+}
+// 問「要用哪種模式」：送 Flex 卡片（有粗體、有顏色，跟網頁的視覺效果一致）＋快速回覆按鈕；LINE 拒絕卡片格式時，改送純文字備援（FORM_MODE_REMINDER），一樣帶按鈕，確保使用者一定看得到、一定能選
+async function askFormMode(token, replyToken, headingText, trailingText, quickOptions) {
+  const opts = (quickOptions || []).slice();
+  if (!opts.includes('結束')) opts.push('結束');
+  const altText = (headingText || '單表單模式／雙表單模式').replace(/\n/g, ' ').slice(0, 300);
+  const msg = { type: 'flex', altText, contents: formModeBubbleContents(headingText, trailingText), quickReply: quickReplyItems(opts) };
+  let res = null;
+  try { res = await lineReplyMessages(token, replyToken, [msg]); } catch (e) { res = null; }
+  if (!res || !res.ok) {
+    try { console.log('LINE reply failed', res ? res.status : 'no response', res ? await res.text() : ''); } catch (e) {}
+    const fallbackText = [headingText, FORM_MODE_REMINDER, trailingText].filter(Boolean).join('\n\n');
+    try { await lineReplyMessages(token, replyToken, [rec4TextMsg(fallbackText, opts)]); } catch (e) {}
+  }
+}
 // 表單模式的補充說明（V10.5.1，使用者 2026-11-12 的「表單模式設定與應用」）：適用場景與介面特點。後台「表單模式提醒」顯示；網頁表單的「適用場景與特點」用同樣的文字。
 //   使用者原稿的資料庫用語（主表、主鍵／外鍵）和「僅用戶 A 欄位：姓名／ID、金額／項目、備註」這個 App 沒有這樣的設計，改寫成不會說錯的白話：只新增 1 筆紀錄、只關聯用戶 A、欄位沿用該功能原本的表單
 const FORM_MODE_MORE = [
@@ -834,6 +867,7 @@ const FORM_MODE_MORE = [
   ] },
   { title: '雙表單模式（只填寫用戶 A＋用戶B）', lines: [
     '常用於：雙人點數發放／扣除、轉帳紀錄、同房／同行登記、管理員一次性批次登錄兩位用戶資料。',
+    '儲存時一次寫入 2 筆紀錄（➊、➋ 各一筆），兩筆會帶同一個配對編號連在一起；之後編輯其中一筆，畫面會提醒這是同一次的另一筆。',
   ] },
 ];
 
@@ -849,11 +883,7 @@ async function flagshipProceedAfterModule(session, userId, env, token, replyToke
   }
   await setFlagshipSession(userId, session, env);
   const flow = FLAGSHIP_SCHEMAS[session.flow];
-  await lineReplyAsk(
-    token, replyToken,
-    flow.label + '：要用哪種模式？\n' + FORM_MODE_REMINDER + '\n\n要用哪一種？',
-    ['單表單模式', '雙表單模式', '↩️ 返回']
-  );
+  await askFormMode(token, replyToken, flow.label + '：要用哪種模式？', '要用哪一種？', ['單表單模式', '雙表單模式', '↩️ 返回']);
 }
 
 // 處理旗艦版／簡易版／標準版的多輪問答訊息（三種tier共用同一套引擎，用session.flow分辨）。
@@ -1459,7 +1489,7 @@ function buildMenuMessage(cfg, ctx, onlyMainId) {
   ];
   if (gridSec) body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: gridRows(gridSec.cells.concat([GRID_BACK])) });
   else if (collapsed) body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: sections.map((s) => s.buttons[0]) });
-  else if (onlyMainId) body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: sections[0].buttons });
+  else if (onlyMainId) body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: sections[0].buttons.concat([btn('↩️ 功能選單', '功能選單')]) }); // V10.9.1：點進某個主選單（非九宮格）看子項目時，原本只有子項目按鈕、沒有能點的「返回主選單」（九宮格、待去清單／分帳管理這類範本式選單都有，只有這裡缺），補上
   else sections.forEach((s) => body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: [{ type: 'text', text: s.title, weight: 'bold', size: 'sm', color: '#8b7355' }].concat(s.buttons) }));
   const alt = (onlyMainId ? heading : '功能選單') + '：' + (collapsed ? sections.map((s) => s.names[0]) : sections.map((s) => s.names.join('／'))).join('／');
   return {
@@ -3410,7 +3440,7 @@ async function handleFlagshipMessage(ev, token, env) {
     if (/^單/.test(text)) session.mode = 'single';
     else if (/^雙/.test(text)) session.mode = 'dual';
     else {
-      await lineReplyAsk(token, ev.replyToken, '請選擇：單表單模式 或 雙表單模式\n' + FORM_MODE_REMINDER, ['單表單模式', '雙表單模式']);
+      await askFormMode(token, ev.replyToken, '請選擇：單表單模式 或 雙表單模式', null, ['單表單模式', '雙表單模式']);
       return true;
     }
 
@@ -6657,8 +6687,8 @@ async function rec4StartVersionPhoto(ctx, ev, token, env, cfg, msg) {
 // （官方帳號看起來沒更新時，先用這個查：傳「機器人版本」給官方帳號，或打開 /api/health 看 worker 欄位）
 // 只回報版本，以及各項「有沒有設定」（是／否）；不會顯示任何金鑰、密碼或同步碼本身。
 // ============================================================
-const BOT_LINE_VERSION = '10.9.0'; // 要跟網頁 index.html 的 LINE_VERSION、BUILD_ID 一致（backend105 測試會逐一比對）
-const BOT_BUILD = '2026-11-12e';
+const BOT_LINE_VERSION = '10.9.1'; // 要跟網頁 index.html 的 LINE_VERSION、BUILD_ID 一致（backend105 測試會逐一比對）
+const BOT_BUILD = '2026-11-12f';
 const BOT_VERSION_CMD_RE = /^(機器人版本|機器人版號|bot版本)$/i;
 async function botVersionText(env, userId) {
   const lines = [
