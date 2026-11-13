@@ -140,19 +140,22 @@ body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;color:var(--t);-
 .fm-note.has{display:block;margin-top:8px}
 .fm-ctrl,.fm-note{max-width:680px;margin-left:auto;margin-right:auto}
 .fm-edit .fm-ctrl{display:none}
-/* 面板擺法：單人只露 ➊；雙人一步露一個面板，第 3 步露並排總覽；編輯舊紀錄只露那一筆自己的面板 */
+/* 面板擺法：單人只露 ➊；雙人步驟 1 是 ➊➋ 一起露出來同時填（寬螢幕左右並排、≤768px上下疊），步驟 2 收起兩個面板、露並排總覽；編輯舊紀錄只露那一筆自己的面板 */
 @media(min-width:769px){.fm-on .fs-body{justify-content:center}}
 .fm-on .fm-wa,.fm-on .fm-wb{flex:1;max-width:680px;width:100%;margin:0 auto;border-right:none!important;border-bottom:none!important}
 .fm-on .fm-wb .fp-toggle{display:none}
 .fm-on .fm-wb .form-panel.disabled{opacity:1}
 .fm-on.fm-single .fm-wb{display:none}
-.fm-on.fm-dual.fm-s1 .fm-wb,.fm-on.fm-dual.fm-s3 .fm-wa,.fm-on.fm-dual.fm-s3 .fm-wb,.fm-on.fm-dual.fm-s2 .fm-wa{display:none}
+.fm-on.fm-dual.fm-s2 .fm-wa,.fm-on.fm-dual.fm-s2 .fm-wb{display:none}
 .fm-on.fm-edit.fm-edit-b .fm-wa{display:none}
 .fm-on.fm-edit.fm-edit-b .fm-wb{display:block}
 .fm-on.fm-edit .fm-wb .form-panel.disabled{opacity:1}
 .fm-ov{display:none;max-width:none!important}
-.fm-on.fm-dual.fm-s3 .fm-ov{display:block}
-.fm-on.fm-s3 #travel-tpl-block{display:none}
+.fm-on.fm-dual.fm-s2 .fm-ov{display:block}
+.fm-on.fm-s2 #travel-tpl-block{display:none}
+/* 雙人步驟 1（➊➋ 同時填寫）：寬螢幕左右並排、中間一條分隔線，取消單面板置中那組寬度限制；≤768px 維持上下疊，改用下分隔線 */
+@media(min-width:769px){.fm-on.fm-dual.fm-s1 .fm-wa,.fm-on.fm-dual.fm-s1 .fm-wb{max-width:none;margin:0}.fm-on.fm-dual.fm-s1 .fm-wa{border-right:1px solid var(--bdr)!important}}
+@media(max-width:768px){.fm-on.fm-dual.fm-s1 .fm-wa{border-bottom:4px solid var(--bdr)!important;padding-bottom:30px}}
 /* LINE 草稿、LINE紀錄「更改」開出來的表單一次只處理一筆：不顯示切換列；編輯舊紀錄時 ➋ 的選人／帶入列也不顯示 */
 .fm-line .fm-bar{display:none}
 .fm-on.fm-edit .fm-bt{display:none}
@@ -1680,7 +1683,7 @@ svg.fld-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:
   <!-- 航班／船班刪除確認改用 showDangerConfirm 動態彈窗，無需獨立 modal -->
 </div>
 <script>
-const BUILD_ID='2026-11-12f';
+const BUILD_ID='2026-11-13b';
 // 標語：首頁最上方與「設定 → 關於」都用這一行（改這裡兩處一起變）
 const APP_SLOGAN='記錄每一刻，感受每一種生活';
 // --- Anthropic API Helper ---
@@ -4056,7 +4059,43 @@ function lcRenderDraftSection(){
   });
   return h;
 }
-function lcRenderSpecs(){return lcRenderDraftSection()+lcRenderSpecs0();}
+// ---------- 管理頁：表單模式（單／雙，V10.10正式接進LINE）——用戶A／B綁定＋6模組開關 ----------
+function lcFmModule(fn){return !!(lc.cfg.formMode&&lc.cfg.formMode.modules&&lc.cfg.formMode.modules[fn]);}
+function lcFmToggle(fn,on){return lcCommit(function(c){c.formMode=c.formMode||{aId:'',bId:'',modules:{}};c.formMode.modules=c.formMode.modules||{};c.formMode.modules[fn]=!!on;},on?'✅ 已開啟':'✅ 已關閉');}
+function lcFmSavePeople(aId,bId){return lcCommit(function(c){c.formMode=c.formMode||{modules:{}};c.formMode.aId=aId;c.formMode.bId=bId;},'✅ 已儲存用戶A／用戶B設定');}
+function lcFmEditPeople(){
+  if(!lc.users.length){toast('⚠️ 還沒有已知的使用者（請先讓用戶A、用戶B各傳一句話給機器人，才會出現在清單裡）');return;}
+  const cur=lc.cfg.formMode||{aId:'',bId:''};
+  const opts=[['','（尚未選擇）']].concat(lc.users.map(function(u){return [u.userId,u.name||u.userId.slice(0,8)];}));
+  lcForm('設定用戶A／用戶B（雙表單模式）',[
+    {k:'aId',label:'用戶A（通常設成你自己——平常跟機器人講話的人）',type:'select',options:opts},
+    {k:'bId',label:'用戶B（雙表單時另一位的身分）',type:'select',options:opts},
+  ],{aId:cur.aId||'',bId:cur.bId||''},function(out){
+    if(out.aId&&out.bId&&out.aId===out.bId){toast('⚠️ 用戶A、用戶B不能是同一個人');return false;}
+    return lcFmSavePeople(out.aId,out.bId);
+  });
+}
+function lcRenderFormModeSection(){
+  const fm=lc.cfg.formMode||{aId:'',bId:'',modules:{}};
+  const nameOf=function(uid){const u=lc.users.find(function(x){return x.userId===uid;});return u?(u.name||uid.slice(0,8)):(uid?uid.slice(0,8)+'（不在已知清單）':'');};
+  const ready=!!(fm.aId&&fm.bId);
+  const MODS=[['drink','🥤 飲料',true],['food','🍽️ 美食',true],['travel','🚗 交通',true],['split','💰 分帳',false],['sticker','🎟️ 集點卡',false],['wish','📍 待去清單',false]];
+  let h='<div style="border:1px solid var(--bdr);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--sur)">'
+    +'<div style="font-size:14px;font-weight:900;color:var(--bd)">👥 表單模式（單／雙）　<span style="font-size:11px;font-weight:700;color:'+(ready?'#16a34a':'var(--t5)')+'">'+(ready?'已設定':'尚未設定')+'</span></div>'
+    +'<div style="font-size:11px;color:var(--t5);line-height:1.7;margin:4px 0 8px">開啟後，LINE 選好紀錄版本之後會先問「要用哪種模式」：單表單只記自己的一筆；雙表單會先整套問完用戶A（跟機器人講話的這個人），再整套問一次用戶B，兩筆同時存檔並用配對編號連起來（跟網頁的單／雙表單意思一樣）。只支援「直接寫入」——開著上面的「LINE 草稿模式」時，雙表單會先禮貌退回單表單並說明原因，不會把資料存錯歸屬。</div>'
+    +'<div style="font-size:12px;color:var(--bd);margin-bottom:8px">用戶A：<b>'+dEsc(fm.aId?nameOf(fm.aId):'（尚未選擇）')+'</b>　用戶B：<b>'+dEsc(fm.bId?nameOf(fm.bId):'（尚未選擇）')+'</b>　'
+    +'<button type="button" onclick="lcFmEditPeople()" style="margin-left:6px;padding:3px 10px;border:1px solid var(--bdr);border-radius:999px;background:var(--bg);color:var(--br);font-family:inherit;font-size:11px;font-weight:900;cursor:pointer">✏️ 設定</button></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px 14px">'+MODS.map(function(m){
+      const fn=m[0],label=m[1],live=m[2];
+      if(!live)return '<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--t5)"><input type="checkbox" disabled style="width:16px;height:16px">'+label+'<span style="font-size:10px">（⏳尚未支援：只能走網頁草稿，還沒做到兩筆分開歸戶）</span></label>';
+      const on=lcFmModule(fn);
+      return '<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--bd)"><input type="checkbox" '+(on?'checked ':'')+(ready?'':'disabled ')+'onchange="lcFmToggle(\''+fn+'\',this.checked)" style="width:16px;height:16px">'+label+'</label>';
+    }).join('')+'</div>'
+    +(ready?'':'<div style="font-size:11px;color:#dc2626;margin-top:6px">要先設定好用戶A／用戶B，才能打開下面的開關。</div>')
+    +'</div>';
+  return h;
+}
+function lcRenderSpecs(){return lcRenderDraftSection()+lcRenderFormModeSection()+lcRenderSpecs0();}
 
 // ============================================================
 // 🪪 LINE 資料卡片（LINE整合 V10）
@@ -4441,14 +4480,14 @@ const IL = {normal:'正常冰',more:'多冰',less:'少冰',micro:'微冰',no_ice
 const SL = {'0':'無糖','0.5':'0.5分糖','1':'一分糖','2':'二分糖','3':'微糖','5':'半糖','7':'少糖','10':'全糖'};
 
 // --- 版本資訊與更新紀錄 ---
-const APP_VERSION = '26.10.3'; // ⚙️ 系統層版本：適用範圍無法明確劃分模組的改動（資料管理中心、完整備份與還原、首頁生活工具入口、回收桶、返回首頁、首頁全館總覽、統計中心、開場動畫、選單與權限設定、單人／雙人表單模式、雲端同步等）
+const APP_VERSION = '26.12.0'; // ⚙️ 系統層版本：適用範圍無法明確劃分模組的改動（資料管理中心、完整備份與還原、首頁生活工具入口、回收桶、返回首頁、首頁全館總覽、統計中心、開場動畫、選單與權限設定、單人／雙人表單模式、雲端同步等）
 const DRINK_VERSION = '22.7.0'; // 🧋 飲料模組獨立版本：沿用原全域版本號接續計算，僅飲料專屬功能變動計入
 const FOOD_VERSION = '6.4.0'; // 🍱 美食模組獨立版本：僅美食專屬功能變動計入，下次美食更新即為 V6 系列
 const TRAVEL_VERSION = '1.3.0'; // ✈️🚢 航班/船班模組獨立版本：全新模組，從 V1.0.0 起算
 const SPLIT_VERSION = '1.1.0'; // 🧾 分帳模組獨立版本（V1.1.0：LINE 草稿、資料卡片與 LINE 流水號）
 const STICKER_VERSION = '1.1.0'; // 🌟 集點卡模組獨立版本（含乖寶寶、互助兩張卡）；V1.1.0：LINE 草稿、資料卡片與 LINE 流水號
 const WISHLIST_VERSION = '1.2.0'; // 🗺️ 待去清單模組獨立版本：全新模組，從 V1.0.0 起算；V1.1.0：LINE 草稿、資料卡片與 LINE 流水號；V1.2.0：營業狀態改成依營業時間與現在時間自動判斷（跨夜、多段班、即將打烊／即將營業、國外當地時間）
-const LINE_VERSION = '10.9.1'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉，V7為可管理的選單／關鍵字／群組權限，V8為統一的「紀錄／查詢＋三版本」操作與可靠同步，V9為LINE訊息自動帶入網頁表單（待確認草稿），V10為資料卡片與LINE轉入紀錄的新流水號（最大號+1、編輯鎖定、依紀錄年份），V10.1為分帳／集點卡／待去清單也納入同一套LINE草稿與資料卡片流程（新增LINE-SPL／LINE-PTS／LINE-WSH流水號），V10.1.1為「LINE紀錄」頁（原名「LINE記帳」，V10.1.1起統一改稱「LINE紀錄」）讀取失敗與LINE暫存資料遺失等修復，V10.2.0為「LINE紀錄」頁每一筆新增「更改」（先開表單、儲存才匯入）與「刪除」（先確認、伺服器確認後才消失），原本的「匯入」維持，V10.3.0為LINE紀錄入口整合成四種版本（簡易／標準／進階／旗艦）：新增進階版一次一題的問答、飲料旗艦版依網頁表單全部欄位逐項建檔、所有版本支援照片辨識、統一的「確認送出／返回修改／取消紀錄」確認畫面、新增診斷指令「機器人版本」，V10.4.0為分帳／集點卡／待去清單也納入四種紀錄版本（含分帳自訂金額）、功能選單改成「點哪個只顯示哪個」、LINE上8個生活工具、後台選單與版本規格頁更新，V10.5.0為隱藏按鈕（按下去聊天室不多一句話）、「工具」改成3×3九宮格、工具直接在LINE玩（新的回覆說法、轉盤與轉瓶子點一下就有結果）、奇遇羅盤／驚喜製造所從待去清單抽並回店家圖卡（營業狀態＋Google地圖按鈕）、後台選單可設定排版與九宮格小字，V10.5.1為依「問答提示詞更新」改寫四種紀錄版本的名稱與說明（簡易版＝輕享紀錄、進階版＝動態問答紀錄）、進階／旗艦版列出實際會問的欄位清單、表單模式補上適用場景與特點，V10.6.0為剪刀石頭布分成兩種玩法：新增「🤖 自動剪刀石頭布」（一鍵自動對決：點一下就出結果，你和小秘書各自隨機出拳，回「你出了／小秘書出／結果」三行）、手動出拳（互動對決）的按鈕順序改成 ✊ 石頭、✌️ 剪刀、✋ 布且結果改用同一種三行格式、「工具」九宮格變成 10 格（9 個工具＋返回主選單）、已存過選單設定的人更新後自動補上新格子，V10.7.0為分帳／集點卡／待去清單的版本說明卡開放在群組、多人聊天室（只看說明，卡片註明「要記錄請到 1 對 1」；記錄仍只在 1 對 1），V10.8.0為LINE官方帳號管理頁登入密碼加上錯誤次數限制與鎖定（同一來源連續輸錯5次先鎖10分鐘、記錄最近失敗嘗試），V10.9.0為「工具」選單的剪刀石頭布從2格（✌️剪刀石頭布=手動出拳要再選一次、🤖自動剪刀石頭布=一鍵出結果）拆成4格——✌️剪刀、✊石頭、✋布、🤖自動，每格點了就直接出結果不用再選一次，已存過選單設定的人更新後自動把原本「剪刀石頭布」那格拆成剪刀／石頭／布3格（自動剪刀石頭布維持在最後），打字「猜拳」「剪刀石頭布」仍維持原來跳3顆按鈕選的互動對決，V10.9.1修復點進「紀錄」這類（先選主選單、再看子項目、非九宮格排版的）選單時，子項目按鈕下面沒有「↩️ 功能選單」可以點、只能重新打字的問題
+const LINE_VERSION = '10.11.0'; // ⚙️ LINE整合獨立版本（不是App模組，是串接LINE Bot的功能總稱）；V1-V4為原始LINE Bot開發階段1-4，V5為群組／三種記帳方式／自動同步等，V6為「紀錄」選單與關鍵字跳轉，V7為可管理的選單／關鍵字／群組權限，V8為統一的「紀錄／查詢＋三版本」操作與可靠同步，V9為LINE訊息自動帶入網頁表單（待確認草稿），V10為資料卡片與LINE轉入紀錄的新流水號（最大號+1、編輯鎖定、依紀錄年份），V10.1為分帳／集點卡／待去清單也納入同一套LINE草稿與資料卡片流程（新增LINE-SPL／LINE-PTS／LINE-WSH流水號），V10.1.1為「LINE紀錄」頁（原名「LINE記帳」，V10.1.1起統一改稱「LINE紀錄」）讀取失敗與LINE暫存資料遺失等修復，V10.2.0為「LINE紀錄」頁每一筆新增「更改」（先開表單、儲存才匯入）與「刪除」（先確認、伺服器確認後才消失），原本的「匯入」維持，V10.3.0為LINE紀錄入口整合成四種版本（簡易／標準／進階／旗艦）：新增進階版一次一題的問答、飲料旗艦版依網頁表單全部欄位逐項建檔、所有版本支援照片辨識、統一的「確認送出／返回修改／取消紀錄」確認畫面、新增診斷指令「機器人版本」，V10.4.0為分帳／集點卡／待去清單也納入四種紀錄版本（含分帳自訂金額）、功能選單改成「點哪個只顯示哪個」、LINE上8個生活工具、後台選單與版本規格頁更新，V10.5.0為隱藏按鈕（按下去聊天室不多一句話）、「工具」改成3×3九宮格、工具直接在LINE玩（新的回覆說法、轉盤與轉瓶子點一下就有結果）、奇遇羅盤／驚喜製造所從待去清單抽並回店家圖卡（營業狀態＋Google地圖按鈕）、後台選單可設定排版與九宮格小字，V10.5.1為依「問答提示詞更新」改寫四種紀錄版本的名稱與說明（簡易版＝輕享紀錄、進階版＝動態問答紀錄）、進階／旗艦版列出實際會問的欄位清單、表單模式補上適用場景與特點，V10.6.0為剪刀石頭布分成兩種玩法：新增「🤖 自動剪刀石頭布」（一鍵自動對決：點一下就出結果，你和小秘書各自隨機出拳，回「你出了／小秘書出／結果」三行）、手動出拳（互動對決）的按鈕順序改成 ✊ 石頭、✌️ 剪刀、✋ 布且結果改用同一種三行格式、「工具」九宮格變成 10 格（9 個工具＋返回主選單）、已存過選單設定的人更新後自動補上新格子，V10.7.0為分帳／集點卡／待去清單的版本說明卡開放在群組、多人聊天室（只看說明，卡片註明「要記錄請到 1 對 1」；記錄仍只在 1 對 1），V10.8.0為LINE官方帳號管理頁登入密碼加上錯誤次數限制與鎖定（同一來源連續輸錯5次先鎖10分鐘、記錄最近失敗嘗試），V10.9.0為「工具」選單的剪刀石頭布從2格（✌️剪刀石頭布=手動出拳要再選一次、🤖自動剪刀石頭布=一鍵出結果）拆成4格——✌️剪刀、✊石頭、✋布、🤖自動，每格點了就直接出結果不用再選一次，已存過選單設定的人更新後自動把原本「剪刀石頭布」那格拆成剪刀／石頭／布3格（自動剪刀石頭布維持在最後），打字「猜拳」「剪刀石頭布」仍維持原來跳3顆按鈕選的互動對決，V10.9.1修復點進「紀錄」這類（先選主選單、再看子項目、非九宮格排版的）選單時，子項目按鈕下面沒有「↩️ 功能選單」可以點、只能重新打字的問題，V10.10.0為網頁原本就有的「單表單／雙表單模式」正式接上LINE的「紀錄」引擎（飲料／美食／交通）：後台「LINE官方帳號 → 版本規格」新增可設定用戶A／用戶B（LINE帳號綁定）＋各模組獨立開關（預設全部關閉，要手動開才會問，不開跟以前完全一樣）；開著的模組選好任一種紀錄版本後，LINE會先問「單表單／雙表單」，單表單只記自己這 1 筆，雙表單會先整套問完用戶A（跟機器人講話的這個人）、再整套問一次用戶B，兩筆同時存檔並用同一個配對編號連起來，跟網頁單／雙表單的意思一致；分帳／集點卡／待去清單這 3 個後台開關一律鎖灰、永遠不會真的問，因為這 3 個目前只能走「LINE 草稿」（草稿一次只有一個擁有者，沒辦法拆成兩筆分別歸戶），誠實鎖住並附註原因，不勉強接上；雙表單只支援「直接寫入」，開著「LINE 草稿模式」時會先禮貌退回單表單並說明原因；順便修好兩個這次開發過程中發現的問題——選擇單表單／雙表單時打「不要」「否」沒有真的取消（只會一直重問同一句話）、以及雙表單直接寫入存檔中途失敗、使用者照指示再按一次「確認送出」時，原本會把用戶A的資料錯誤重複合併、誤標成用戶B的（修好後重試只補上原本失敗的部分，最終還是正確的兩筆、配對編號一致），V10.11.0為「奇遇羅盤」「驚喜製造所」新增第4種玩法「固定清單抽」（沿用網頁原「喝哪裡」「喝什麼」的預設清單）、並統一待去清單抽／紀錄抽／固定清單抽／自訂清單抽這4種玩法的結果文字開頭（品牌文案）
 
 // 版本治理規範（僅供未來判定版本號／更新提示策略參考，本身不觸發版本變更）：
 // 1. Major：重大架構改版或不向下相容的 Breaking Change（如資料結構不相容、核心引擎重寫）。
@@ -4476,6 +4515,52 @@ const UPDATE_POLICY = {
 const DEV_ORDER_POLICY = ['紀錄日常','數據統計','生活工具','設定'];
 
 const CHANGELOG = [
+  {
+    version:'26.12.0', type:'Minor', date:'2026/11/13',
+    items:[
+      '生活工具：「喝哪裡」全面更名為「奇遇羅盤」、「喝什麼」全面更名為「驚喜製造所」——涵蓋網頁所有用到這兩個工具的地方（生活工具頁的工具名稱／主按鈕／結果文字／再探索按鈕、首頁「🧰 生活工具」入口裡的卡片、飲料模組內建的生活工具），文案統一採用新的品牌說法：奇遇羅盤主按鈕「🧭 開啟奇遇」、結果「命運為你安排了……」、再探索「🔄 再遇一次驚喜」；驚喜製造所主按鈕「🎁 開始製造驚喜」、結果「命運為你準備的驚喜是……」、再探索「🔄 再製造一次驚喜」；只改這兩個工具，吃哪裡／吃什麼（美食）、去哪裡／搭什麼（交通）維持原名，沒有一併改名',
+      '生活工具：奇遇羅盤、驚喜製造所新增「🗺️ 待去清單」分頁——在原本「輸入自訂清單」分頁之外，新增一個直接從使用者自己「待去清單」裡「待去」「已安排」狀態項目中抽一個出來的玩法；抽完結果下面有「查看完整資訊」連結，點了會跳到待去清單頁面看完整的營業狀態、地址、Google 地圖等細節（這些判斷本來就只在待去清單頁面做一份，這次沒有在生活工具頁重做一份引擎，避免兩份邏輯以後跑不同步）；待去清單裡沒有可抽的項目時會提示去待去清單新增，不會抽出空結果',
+      '生活工具：奇遇羅盤、驚喜製造所統一後仍各自維持專屬品牌定位——奇遇羅盤只負責選地點探索目的地、驚喜製造所只負責選店家探索消費場所，兩者的文案和操作提示不會互相混用，也不會出現舊名稱「喝哪裡」「喝什麼」',
+      '生活工具：保留原有的轉動動畫（由慢到快的隨機跑馬燈效果）、再次抽選、固定清單抽等既有行為都沒有改變，只是外觀文字換成新的品牌名稱與文案',
+      '生活工具：沒有動到的——吃哪裡／吃什麼／去哪裡／搭什麼的名稱與文案；轉盤、擲硬幣、轉瓶子、隨機盒子、骰子、剪刀石頭布這 6 個工具的名稱、文案、行為都沒有改；LINE 上原本就有的奇遇羅盤／驚喜製造所（從待去清單抽、回店家圖卡）既有行為也沒有改，這次是讓網頁也用上同樣的品牌名稱、並讓網頁也能像 LINE 一樣多一種「從待去清單抽」的玩法（LINE 這邊新增的「固定清單抽」玩法見下一條 LINE整合版本）',
+    ],
+    reason:'把兩個既有生活工具（喝哪裡、喝什麼）換成新名稱「奇遇羅盤」「驚喜製造所」與新文案、並新增一種抽法（待去清單抽），是功能補強與品牌一致性調整，不影響其他工具、不影響既有資料或儲存方式，故列為 Minor，系統層版本由 v26.11.0 升至 v26.12.0；LINE整合版本見下一條。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.11.0', type:'Minor', date:'2026/11/13',
+    items:[
+      'LINE整合：「奇遇羅盤」「驚喜製造所」（工具選單裡的 🧭🎁 兩格，原本就有、不是新功能）新增第五種玩法「🎯 固定清單抽」——直接從一組固定清單裡抽一個出來，清單內容沿用網頁原「喝哪裡」「喝什麼」的預設清單（奇遇羅盤：東區／信義區／天母／大安區／中山區；驚喜製造所：珍珠奶茶／翡翠檸檬／波霸鮮奶茶／四季春／烏龍茶），打字「奇遇羅盤 固定」或「驚喜製造所 固定」就能用；從待去清單抽出的結果卡片下面，也新增一顆「🎯 固定清單抽」快速按鈕可以直接點著切過去',
+      'LINE整合：奇遇羅盤、驚喜製造所的回覆文字統一加上品牌文案——不管是從待去清單抽、改從我的紀錄抽、固定清單抽、還是打自訂清單抽，四種模式的結果文字現在都以「🧭 奇遇羅盤・命運為你安排了……」／「🎁 驚喜製造所・命運為你準備的驚喜是……」開頭，風格統一、不會因為抽法不同而文案不一致',
+      'LINE整合：「工具」說明文字（打「工具」或「說明」看到的介紹）同步補上固定清單抽的說明，讓使用者知道奇遇羅盤、驚喜製造所現在有 4 種玩法可以選',
+      'LINE整合：沒有動到的——奇遇羅盤／驚喜製造所原本「從待去清單抽」（預設行為）、「改從我的紀錄抽」、「自己輸入清單」這 3 種既有玩法，觸發方式、資料來源、圖卡格式都沒有改，只是文字統一成上面第 2 點的新開頭；其他 6 個工具（轉盤、拋硬幣、轉瓶子、隨機盒子、骰子、剪刀石頭布）的玩法、文案都沒有改；待去清單本身的營業狀態判斷引擎沒有改',
+    ],
+    reason:'新增一種抽法（固定清單抽）、並統一既有四種抽法的品牌文案，是功能補強與一致性調整，向下相容（原有打法完全不受影響，沒開新玩法的人感覺不到任何差異），故列為 Minor，LINE整合版本由 V10.10.0 升至 V10.11.0；系統層版本見上一條。',
+  },
+  {
+    version:'26.11.0', type:'Minor', date:'2026/11/13',
+    items:[
+      '單人雙人表單：雙表單模式從「先填 ➊ → 再填 ➋ → 並排總覽確認」三步驟，改成「➊➋ 同時顯示、同時可以填 → 並排總覽確認」兩步驟——切成雙人的那一刻，➊➋ 兩個面板就一起打開、都能填，不用先填完 ➊ 才看得到 ➋；最後的並排總覽確認步驟保留，沒有拿掉',
+      '單人雙人表單：版面寬螢幕（≥769px）時 ➊ 在左、➋ 在右，左右並排、中間一條分隔線；手機窄螢幕（≤768px）時 ➊ 在上、➋ 在下，上下疊放，跟原本其他窄螢幕版面的排法一致',
+      '單人雙人表單：➋ 的名單排除 ➊、不能選 Together、可以按「同 ➊」一鍵帶入 ➊ 的共用欄位（日期、地點等），這些行為沒有變，只是從「填完 ➊ 才看到」變成「切成雙人那一刻就看得到、就能用」；➊ 換人時 ➋ 也會立刻跟著變成合法的另一個人，不用再按下一步才生效',
+      '單人雙人表單：「下一步」按鈕從「驗證 ➊」變成「一次驗證 ➊➋ 兩邊的內容和配對規則（不能選同一個人）」，任一邊沒填好都會擋住並指出是哪一邊；驗證通過後直接到並排總覽確認，沒有改變最後「確認送出」要二次確認、同時寫入兩筆、帶同一個配對編號的行為',
+      '單人雙人表單：只適用於目前已有雙表單功能的 3 個模組——飲料、美食、交通；分帳、集點卡、待去清單目前仍然沒有雙表單功能（這 3 個模組要不要做雙表單，還在討論中，這次沒有一併處理）',
+      '單人雙人表單：這次只改網頁。LINE 官方帳號的「單表單／雙表單」問答流程（V10.10.0 剛接上的，①整套問完用戶A→②整套問一次用戶B→③確認）沒有改——LINE 是一句一句對話，沒辦法像網頁一樣兩個表單同時攤開來填，所以兩邊維持原本各自最適合的填寫方式，資料結構（配對編號等）仍然相通',
+      '單人雙人表單：沒有動到的——欄位本身、每個欄位的驗證規則（日期格式、交通班次等必填項目）、儲存後產生流水號的規則、編輯舊紀錄時的畫面（不顯示切換、配對編號鎖定）、交通「依紀錄者決定面板」的規則都沒有改；分帳、集點卡、待去清單的既有行為也沒有改',
+    ],
+    reason:'雙表單的填寫方式從「分步驟」改成「兩邊同時攤開填」，是使用者體驗上的調整，不影響欄位、驗證規則或資料儲存方式，對已存在的紀錄、LINE 流程、其他模組都沒有影響，故列為 Minor，系統層版本由 v26.10.3 升至 v26.11.0；LINE整合版本不變。',
+  },
+  {
+    version:'⚙️ LINE整合 V10.10.0', type:'Minor', date:'2026/11/12',
+    items:[
+      'LINE整合：網頁原本就有的「單表單／雙表單模式」正式接上LINE的「紀錄」引擎（飲料／美食／交通）。後台「LINE官方帳號 → 版本規格」新增一個區塊，可以設定用戶A／用戶B（各自綁定一個LINE帳號）、以及每個模組各自獨立的開關，預設全部關閉——沒有手動開啟的模組，LINE上的體驗跟這次上線前完全一樣，不會多問任何問題',
+      'LINE整合：模組開關打開之後，使用者在LINE上選好任何一種紀錄版本（簡易／標準／進階／旗艦）後，機器人會先問「要用單表單還是雙表單」：選單表單只會記自己這 1 筆，跟以前一樣；選雙表單，機器人會先把用戶A（現在正在跟機器人講話的這個人）整套問題問完，確認送出後接著整套問一次用戶B，兩筆資料會同時存檔，並帶同一個配對編號（跟網頁單／雙表單那套「帶配對編號」的意思完全一樣，方便事後對照是同一次記的）',
+      'LINE整合：分帳、集點卡、待去清單這 3 個模組，後台的開關故意一律鎖灰、永遠點不開，旁邊附註說明原因——這 3 個目前只能走「LINE 草稿」（LINE先建一張待確認草稿，使用者要到網頁核對、按下「儲存」才正式建檔），草稿系統的設計是一次只能有一個擁有者，沒有辦法把同一次對話拆成兩筆、分別歸戶給用戶A和用戶B，這次誠實選擇不勉強接上，等草稿系統有能力處理「一次拆兩筆」之後再開放，不是漏做',
+      'LINE整合：雙表單目前只支援「直接寫入」（沒有開「LINE 草稿模式」的情況）。如果使用者同時把「LINE 草稿模式」打開，雙表單會先禮貌退回單表單繼續、並說明原因，確保不會把資料存錯歸屬',
+      'LINE整合：開發過程中額外抓到並修掉兩個這次新功能自己的問題，誠實列出——①選擇「單表單／雙表單」畫面時，打「不要」或「否」原本沒有真的取消，只會被當成聽不懂又重問一次同一句話（用「結束」「取消紀錄」這類說法已經可以正常取消，這次補的是「不要」「否」這兩種說法）；②【影響資料正確性，這個比較嚴重】雙表單用「直接寫入」存檔時，如果中途網路或資料庫一時寫入失敗（只存成功用戶A那 1 筆），使用者照畫面提示再按一次「確認送出」重試，原本的程式會把用戶A的資料錯誤地重複合併一次、而且被誤標成用戶B的內容，變成 3 筆、其中 1 筆歸屬是錯的；修好之後，重試只會把原本沒存成功的部分補上，最終還是正確的 2 筆（用戶A、用戶B各 1 筆），配對編號一致，不會重複也不會錯誤歸屬',
+      'LINE整合：沒有動到的——沒有打開任何模組開關之前，LINE上的「紀錄」體驗跟這次上線前完全一樣；網頁原本的單人／雙人表單（欄位、填寫步驟、儲存邏輯）沒有改；分帳、集點卡、待去清單在LINE上的既有行為（走草稿、核對、儲存）沒有改；單表單模式下的紀錄，不管有沒有開這個功能都只會記 1 筆，跟以前一樣',
+    ],
+    reason:'把網頁既有的「單表單／雙表單」功能延伸到LINE的紀錄引擎，是新增功能、預設關閉、向下相容（不開不影響任何既有行為），故列為 Minor，LINE整合版本由 V10.9.1 升至 V10.10.0；系統層版本不變。',
+  },
   {
     version:'⚙️ LINE整合 V10.9.1', type:'Patch', date:'2026/11/12',
     items:[
@@ -8237,17 +8322,19 @@ function populateAccountOptions(selectId,includeTogether=true){
 }
 
 // ============================================================
-// 👥 單人／雙人表單模式（系統層 v26.5.0；飲料／美食／交通的「新增紀錄」表單共用）
+// 👥 單人／雙人表單模式（系統層 v26.5.0 新增；v26.11.0 改成 ➊➋ 同時顯示可編輯——飲料／美食／交通的「新增紀錄」表單共用）
 //   ・表單最上方多一個【👤 單人｜👥 雙人】切換。原本的 ➊／➋ 兩個面板、儲存、流水號、LINE 草稿、AI 辨識都沿用，這裡只管「怎麼擺、怎麼走」。
 //   ・單人：只顯示 ➊，「是誰」自動帶入目前登入的帳號；填完直接儲存。
-//   ・雙人：分三步——① 填 ➊（發起人，預設目前登入者；共用的日期／地點也在這裡填）→ ② 填 ➋（選另一個人：名單自動排除 ➊ 那一位，
-//     可一鍵帶入 ➊ 的日期／地點）→ ③ 並排總覽；按「確認送出」後再跳一次「即將同時寫入 2 筆」，確定才存。
+//   ・雙人：分兩步——① ➊➋ 同時顯示填寫（寬螢幕左右並排、≤768px 上下疊；➊ 是發起人，預設目前登入者，共用的日期／地點填在這裡；
+//     ➋ 選另一個人：名單自動排除 ➊ 那一位，不能選 Together，可一鍵「同 ➊」帶入共用欄位；➊ 換人、➋ 也會立刻跟著變成合法的人）→
+//     ② 並排確認（填完兩邊按「下一步」才會驗證一起前進）；按「確認送出」後再跳一次「即將同時寫入 2 筆」，確定才存。
+//     v26.5.0～v26.10.3 原本是分三步、一次只露一個面板（① 填 ➊ → ② 填 ➋ → ③ 並排總覽），v26.11.0 改成 ➊➋ 同時開著可以一起填。
 //   ・兩筆紀錄用同一個配對編號 pairId 連起來；存好後顯示每一筆的流水號。
 //   ・編輯舊紀錄時不顯示切換（一次只改一筆）；pairId 和流水號一樣，編輯時鎖定不變。
 //   ・只有表單的擺法與步驟是新的：真正存檔仍走原本的 saveRecs／saveMealRecs／saveTravelRecord（含草稿、LINE 更改、流水號配發），
 //     所以直接呼叫儲存函式（測試、草稿卡片【確認新增】）的行為跟以前一樣；這一層壞掉也不會影響原本的表單開啟與儲存（外層都包了 try/catch）。
 // ============================================================
-// mode：single／dual；step：雙人的第幾步（1～3）；snap：➋ 的「共用欄位」上一次被自動帶入的內容（用來判斷使用者有沒有自己改過 ➋ 的日期／地點，改過就不蓋掉）；recSnap：➋ 的「紀錄者」上一次被自動帶入的值（同理，使用者自己改過就不蓋掉）；busy：正在由這一層自己切換 ➋ 開關；line：目前是 LINE 草稿／LINE紀錄「更改」開出來的表單（一次只處理一筆，不顯示切換）
+// mode：single／dual；step：雙人的第幾步（1～2；1＝➊➋ 同時填寫，2＝並排確認）；snap：➋ 的「共用欄位」上一次被自動帶入的內容（用來判斷使用者有沒有自己改過 ➋ 的日期／地點，改過就不蓋掉）；recSnap：➋ 的「紀錄者」上一次被自動帶入的值（同理，使用者自己改過就不蓋掉）；busy：正在由這一層自己切換 ➋ 開關；line：目前是 LINE 草稿／LINE紀錄「更改」開出來的表單（一次只處理一筆，不顯示切換）
 const FM_BAR={drink:null,food:null,travel:null}; // LINE 流程時把切換列整個拿下來，放這裡；下次一般開表單再接回去
 const FM_ST={drink:{mode:'single',step:1,snap:null,recSnap:null,busy:false,line:false},food:{mode:'single',step:1,snap:null,recSnap:null,busy:false,line:false},travel:{mode:'single',step:1,snap:null,recSnap:null,busy:false,line:false}};
 const FM_TRAVEL_SHARED={
@@ -8437,6 +8524,21 @@ function fmSyncRecorder(kind){
   setSelOrCustom(rb,rb+'-c',v);
   st.recSnap=getCustom(rb,rb+'-c');
 }
+// v26.11.0：➊➋ 改成同時顯示可編輯，不再有「填完 ➊ 才看到 ➋」那個時間點，所以下面這兩個原本只在「下一步」那一刻做一次的
+// 修正（➋ 換成合法的人、紀錄者跟著 ➊、共用欄位預設帶一次 ➊ 的值）要提前到「切成雙人模式」那一刻做；
+// fmKeepBValid 另外在 ➊ 換人時也會再呼叫一次（➊➋ 同時看得到，➊ 一換人就要讓 ➋ 立刻跟著合法，不能等使用者按下一步才發現）
+function fmDualEnterSetup(kind){
+  const c=FM_CFG[kind],st=FM_ST[kind];
+  fmFixB(kind);
+  fmSyncRecorder(kind);
+  const cur=JSON.stringify(c.sharedGet('b'));
+  if(st.snap===null||st.snap===cur){c.sharedSet('b',c.sharedGet('a'));st.snap=JSON.stringify(c.sharedGet('b'));}
+}
+function fmKeepBValid(kind){
+  if(FM_ST[kind].mode!=='dual')return;
+  fmFixB(kind);
+  fmSyncRecorder(kind);
+}
 function fmRenderChips(kind){
   const box=fmEl('fm-chips-'+kind);
   if(!box)return;
@@ -8486,7 +8588,7 @@ function fmMount(kind){
   bar.className='fm-bar';bar.id='fm-bar-'+kind;
   bar.innerHTML='<div class="fm-ctrl">'
     +'<div class="fm-seg" role="tablist"><button type="button" class="fm-seg-btn on" data-fm-mode="single" onclick="fmSetMode(\''+kind+'\',\'single\')">👤 單人</button><button type="button" class="fm-seg-btn" data-fm-mode="dual" onclick="fmSetMode(\''+kind+'\',\'dual\')">👥 雙人</button></div>'
-    +'<div class="fm-steps"><div class="fm-step" data-fm-step="1">① 填 ➊</div><div class="fm-step" data-fm-step="2">② 填 ➋</div><div class="fm-step" data-fm-step="3">③ 確認</div></div>'
+    +'<div class="fm-steps"><div class="fm-step" data-fm-step="1">① 填寫 ➊➋</div><div class="fm-step" data-fm-step="2">② 確認</div></div>'
     +'<div class="fm-hint"></div></div><div class="fm-note"></div>';
   wrap.insertBefore(bar,hdr.nextSibling);
   // ➋ 面板最上方：選人（名單已排除 ➊）＋一鍵帶入 ➊ 的日期／地點
@@ -8509,24 +8611,28 @@ function fmMount(kind){
   const foot=document.createElement('div');
   foot.className='fm-foot';foot.id='fm-foot-'+kind;
   if(orig){orig.classList.add('fm-orig');orig.parentNode.insertBefore(foot,orig.nextSibling);}else wrap.appendChild(foot);
-  // ➊ 換人時，➋ 的名單跟著重算；➋ 自己用下拉選單換人時，上面的按鈕也要跟著亮
+  // ➊ 換人時，➋ 的名單跟著重算、➋ 現在選的人如果變得不合法（跟新的 ➊ 同一人）要立刻跟著換掉——
+  // ➊➋ 現在同時顯示，不是等「下一步」才修正，所以要在這裡立刻做一次（fmKeepBValid），而不是只靠原本在 fmNext 裡才做的 fmFixB
   const sa=fmEl(c.sel('a')),ca=fmEl(c.sel('a')+'-c');
-  const again=function(){fmApplyPersonRules(kind);if(FM_ST[kind].mode==='dual'&&FM_ST[kind].step===2)fmRenderChips(kind);};
+  const again=function(){fmApplyPersonRules(kind);fmKeepBValid(kind);if(FM_ST[kind].mode==='dual'&&FM_ST[kind].step===1)fmRenderChips(kind);};
   if(sa)sa.addEventListener('change',again);
   if(ca)ca.addEventListener('input',again);
   const sb=fmEl(c.sel('b')),cb=fmEl(c.sel('b')+'-c');
-  const againB=function(){if(FM_ST[kind].mode==='dual'&&FM_ST[kind].step===2)fmRenderChips(kind);};
+  const againB=function(){if(FM_ST[kind].mode==='dual'&&FM_ST[kind].step===1)fmRenderChips(kind);};
   if(sb)sb.addEventListener('change',againB);
   if(cb)cb.addEventListener('input',againB);
 }
 
 // ---------- 畫面更新 ----------
-// 表單模式提醒（使用者指定的用語；LINE 機器人舊流程的問句用的是同一段文字）
+// 表單模式提醒（使用者指定的用語；LINE 機器人舊流程的問句原本用的是同一段文字）
+//   v26.11.0：網頁的雙表單改成 ➊➋ 同時顯示可編輯（不再是先填完 ➊ 才看到 ➋），這句的「先填用戶A，再填用戶B」改成「➊➋ 同時填寫」；
+//   LINE 那邊是聊天介面、本質上只能一次問一句，仍然是「先整套問完用戶A、再整套問一次用戶B」，兩邊現在文字不同、但各自都誠實對應自己的實際流程，
+//   _worker.js 裡 LINE 機器人自己那一份同樣的提醒文字維持原樣不動（backend109.test.mjs 驗證的就是 LINE 那份、不受這次影響）
 // v26.10.3：使用者說「選擇表單模式後沒有顯示提示」——原來的提醒句只講「適用情境」，沒有明確講「存檔後實際會發生什麼事」；這裡補上一句粗體、換色的「儲存後效果」，固定顯示（不用展開「適用場景與特點」才看到）。
 //   這兩句是開發者寫的固定文字、不是使用者輸入，所以直接含 <b> 標籤（跟下面 fmHintDetail 的寫法一致），fmTipHtml 不會再對它們做 dEsc escape。
 //   雙表單這句原本比照使用者原稿多補了「（帶同一個配對編號）」，字數變長，在較窄螢幕（320／360px）會多繞一行、擠掉填寫區的版面預算（視覺測試 visual108／116 量出來的，矮螢幕規則「一點都不能少」、一般情況「最多少 50px」都會被超過）；「配對編號」這件事在下面可展開的「適用場景與特點」裡本來就有講，這句固定顯示的改回貼近使用者原本的用語，簡短一點
 const FM_TIP_SINGLE='單表單模式（只填寫用戶 A）：適用於單一對象的獨立紀錄、個人資料異動或單向操作。<b class="fm-hi">儲存後只新增這 1 筆個人紀錄。</b>';
-const FM_TIP_DUAL='雙表單模式（只填寫用戶 A＋用戶B）：針對「一次填寫兩個人的紀錄（先填用戶 A，再填用戶 B）」，核心在連貫性與資料關聯性。<b class="fm-hi">單次儲存，雙方紀錄即時歸檔。</b>';
+const FM_TIP_DUAL='雙表單模式（只填寫用戶 A＋用戶B）：針對「一次填寫兩個人的紀錄（➊➋ 同時填寫）」，核心在連貫性與資料關聯性。<b class="fm-hi">單次儲存，雙方紀錄即時歸檔。</b>';
 // 表單模式的補充說明（v26.10.1，使用者「表單模式設定與應用」；和 LINE 後台版本規格頁的「表單模式設定與應用」同一份文字）：預設收合，點「適用場景與特點」才展開。
 //   使用者原稿的資料庫用語（主表、主鍵／外鍵）和「僅用戶 A 欄位：姓名／ID、金額／項目、備註」這個 App 沒有這樣的設計，改寫成不會說錯的白話：只新增 1 筆紀錄、只關聯用戶 A、欄位沿用該功能原本的表單
 const FM_MORE=[
@@ -8546,14 +8652,12 @@ function fmHintHtml(kind){
 function fmHintDetail(kind){
   const c=FM_CFG[kind],st=FM_ST[kind],a=fmPerson(kind,'a')||fmDefaultName('a'),b=fmPerson(kind,'b');
   if(st.mode!=='dual')return '👤 <b>單人</b>：只填 ➊，「是誰」'+(currentUser?'自動帶入目前登入的 <b>':'預設帶入 <b>')+dEsc(fmDefaultName('a'))+'</b>；填完直接儲存。要一次記兩個人請按「👥 雙人」。';
-  if(st.step===1)return '步驟 1／3：先填 <b>➊ '+dEsc(a)+'</b>（發起人）。這次共用的'+c.sharedLabel+'也在這裡填，下一步可以一鍵帶給 ➋。';
-  if(st.step===2)return '步驟 2／3：再填 <b>➋</b>——選另一個人（名單已排除 ➊ 的 '+dEsc(a)+'）；'+c.sharedLabel+'可一鍵「同 ➊」，只要改 ➋ 自己不一樣的欄位。';
-  return '步驟 3／3：兩筆並排確認'+(b?'（➊ '+dEsc(a)+'　➋ '+dEsc(b)+'）':'')+'，沒問題就按「確認送出」。';
+  if(st.step===1)return '步驟 1／2：<b>➊ '+dEsc(a)+'</b>（發起人）與 <b>➋'+(b?' '+dEsc(b):'')+'</b>（名單排除 ➊）同時填寫，'+c.sharedLabel+'可一鍵帶給對方。';
+  return '步驟 2／2：兩筆並排確認'+(b?'（➊ '+dEsc(a)+'　➋ '+dEsc(b)+'）':'')+'，沒問題就按「確認送出」。';
 }
 function fmFootHtml(kind){
   const st=FM_ST[kind],k="'"+kind+"'";
-  if(st.step===1)return {two:true,html:'<button type="button" class="fm-fbtn" onclick="fmCancel('+k+')">取消</button><button type="button" class="fm-fbtn pri" onclick="fmNext('+k+')">下一步：填 ➋ ▶</button>'};
-  if(st.step===2)return {two:false,html:'<button type="button" class="fm-fbtn" onclick="fmCancel('+k+')">取消</button><button type="button" class="fm-fbtn" onclick="fmPrev('+k+')">◀ 上一步</button><button type="button" class="fm-fbtn pri" onclick="fmNext('+k+')">下一步：看總覽 ▶</button>'};
+  if(st.step===1)return {two:true,html:'<button type="button" class="fm-fbtn" onclick="fmCancel('+k+')">取消</button><button type="button" class="fm-fbtn pri" onclick="fmNext('+k+')">下一步：確認 ▶</button>'};
   return {two:true,html:'<button type="button" class="fm-fbtn" onclick="fmPrev('+k+')">◀ 上一步</button><button type="button" class="fm-fbtn pri" onclick="fmConfirmSubmit('+k+')">✅ 確認送出</button>'};
 }
 function fmCancel(kind){FM_CFG[kind].cancel();}
@@ -8565,7 +8669,7 @@ function fmRender(kind){
   m.classList.toggle('fm-dual',dual);
   m.classList.toggle('fm-edit',edit);
   m.classList.toggle('fm-line',!!st.line);
-  for(let n=1;n<=3;n++)m.classList.toggle('fm-s'+n,dual&&st.step===n);
+  for(let n=1;n<=2;n++)m.classList.toggle('fm-s'+n,dual&&st.step===n);
   const bar=fmEl('fm-bar-'+kind);
   if(bar){
     bar.querySelectorAll('.fm-seg-btn').forEach(function(b){
@@ -8582,8 +8686,8 @@ function fmRender(kind){
   }
   const foot=fmEl('fm-foot-'+kind);
   if(foot&&dual){const f=fmFootHtml(kind);foot.className='fm-foot'+(f.two?' fm-two':'');foot.innerHTML=f.html;}
-  if(dual&&st.step===2)fmRenderChips(kind);
-  if(dual&&st.step===3)fmRenderOverview(kind);
+  if(dual&&st.step===1)fmRenderChips(kind);
+  if(dual&&st.step===2)fmRenderOverview(kind);
   fmEditNote(kind);
 }
 function fmScrollTop(kind){
@@ -8634,10 +8738,12 @@ function fmOnBToggled(kind){
     if(st.busy||!fmMounted(kind))return;
     const c=FM_CFG[kind];
     if(c.isEdit()||st.line)return;
-    if(c.isB()&&st.mode!=='dual'){st.mode='dual';st.step=1;st.snap=null;st.recSnap=null;}
+    let enterDual=false;
+    if(c.isB()&&st.mode!=='dual'){st.mode='dual';st.step=1;st.snap=null;st.recSnap=null;enterDual=true;}
     else if(!c.isB()&&st.mode==='dual'){st.mode='single';st.step=1;}
     else return;
     fmApplyPersonRules(kind);
+    if(enterDual)fmDualEnterSetup(kind);
     fmRender(kind);
   }catch(e){console.error('單人／雙人模式同步失敗（不影響原本的表單）:',e);}
 }
@@ -8675,6 +8781,7 @@ function fmSetMode(kind,mode){
       fmSetB(kind,false);
     }
     fmApplyPersonRules(kind);
+    if(mode==='dual')fmDualEnterSetup(kind);
     fmRender(kind);
     fmScrollTop(kind);
   }catch(e){console.error('切換單人／雙人失敗:',e);}
@@ -8701,25 +8808,23 @@ function fmCheckPair(kind){
   return '';
 }
 function fmGo(kind,step){FM_ST[kind].step=step;fmRender(kind);fmScrollTop(kind);}
+// ➊➋ 現在同時顯示、同時填，所以「下一步」一次驗證兩邊＋配對規則，一次到位進第 2 步（並排確認）
 function fmNext(kind){
   const st=FM_ST[kind];
-  if(st.step===1){
-    const bad=fmCheckPanel(kind,'a')||fmCheckPerson(kind,'a');
-    if(bad){toast('⚠️ ➊：'+bad.replace(/^➊：/,''),3200);return;}
-    fmApplyPersonRules(kind);
-    fmFixB(kind);
-    fmSyncRecorder(kind);
-    // ➋ 的日期／地點預設同 ➊；如果使用者之前已經自己改過 ➋ 的這幾欄，就不蓋掉
-    const c=FM_CFG[kind],cur=JSON.stringify(c.sharedGet('b'));
-    if(st.snap===null||st.snap===cur){c.sharedSet('b',c.sharedGet('a'));st.snap=JSON.stringify(c.sharedGet('b'));}
-    fmGo(kind,2);
-  }else if(st.step===2){
-    const bad=fmCheckPanel(kind,'b');
-    if(bad){toast('⚠️ ➋：'+bad,3200);return;}
-    const bp=fmCheckPair(kind);
-    if(bp){toast('⚠️ '+bp,3600);return;}
-    fmGo(kind,3);
-  }
+  if(st.step!==1)return;
+  const badA=fmCheckPanel(kind,'a')||fmCheckPerson(kind,'a');
+  if(badA){toast('⚠️ ➊：'+badA.replace(/^➊：/,''),3200);return;}
+  const badB=fmCheckPanel(kind,'b')||fmCheckPerson(kind,'b');
+  if(badB){toast('⚠️ ➋：'+badB.replace(/^➋：/,''),3200);return;}
+  const bp=fmCheckPair(kind);
+  if(bp){toast('⚠️ '+bp,3600);return;}
+  fmApplyPersonRules(kind);
+  fmFixB(kind);
+  fmSyncRecorder(kind);
+  // ➋ 的日期／地點預設同 ➊（切成雙人時已經做過一次，這裡是保險：如果使用者之前已經自己改過 ➋ 的這幾欄，就不蓋掉）
+  const c=FM_CFG[kind],cur=JSON.stringify(c.sharedGet('b'));
+  if(st.snap===null||st.snap===cur){c.sharedSet('b',c.sharedGet('a'));st.snap=JSON.stringify(c.sharedGet('b'));}
+  fmGo(kind,2);
 }
 function fmPrev(kind){
   const st=FM_ST[kind];
@@ -8739,7 +8844,7 @@ function fmRenderOverview(kind){
   const c=FM_CFG[kind],box=fmEl('fm-ov-'+kind);
   if(!box)return;
   const r1=c.collect('a'),r2=c.collect('b');
-  let h='<div class="fm-ov-t">③ 確認兩筆內容</div><div class="fm-ov-s">左邊是 ➊、右邊是 ➋；兩邊不一樣的地方用淡黃色標出來。要改就按「上一步」。</div>';
+  let h='<div class="fm-ov-t">② 確認兩筆內容</div><div class="fm-ov-s">左邊是 ➊、右邊是 ➋；兩邊不一樣的地方用淡黃色標出來。要改就按「上一步」。</div>';
   h+='<table class="fm-tbl"><thead><tr><th class="rl"></th><th>➊ '+dEsc(fmPerson(kind,'a'))+'</th><th>➋ '+dEsc(fmPerson(kind,'b'))+'</th></tr></thead><tbody>';
   FM_ROWS[kind].forEach(function(row){
     const v1=String(row[1](r1,'a')||''),v2=String(row[1](r2,'b')||'');
@@ -8765,8 +8870,8 @@ function fmCloseSheet(id){const o=fmEl(id);if(o)o.remove();}
 function fmConfirmSubmit(kind){
   const c=FM_CFG[kind];
   const e1=fmCheckPanel(kind,'a');if(e1){fmGo(kind,1);toast('⚠️ ➊：'+e1,3200);return;}
-  const e2=fmCheckPanel(kind,'b');if(e2){fmGo(kind,2);toast('⚠️ ➋：'+e2,3200);return;}
-  const ep=fmCheckPair(kind);if(ep){fmGo(kind,2);toast('⚠️ '+ep,3600);return;}
+  const e2=fmCheckPanel(kind,'b');if(e2){fmGo(kind,1);toast('⚠️ ➋：'+e2,3200);return;}
+  const ep=fmCheckPair(kind);if(ep){fmGo(kind,1);toast('⚠️ '+ep,3600);return;}
   const r1=c.collect('a'),r2=c.collect('b');
   const bd=fmSheet('fm-confirm',
     '<div class="fm-sh-ic">👥</div><div class="fm-sh-t">即將同時寫入 2 筆'+dEsc(c.label)+'紀錄</div>'
@@ -11363,11 +11468,13 @@ function recordHistory(tool,result){
 let wheelCanvas=null,wheelCtx=null,wheelItems=[],wheelAngle=0,wheelSpinning=false,wheelTargetAngle=0,wheelAnimId=null;
 
 // --- 工具獨立機率系統 ---
-const TOOL_LABELS={where:'喝哪裡',what:'喝什麼',wheel:'轉盤',coin:'擲硬幣',bottle:'轉瓶子',box:'隨機盒子',dice:'骰子',rps:'剪刀石頭布'};
+const TOOL_LABELS={where:'奇遇羅盤',what:'驚喜製造所',wheel:'轉盤',coin:'擲硬幣',bottle:'轉瓶子',box:'隨機盒子',dice:'骰子',rps:'剪刀石頭布'};
 // --- 地點工具(where)／內容工具(what) 依系統(currentModule)動態切換：標題、子標、分頁、placeholder、結果圖示、資料來源 ---
+// v26.11.x：飲料系統(drink)的where/what改名「奇遇羅盤」「驚喜製造所」（原「喝哪裡」「喝什麼」），統一成和LINE既有的奇遇羅盤/驚喜製造所(從待去清單抽店家卡片)同一個招牌；
+//           美食(food)、交通(travel)的where/what(吃哪裡/吃什麼、去哪裡/搭什麼)沒有改名，維持原樣，不受影響。
 const TOOL_SYS={
-  drink:{whereT:'喝哪裡',whereS:'隨機選地點',wherePH:'每行一個地點',whereDef:['東區','信義區','天母','大安區','中山區'],
-         whatT:'喝什麼',whatS:'選飲品清單',whatPH:'每行一個飲品',whatField:'drink',whatTab:'我的飲品',whatEmoji:'🧋',whatDef:['珍珠奶茶','翡翠檸檬','波霸鮮奶茶','四季春','烏龍茶'],brandTab:true,brandTabLabel:'按品牌篩選'},
+  drink:{whereT:'奇遇羅盤',whereS:'隨機選地點',wherePH:'每行一個地點',whereDef:['東區','信義區','天母','大安區','中山區'],
+         whatT:'驚喜製造所',whatS:'選飲品清單',whatPH:'每行一個飲品',whatField:'drink',whatTab:'我的飲品',whatEmoji:'🧋',whatDef:['珍珠奶茶','翡翠檸檬','波霸鮮奶茶','四季春','烏龍茶'],brandTab:true,brandTabLabel:'按品牌篩選'},
   food:{whereT:'吃哪裡',whereS:'隨機選地點',wherePH:'每行一個地點',whereDef:['東區','信義區','天母','大安區','中山區'],
         whatT:'吃什麼',whatS:'選餐點清單',whatPH:'每行一個餐點',whatField:'dish',whatTab:'我的餐點',whatEmoji:'🍱',whatDef:['牛肉麵','小籠包','拉麵','滷肉飯','火鍋'],brandTab:true,brandTabLabel:'按店家篩選'},
   travel:{whereT:'去哪裡',whereS:'隨機選目的地',wherePH:'每行一個目的地',whereDef:['東京','大阪','香港','高雄','沖繩'],
@@ -11580,38 +11687,53 @@ function renderToolArea(){
 
 function renderWhere(el){
   const cfg=curToolSys();
+  const isCompass=(currentModule==='drink'||currentModule==='tools'); // v26.11.x：這個招牌是「奇遇羅盤」時，才多一個「待去清單」分頁
   const areas=[...new Set(toolDataArr().filter(r=>r.area).map(r=>r.area))];
   const defaultAreas=areas.length?areas:cfg.whereDef;
   el.innerHTML=`
   <div style="width:100%">
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <div style="flex:1;display:flex;gap:6px">
+        ${isCompass?'<button class="tmt-btn" id="where-tw" onclick="switchWhereTab(\'wish\')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg);color:var(--t5);font-size:11px;font-weight:900;cursor:pointer">🗺️ 待去清單</button>':''}
         <button class="tmt-btn active" id="where-ta" onclick="switchWhereTab('rec')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--bdr);background:var(--br);color:#fff;font-size:11px;font-weight:900;cursor:pointer">我的紀錄</button>
         <button class="tmt-btn" id="where-tb" onclick="switchWhereTab('custom')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg);color:var(--t5);font-size:11px;font-weight:900;cursor:pointer">自訂清單</button>
       </div>
     </div>
-    <textarea class="opt-area" id="where-opts" style="height:90px" placeholder="${cfg.wherePH}">${defaultAreas.join('\n')}</textarea>
+    <textarea class="opt-area" id="where-opts" data-src="rec" style="height:90px" placeholder="${cfg.wherePH}">${defaultAreas.join('\n')}</textarea>
     <div id="where-shuffle-display" style="min-height:52px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
-    <button class="tool-btn" id="where-btn" onclick="rollWhere()" style="width:100%">🎲 洗牌決定！</button>
+    <button class="tool-btn" id="where-btn" onclick="rollWhere()" style="width:100%">${isCompass?'🧭 開啟奇遇':'🎲 洗牌決定！'}</button>
     <div class="res-pop" id="where-res" style="margin-top:14px;font-size:22px"></div>
+    <div id="where-extra" style="margin-top:8px;text-align:center"></div>
   </div>`;
 }
 function switchWhereTab(t){
   const areas=[...new Set(toolDataArr().filter(r=>r.area).map(r=>r.area))];
-  const ta=document.getElementById('where-ta'),tb=document.getElementById('where-tb');
-  if(t==='rec'){
-    document.getElementById('where-opts').value=areas.length?areas.join('\n'):'（尚無地點紀錄）';
-    ta.style.background='var(--br)';ta.style.color='#fff';tb.style.background='var(--bg)';tb.style.color='var(--t5)';
+  const ta=document.getElementById('where-ta'),tb=document.getElementById('where-tb'),tw=document.getElementById('where-tw');
+  [tw,ta,tb].forEach(b=>{if(b){b.style.background='var(--bg)';b.style.color='var(--t5)';}});
+  const opts=document.getElementById('where-opts');
+  if(t==='wish'){
+    const open=wishReadItems().filter(x=>x&&typeof x==='object'&&String(x.name||'').trim()&&(!x.status||x.status==='待去'||x.status==='已安排'));
+    opts.value=open.length?open.map(x=>String(x.name||'').trim()).join('\n'):'（待去清單目前是空的，到「🗺️ 待去清單」新增想去的地方）';
+    opts.dataset.src='wish';
+    if(tw){tw.style.background='var(--br)';tw.style.color='#fff';}
+  } else if(t==='rec'){
+    opts.value=areas.length?areas.join('\n'):'（尚無地點紀錄）';
+    opts.dataset.src='rec';
+    ta.style.background='var(--br)';ta.style.color='#fff';
   } else {
-    document.getElementById('where-opts').value='';
-    ta.style.background='var(--bg)';ta.style.color='var(--t5)';tb.style.background='var(--br)';tb.style.color='#fff';
-    document.getElementById('where-opts').focus();
+    opts.value='';
+    opts.dataset.src='custom';
+    tb.style.background='var(--br)';tb.style.color='#fff';
+    opts.focus();
   }
 }
 function rollWhere(){
   const opts=document.getElementById('where-opts').value.split('\n').map(s=>s.trim()).filter(Boolean);
   if(!opts.length){toast('請先加入地點');return;}
   const btn=document.getElementById('where-btn'),disp=document.getElementById('where-shuffle-display'),res=document.getElementById('where-res');
+  const isCompass=(currentModule==='drink'||currentModule==='tools');
+  const fromWish=document.getElementById('where-opts').dataset.src==='wish';
+  const extra=document.getElementById('where-extra');if(extra)extra.innerHTML='';
   btn.disabled=true;res.textContent='';
   const result=weightedRandom(opts,toolHistory.where);
   let i=0,speed=60;
@@ -11620,43 +11742,59 @@ function rollWhere(){
     disp.innerHTML=`<span style="font-size:15px;font-weight:900;color:var(--br);background:var(--crm);padding:6px 14px;border-radius:10px">${shown}</span>`;
     i++;speed=Math.min(speed+18,350);
     if(i<18)setTimeout(shuffle,speed);
-    else{disp.innerHTML=`<span style="font-size:15px;font-weight:900;color:var(--br);background:var(--crm);padding:6px 14px;border-radius:10px">🎯 ${result}</span>`;res.textContent=result;recordHistory('where',result);btn.disabled=false;}
+    else{
+      disp.innerHTML=`<span style="font-size:15px;font-weight:900;color:var(--br);background:var(--crm);padding:6px 14px;border-radius:10px">🎯 ${result}</span>`;
+      res.textContent=(isCompass?'命運為你安排了…… ':'')+result;
+      recordHistory('where',result);btn.disabled=false;
+      if(fromWish&&extra)extra.innerHTML='<a href="javascript:goTab(\'wish\')" style="font-size:12px;color:var(--br);text-decoration:underline">🗺️ 到待去清單看完整資訊（營業狀態／地址／地圖）</a>';
+    }
   };
   shuffle();
 }
 
 function renderWhat(el){
   const cfg=curToolSys();
+  const isSurprise=(currentModule==='drink'||currentModule==='tools'); // v26.11.x：這個招牌是「驚喜製造所」時，才多一個「待去清單」分頁
   const items=[...new Set(toolDataArr().filter(r=>r[cfg.whatField]).map(r=>r[cfg.whatField]))];
   const defaultItems=items.length?items:cfg.whatDef;
   el.innerHTML=`
   <div style="width:100%">
     <div style="display:flex;gap:6px;margin-bottom:10px">
+      ${isSurprise?'<button id="what-tw" onclick="switchWhatTab(\'wish\')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg);color:var(--t5);font-size:11px;font-weight:900;cursor:pointer">🗺️ 待去清單</button>':''}
       <button id="what-ta" onclick="switchWhatTab('rec')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--bdr);background:var(--br);color:#fff;font-size:11px;font-weight:900;cursor:pointer">${cfg.whatTab}</button>
       ${cfg.brandTab?`<button id="what-tb" onclick="switchWhatTab('brand')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg);color:var(--t5);font-size:11px;font-weight:900;cursor:pointer">${cfg.brandTabLabel}</button>`:''}
       <button id="what-tc" onclick="switchWhatTab('custom')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--bdr);background:var(--bg);color:var(--t5);font-size:11px;font-weight:900;cursor:pointer">自訂清單</button>
     </div>
     <div id="what-brand-filter" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
-    <textarea class="opt-area" id="what-opts" style="height:90px" placeholder="${cfg.whatPH}">${defaultItems.join('\n')}</textarea>
+    <textarea class="opt-area" id="what-opts" data-src="rec" style="height:90px" placeholder="${cfg.whatPH}">${defaultItems.join('\n')}</textarea>
     <div id="what-shuffle-display" style="min-height:52px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
-    <button class="tool-btn" id="what-btn" onclick="rollWhat()" style="width:100%">🎲 洗牌決定！</button>
+    <button class="tool-btn" id="what-btn" onclick="rollWhat()" style="width:100%">${isSurprise?'🎁 開始製造驚喜':'🎲 洗牌決定！'}</button>
     <div class="res-pop" id="what-res" style="margin-top:14px;font-size:22px"></div>
+    <div id="what-extra" style="margin-top:8px;text-align:center"></div>
   </div>`;
 }
 function switchWhatTab(t){
   const cfg=curToolSys();
   const items=[...new Set(toolDataArr().filter(r=>r[cfg.whatField]).map(r=>r[cfg.whatField]))];
   const brands=[...new Set(toolDataArr().filter(r=>r.brand).map(r=>r.brand))];
-  [['what-ta','rec'],['what-tb','brand'],['what-tc','custom']].forEach(([id,key])=>{const b=document.getElementById(id);if(!b)return;b.style.background=key===t?'var(--br)':'var(--bg)';b.style.color=key===t?'#fff':'var(--t5)';});
+  [['what-tw','wish'],['what-ta','rec'],['what-tb','brand'],['what-tc','custom']].forEach(([id,key])=>{const b=document.getElementById(id);if(!b)return;b.style.background=key===t?'var(--br)':'var(--bg)';b.style.color=key===t?'#fff':'var(--t5)';});
   const bf=document.getElementById('what-brand-filter');
   bf.style.display=t==='brand'?'flex':'none';
-  if(t==='brand'){
+  const opts=document.getElementById('what-opts');
+  if(t==='wish'){
+    const open=wishReadItems().filter(x=>x&&typeof x==='object'&&String(x.name||'').trim()&&(!x.status||x.status==='待去'||x.status==='已安排'));
+    opts.value=open.length?open.map(x=>String(x.name||'').trim()).join('\n'):'（待去清單目前是空的，到「🗺️ 待去清單」新增想去的地方）';
+    opts.dataset.src='wish';
+  } else if(t==='brand'){
     bf.innerHTML=brands.map(br=>`<span onclick="filterWhatByBrand('${br}',this)" style="padding:4px 10px;border-radius:8px;background:var(--crm);color:var(--br);font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--bdr)">${br}</span>`).join('');
+    opts.dataset.src='brand';
   } else if(t==='rec'){
-    document.getElementById('what-opts').value=items.join('\n');
+    opts.value=items.join('\n');
+    opts.dataset.src='rec';
   } else {
-    document.getElementById('what-opts').value='';
-    document.getElementById('what-opts').focus();
+    opts.value='';
+    opts.dataset.src='custom';
+    opts.focus();
   }
 }
 function filterWhatByBrand(brand,el){
@@ -11670,6 +11808,9 @@ function rollWhat(){
   const opts=document.getElementById('what-opts').value.split('\n').map(s=>s.trim()).filter(Boolean);
   if(!opts.length){toast('請先加入選項');return;}
   const btn=document.getElementById('what-btn'),disp=document.getElementById('what-shuffle-display'),res=document.getElementById('what-res');
+  const isSurprise=(currentModule==='drink'||currentModule==='tools');
+  const fromWish=document.getElementById('what-opts').dataset.src==='wish';
+  const extra=document.getElementById('what-extra');if(extra)extra.innerHTML='';
   btn.disabled=true;res.textContent='';
   const result=weightedRandom(opts,toolHistory.what);
   const emoji=curToolSys().whatEmoji;
@@ -11679,7 +11820,12 @@ function rollWhat(){
     disp.innerHTML=`<span style="font-size:15px;font-weight:900;color:var(--br);background:var(--crm);padding:6px 14px;border-radius:10px">${shown}</span>`;
     i++;speed=Math.min(speed+18,350);
     if(i<18)setTimeout(shuffle,speed);
-    else{disp.innerHTML=`<span style="font-size:15px;font-weight:900;color:var(--br);background:var(--crm);padding:6px 14px;border-radius:10px">${emoji} ${result}</span>`;res.textContent=result;recordHistory('what',result);btn.disabled=false;}
+    else{
+      disp.innerHTML=`<span style="font-size:15px;font-weight:900;color:var(--br);background:var(--crm);padding:6px 14px;border-radius:10px">${emoji} ${result}</span>`;
+      res.textContent=(isSurprise?'命運為你準備的驚喜是…… ':'')+result;
+      recordHistory('what',result);btn.disabled=false;
+      if(fromWish&&extra)extra.innerHTML='<a href="javascript:goTab(\'wish\')" style="font-size:12px;color:var(--br);text-decoration:underline">🗺️ 到待去清單看完整資訊（營業狀態／地址／地圖）</a>';
+    }
   };
   shuffle();
 }
@@ -13058,7 +13204,7 @@ function enterSplit(){
 
 // ===== 🧰 首頁「生活工具」（v26.8.0）：飲料裡那整套生活工具的複本，不用先進飲料就能用 =====
 // 用的是同一套程式（renderTools 與各個工具），不是另外複製第二份：之後工具改了，飲料裡和首頁會一起更新。
-// 喝哪裡／喝什麼用飲料的資料與文字：currentModule 設成 'tools'（不屬於任何紀錄模組），curToolSys()／toolDataArr() 找不到對應就用「飲料」那一套；
+// 奇遇羅盤／驚喜製造所（原「喝哪裡」「喝什麼」，v26.11.x改名）用飲料的資料與文字：currentModule 設成 'tools'（不屬於任何紀錄模組），curToolSys()／toolDataArr() 找不到對應就用「飲料」那一套；
 // 工具機率設定（boba_tool_prob）跟各模組裡的生活工具共用同一份。畫面跟 enterSplit 一樣：沒有側邊抽屜，左上角「←」回首頁。
 function toolsCardSub(){try{return TOOL_ORDER.length+' 項工具・隨機決定';}catch(_){return '隨機決定';}} // 首頁卡片上的小字；TOOL_ORDER 還沒準備好時只顯示後半句
 function enterTools(){
