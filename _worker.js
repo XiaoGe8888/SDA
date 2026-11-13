@@ -829,6 +829,37 @@ const FORM_MODE_TEXT = {
   dual: { label: '雙表單模式（只填寫用戶 A＋用戶B）', desc: '針對「一次填寫兩個人的紀錄（先填用戶 A，再填用戶 B）」，核心在連貫性與資料關聯性。', hi: '單次儲存，雙方紀錄即時歸檔。' },
 };
 const FORM_MODE_REMINDER = FORM_MODE_TEXT.single.label + '：' + FORM_MODE_TEXT.single.desc + FORM_MODE_TEXT.single.hi + '\n' + FORM_MODE_TEXT.dual.label + '：' + FORM_MODE_TEXT.dual.desc + FORM_MODE_TEXT.dual.hi;
+// V10.10：「表單模式」正式接進 LINE 的 REC4 引擎（六大功能×四版本）——使用者確認過的範圍與做法：
+//   ・6 個模組都要，後台可以個別開關（預設全部關閉，cfg.formMode.modules）；
+//   ・雙表單模式下「用戶A＝現在講話的這個人、用戶B＝另一位」：要先在後台把這兩人的LINE User ID綁定好（cfg.formMode.aId／bId），沒綁好就不會問、直接當單表單（不卡流程）；
+//   ・問法＝先把用戶A整套欄位問完，再整套問一次用戶B（跟網頁「先填➊再填➋」一樣）；兩筆用配對編號（pairId）連起來，做法跟網頁 fmPairUp 一致。
+//   ・只支援「直接寫入」（saveLineLogRecord）這條路：草稿系統（createDraftsAndReply／buildDrafts）目前整批草稿只認一個 owner，沒有「同一批兩筆各自歸屬不同人」的機制，
+//     擴充草稿系統是另一個獨立工程，這次沒有做——使用者開著「LINE 草稿模式」、或分帳／集點卡／待去清單（一律只能走草稿）時，雙表單會禮貌退回單表單並說明原因，不會送出歸屬錯誤的資料。
+const FORM_MODE_MODULE_KEYS = ['drink', 'food', 'travel', 'split', 'sticker', 'wish'];
+// 這個模組有沒有開啟「表單模式」步驟（後台設定，預設全部關閉）
+function formModeEnabled(cfg, modFn) { return !!(cfg && cfg.formMode && cfg.formMode.modules && cfg.formMode.modules[modFn]); }
+// 講話的這個 LINE 使用者，是不是後台綁定的用戶A／用戶B之一；是的話回傳對方（配偶／隊友）的身分，給雙表單用。
+// 沒綁好（aId／bId留白）、或講話的人不是這兩人之一 → 回傳 null（這次就不問表單模式，直接當單表單，不卡流程）。
+async function formModeContext(env, cfg, userId) {
+  const fm = (cfg && cfg.formMode) || {};
+  if (!fm.aId || !fm.bId || !userId) return null;
+  if (userId !== fm.aId && userId !== fm.bId) return null;
+  const mateId = userId === fm.aId ? fm.bId : fm.aId;
+  let reg = {};
+  try { reg = JSON.parse((env.SYNC_KV ? await env.SYNC_KV.get(REGISTRY_KEY) : null) || '{}'); } catch (e) { reg = {}; }
+  const nameOf = (uid) => (reg && reg.users && reg.users[uid] && reg.users[uid].name) || '';
+  return { selfId: userId, mateId, selfName: nameOf(userId), mateName: nameOf(mateId) };
+}
+// 問「要用哪種模式」的 Flex 卡片訊息物件（REC4 用——跟 askFormMode 共用同一套 formModeBubbleContents／FORM_MODE_TEXT 文字與樣式，
+// 但用 REC4 既有的「回傳訊息物件、由 rec4Reply 統一送出、送失敗自動退回 altText」機制，不另外直接呼叫 lineReplyMessages）
+function rec4FormModeMsg(sch) {
+  const headingText = sch.icon + ' ' + sch.name + '：要用哪種模式？';
+  const trailingText = '要用哪一種？';
+  const altText = (headingText + '\n' + FORM_MODE_TEXT.single.label.replace(/（.*/, '') + '：' + FORM_MODE_TEXT.single.hi + '\n' + FORM_MODE_TEXT.dual.label.replace(/（.*/, '') + '：' + FORM_MODE_TEXT.dual.hi + '\n' + trailingText).slice(0, 390);
+  return { type: 'flex', altText, contents: formModeBubbleContents(headingText, trailingText), quickReply: quickReplyItems(['單表單模式', '雙表單模式', '結束']) };
+}
+// 配對編號——做法跟網頁 fmNewPairId() 一致（同一個前綴格式），雙表單兩筆記錄共用同一個，才看得出是同一次存的
+function rec4NewPairId() { return 'PR' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase(); }
 // LINE Flex 卡片版的表單模式提醒：headingText 放最上面（可省略）、trailingText 放最下面（例如「要用哪一種？」，可省略），中間固定是單表單／雙表單各一段（說明＋粗體「儲存後效果」，顏色跟網頁 --br 一致）
 function formModeBubbleContents(headingText, trailingText) {
   const body = [];
@@ -1085,6 +1116,10 @@ function defaultLineConfig() {
     query: { defaultVersion: '' },
     draft: { enabled: true }, // V9：LINE 輸入的飲料／美食／交通，先建立「待確認草稿」到網頁確認後才儲存（關閉＝回到 LINE 裡確認儲存）
     menu: { style: 'collapsed', rulesV: MENU_RULES_V, toolsV: TOOLS_V }, // V10.4：功能選單只列第一層；各選單只顯示自己的項目（toolsV：V10.6.0「工具」格子的版本）
+    // V10.10：「表單模式」正式接進 LINE（飲料／美食／交通／分帳／集點卡／待去清單紀錄時可以選單表單／雙表單）。
+    //   aId／bId：用戶A／用戶B綁定的LINE User ID（留白＝還沒設定，這個功能不會啟動，不影響原本的紀錄流程）；
+    //   modules：6個模組各自的開關，預設全部關閉，後台設定頁打開才會在對應模組問「要用哪種模式」。
+    formMode: { aId: '', bId: '', modules: { drink: false, food: false, travel: false, split: false, sticker: false, wish: false } },
   };
   TOOL_FNS.forEach((f) => { cfg.permissions[f] = perm(); }); // 工具：1 對 1、群組都能用，結果直接回在同一個聊天室
   return cfg;
@@ -1178,12 +1213,18 @@ function sanitizeConfig(input) {
   const query = { defaultVersion: ['simple', 'standard', 'flagship'].indexOf(qd) >= 0 ? qd : '' };
   const drIn = inp.draft && typeof inp.draft === 'object' ? inp.draft : d.draft;
   const draft = { enabled: drIn.enabled === false ? false : true };
+  // V10.10：表單模式（單／雙）正式接進 LINE——用戶A／B的LINE User ID綁定＋6個模組各自的開關
+  const fmIn = inp.formMode && typeof inp.formMode === 'object' ? inp.formMode : {};
+  const fmModIn = fmIn.modules && typeof fmIn.modules === 'object' ? fmIn.modules : {};
+  const formMode = { aId: str(fmIn.aId, 64), bId: str(fmIn.bId, 64), modules: {} };
+  FORM_MODE_MODULE_KEYS.forEach((k) => { formMode.modules[k] = bool(fmModIn[k], false); });
+  if (formMode.aId && formMode.bId && formMode.aId === formMode.bId) { errors.push('表單模式：用戶A、用戶B不能是同一個 LINE 帳號'); formMode.bId = ''; }
   const mIn = inp.menu && typeof inp.menu === 'object' ? inp.menu : null;
   const legacySaved = !mIn && Array.isArray(inp.mainMenus) && inp.mainMenus.length > 0; // 有存選單、但沒有 menu 欄位＝V10.3 以前存下來的設定：維持舊的展開方式，後台會提示可以套用新版（完全沒存選單的不算）
   const menu = legacySaved
     ? { style: 'expanded', rulesV: 1 }
     : { style: pick(mIn && mIn.style, ['collapsed', 'expanded'], d.menu.style), rulesV: mIn ? Math.max(1, Math.min(MENU_RULES_V, Math.floor(num(mIn.rulesV, MENU_RULES_V)))) : d.menu.rulesV, toolsV: mIn ? Math.max(1, Math.min(TOOLS_V, Math.floor(num(mIn.toolsV, 1)))) : d.menu.toolsV }; // V10.6.0：存過設定、但沒有 toolsV ＝ 1（還沒有「自動剪刀石頭布」格子）
-  const cfg = { v: 1, mainMenus: mains, subMenus: subs, keywords: kws, permissions: perms, groups, fuzzy, query, draft, menu };
+  const cfg = { v: 1, mainMenus: mains, subMenus: subs, keywords: kws, permissions: perms, groups, fuzzy, query, draft, menu, formMode };
 
   // 衝突檢查：同一個「完全相同的關鍵字」，在同一種聊天室裡不能同時指向兩個不同的功能
   const exact = buildRules(cfg).filter((r) => r.enabled && r.type === 'exact');
@@ -2225,8 +2266,8 @@ function buildSpecs() {
   const versions = REC4_ORDER.map((v) => ({ id: v, emoji: REC4_VERSIONS[v].emoji, name: REC4_VERSIONS[v].name, tag: REC4_VERSIONS[v].tag, lines: rec4VerLines(v, null) }));
   const tool = (id, note) => ({ id, name: FUNCTION_CATALOG[id].label, status: 'default', note });
   const tools = [
-    tool('tool_compass', '奇遇羅盤（選地點）：點一下，從「你的待去清單」（狀態是待去／已安排的項目；只在 1 對 1，且要綁定同步碼）隨機抽一個，回一張店家圖卡（店名、營業狀態、地址、營業時間、Google 地圖按鈕）；也可以改從你的飲料紀錄地點或你輸入的清單抽；每個選項機率相同'),
-    tool('tool_surprise', '驚喜製造所（選店家）：點一下，從「你的待去清單」（狀態是待去／已安排的項目；只在 1 對 1，且要綁定同步碼）隨機抽一個，回一張店家圖卡；也可以改從你的飲料／美食紀錄店家或你輸入的清單抽；每個選項機率相同'),
+    tool('tool_compass', '奇遇羅盤（選地點）：點一下，從「你的待去清單」（狀態是待去／已安排的項目；只在 1 對 1，且要綁定同步碼）隨機抽一個，回一張店家圖卡（店名、營業狀態、地址、營業時間、Google 地圖按鈕）；也可以改從你的飲料紀錄地點、固定清單（東區／信義區／天母等地點，原「喝哪裡」）或你輸入的清單抽；每個選項機率相同'),
+    tool('tool_surprise', '驚喜製造所（選店家）：點一下，從「你的待去清單」（狀態是待去／已安排的項目；只在 1 對 1，且要綁定同步碼）隨機抽一個，回一張店家圖卡；也可以改從你的飲料／美食紀錄店家、固定清單（珍珠奶茶／翡翠檸檬等飲品，原「喝什麼」）或你輸入的清單抽；每個選項機率相同'),
     tool('tool_wheel', '轉盤：點一下就用內建選項（誰買單、今晚吃大餐、回家洗洗睡…）轉出結果「轉盤轉動中... 停！最後指針落在：…」；也可以自己輸入至少 2 個選項（一行打完：轉盤 A B C）'),
     tool('tool_coin', '拋硬幣：「叮！硬幣落地了，結果是：正面／反面」，或自訂兩個面（拋硬幣 吃 不吃）'),
     tool('tool_bottle', '轉瓶子：點一下就用內建的人選（左手邊的人、最晚到的人…）；也可以輸入至少 2 個人名，瓶口隨機指向一個人'),
@@ -2779,6 +2820,8 @@ const RPS_AUTO_AGAIN = hq('🤖 再來一局', '自動剪刀石頭布'); // 自�
 // V10.5：轉盤、轉瓶子「點一下就出結果」用的預設選項（想用自己的，按「✍️ 自己輸入選項」）；每個選項機率相同
 const TOOL_WHEEL_PRESET = ['誰買單 💳', '今晚吃大餐 🍖', '來杯手搖 🧋', '叫外送 🛵', '吃泡麵 🍜', '出去走走 🚶', '回家洗洗睡 😴', '看場電影 🎬', '今天我請客 💸', '早點下班 🏃'];
 const TOOL_BOTTLE_PRESET = ['左手邊的人', '右手邊的人', '對面的人', '最晚到的人', '年紀最大的人', '年紀最小的人', '穿得最亮眼的人', '離你最近的人'];
+const TOOL_COMPASS_PRESET = ['東區', '信義區', '天母', '大安區', '中山區']; // v26.11.x：奇遇羅盤新增「固定清單抽」，沿用網頁原「喝哪裡」的預設地點
+const TOOL_SURPRISE_PRESET = ['珍珠奶茶', '翡翠檸檬', '波霸鮮奶茶', '四季春', '烏龍茶']; // 驚喜製造所新增「固定清單抽」，沿用網頁原「喝什麼」的預設飲品
 
 // 公平亂數：0 ～ n-1 機率都一樣（拒絕取樣，沒有「取餘數」造成的偏差）；env.TOOL_RANDOM 只給自動測試用（正式環境的環境變數只會是文字）
 function toolRnd(n, env) {
@@ -2862,13 +2905,13 @@ async function toolDrawFromList(fn, opts, ctx, ev, token, env, from, rerun, pres
   let text;
   if (fn === 'tool_wheel') text = '轉盤轉動中... 🎡\n停！最後指針落在：\n🎯 ' + pick;
   else if (fn === 'tool_bottle') text = '瓶子轉動中... 🍾\n停！瓶口指向：\n👉 ' + pick + '\n請客囉！';
-  else if (fn === 'tool_compass') text = '羅盤轉動中... 🧭\n指針停在：\n📍 ' + pick;
-  else text = '驚喜開獎中... 🎁\n今天的店家是：\n🏪 ' + pick;
+  else if (fn === 'tool_compass') text = '🧭 奇遇羅盤・命運為你安排了……\n📍 ' + pick;
+  else text = '🎁 驚喜製造所・命運為你準備的驚喜是……\n🏪 ' + pick;
   text += preset ? '\n（預設選項；想用自己的選項，點下面「✍️ 自己輸入選項」）' : '\n（從 ' + opts.length + ' 個' + sp.what + (from ? '：' + from : '') + '抽出）';
   const quick = [];
-  const verb = (fn === 'tool_wheel' || fn === 'tool_bottle') ? '再轉一次' : '再抽一次';
+  const verb = fn === 'tool_compass' ? '再遇一次驚喜' : fn === 'tool_surprise' ? '再製造一次驚喜' : (fn === 'tool_wheel' || fn === 'tool_bottle') ? '再轉一次' : '再抽一次';
   if (preset) {
-    quick.push(hq(sp.icon + ' ' + verb, sp.name), hq('✍️ 自己輸入選項', sp.name + ' 自訂'));
+    quick.push(hq(sp.icon + ' ' + verb, rerun || sp.name), hq('✍️ 自己輸入選項', sp.name + ' 自訂'));
   } else {
     const again = rerun || (sp.name + ' ' + opts.join(' '));
     if (again.length <= 280) quick.push(hq(sp.icon + ' ' + verb, again));
@@ -2964,9 +3007,10 @@ async function toolDrawWish(fn, ctx, ev, token, env, cfg, askTyped) {
   const it = toolPick(open, env);
   await clearFlagshipSession(ctx.userId, env);
   const st = lineBizStatus(it, toolNow(env));
-  const header = (fn === 'tool_compass' ? '🧭 奇遇羅盤・這次指向' : '🎁 驚喜製造所・今天開出') + '（從待去清單 ' + open.length + ' 項抽出）';
-  const label = TOOL_SPEC[fn].name; // 「奇遇羅盤」「驚喜製造所」：按鈕送出的指令（再抽一次＝名稱本身；紀錄／自訂＝名稱＋空白＋字）
-  return toolReplyCard(token, ev, wishCardMessage(it, st, header), [hq('🔄 再抽一次', label), hq('📒 改從我的紀錄抽', label + ' 紀錄'), hq('✍️ 自己輸入', label + ' 自訂')]);
+  const header = (fn === 'tool_compass' ? '🧭 奇遇羅盤・命運為你安排了……' : '🎁 驚喜製造所・命運為你準備的驚喜是……') + '（從待去清單 ' + open.length + ' 項抽出）';
+  const label = TOOL_SPEC[fn].name; // 「奇遇羅盤」「驚喜製造所」：按鈕送出的指令（再抽一次＝名稱本身；紀錄／自訂／固定＝名稱＋空白＋字）
+  const againLabel = fn === 'tool_compass' ? '🔄 再遇一次驚喜' : '🔄 再製造一次驚喜';
+  return toolReplyCard(token, ev, wishCardMessage(it, st, header), [hq(againLabel, label), hq('📒 改從我的紀錄抽', label + ' 紀錄'), hq('✍️ 自己輸入', label + ' 自訂'), hq('🎯 固定清單抽', label + ' 固定')]);
 }
 
 // 執行一個工具；arg＝名稱後面接的字（沒有就是空字串）
@@ -3045,13 +3089,17 @@ async function runLineTool(fn, ctx, ev, token, env, cfg, arg) {
         await toolStartSession(ctx, env, { tool: fn, stage: 'await_opts' });
         return toolReply(token, ev, sp.icon + ' ' + sp.title + '\n' + (lead ? lead + '\n' : '') + '請輸入要抽的' + sp.what + '，至少 2 個，用空白、頓號或換行分開，例如：\n' + sp.ex, [TOOL_CANCEL_Q]);
       };
-      const m = arg.match(/^(待去清單|待去|紀錄|記錄|我的紀錄|飲料|美食|自訂|自己輸入)$/);
+      const m = arg.match(/^(待去清單|待去|紀錄|記錄|我的紀錄|飲料|美食|自訂|自己輸入|固定清單|固定)$/);
       if (arg && !m) { // 一行打完：奇遇羅盤 信義區 大安區
         const opts = parseToolOptions(arg);
         const bad = checkToolOptions(opts, 2, sp.what);
         if (bad) return askTyped('⚠️ ' + bad);
         await clearFlagshipSession(ctx.userId, env);
         return toolDrawFromList(fn, opts, ctx, ev, token, env, '', '', false);
+      }
+      if (/^固定(清單)?$/.test(arg)) { // v26.11.x：固定清單抽——統一「奇遇羅盤／驚喜製造所」招牌下，原「喝哪裡／喝什麼」那種固定選項清單的抽法，一鍵就有結果
+        await clearFlagshipSession(ctx.userId, env);
+        return toolDrawFromList(fn, fn === 'tool_compass' ? TOOL_COMPASS_PRESET : TOOL_SURPRISE_PRESET, ctx, ev, token, env, '', sp.name + ' 固定', true);
       }
       if (!arg || /^待去(清單)?$/.test(arg)) return toolDrawWish(fn, ctx, ev, token, env, cfg, askTyped); // V10.5：一鍵從待去清單抽 → 店家圖卡
       if (/^(自訂|自己輸入)$/.test(arg)) return askTyped('');
@@ -5037,7 +5085,7 @@ function rec4VerLines(v, sch) {
 const REC4_TRIGGERS = {};
 REC4_ORDER.forEach((v) => { const x = REC4_VERSIONS[v]; REC4_TRIGGERS[x.name] = v; REC4_TRIGGERS[x.emoji + ' ' + x.name] = v; REC4_TRIGGERS[x.emoji + x.name] = v; });
 const REC4_MODULE_WORDS = { 飲料: 'drink', 飲料紀錄: 'drink', '🧋 飲料': 'drink', 美食: 'food', 美食紀錄: 'food', '🍱 美食': 'food', 交通: 'travel', 交通紀錄: 'travel', '🚆 交通': 'travel', 分帳: 'split', 分帳紀錄: 'split', 記一筆分帳: 'split', 集點卡: 'sticker', 集點: 'sticker', 集點卡紀錄: 'sticker', 待去清單: 'wish', 待去: 'wish', 待去地點: 'wish', 新增待去地點: 'wish', 待去清單紀錄: 'wish' }; // V10.4：分帳、集點卡、待去清單也有四種版本
-const REC4_PICK_STAGES = { pick_module: 1, pick_version: 1 };
+const REC4_PICK_STAGES = { pick_module: 1, pick_version: 1, pick_mode: 1 };
 const REC4_VS16 = String.fromCharCode(0xFE0F);
 function rec4Clean(t) { return String(t === undefined || t === null ? '' : t).split(REC4_VS16).join('').trim(); }
 const REC4_SKIP_RE = /^(略過|跳過|無|沒有|沒|不知道|不確定|不清楚|skip|n\/a|na|-|－|—|無資料)$/i;
@@ -6236,6 +6284,13 @@ async function rec4PrepLists(rt, preLists) {
 async function rec4Begin(rt, pre) {
   const { S, ctx, ev, token, env, cfg } = rt;
   const sch = REC4_SCHEMAS[S.module];
+  if (!S.mode) { // V10.10：表單模式——這個模組有開、不是分帳／集點卡／待去清單（這 3 個只能建草稿，草稿系統沒有分開歸戶的能力，所以不管後台設定怎麼改都不問）、講話的人是後台綁定的用戶A/B之一、而且現在是「直接寫入」（不是草稿模式）才會問；其他情況直接當單表單，不卡原本的流程
+    if (formModeEnabled(cfg, S.module) && !sch.needLists && (await rec4Mode(ctx.userId, env, cfg)) !== 'draft') {
+      const fmCtx = await formModeContext(env, cfg, ctx.userId);
+      if (fmCtx) { S.dualMate = fmCtx; S.stage = 'pick_mode'; return rec4Done(rt, (pre || []).concat([rec4FormModeMsg(sch)])); }
+    }
+    S.mode = 'single';
+  }
   const av = checkAvailability(sch.fn, ctx, cfg);
   if (!av.ok) { await clearFlagshipSession(ctx.userId, env); await rec4Reply(token, ev.replyToken, [rec4TextMsg(av.message, ['功能選單'])]); return true; }
   if (sch.needLists && !(await rec4PrepLists(rt))) return true;
@@ -6316,6 +6371,20 @@ async function rec4OnPickVersion(rt) {
   if (await rec4SwitchOut(rt)) return true;
   return rec4Done(rt, await rec4Render(S, rt.ctx, rt.env, [], '請點上面的卡片按鈕，選擇紀錄版本。'));
 }
+// 入口：已經選好模組＋版本，正在問「要用哪種表單模式」（V10.10；只有該模組開了開關、且講話的人是後台綁定的用戶A/B之一才會進到這裡）
+async function rec4OnPickMode(rt) {
+  const { S, text, env, cfg, ctx } = rt;
+  if (/^單/.test(text)) { S.mode = 'single'; return rec4Begin(rt, []); }
+  if (/^雙/.test(text)) {
+    const fmCtx = S.dualMate || (await formModeContext(env, cfg, ctx.userId));
+    if (!fmCtx) { S.mode = 'single'; return rec4Begin(rt, [rec4TextMsg('⚠️ 雙表單需要的用戶A／用戶B設定目前不完整，先用單表單繼續。')]); }
+    S.mode = 'dual'; S.dualMate = fmCtx;
+    return rec4Begin(rt, []);
+  }
+  if (REC4_NO_RE.test(text)) return rec4Cancel(rt, ''); // 畫面上就有「結束」這顆快速回覆按鈕，按下去要真的結束，不能被當成聽不懂又重問一次同一題
+  if (await rec4SwitchOut(rt)) return true;
+  return rec4Done(rt, [rec4FormModeMsg(REC4_SCHEMAS[S.module])]);
+}
 function rec4GotText(S) {
   const sch = REC4_SCHEMAS[S.module];
   const parts = S.items.map((it, idx) => {
@@ -6383,7 +6452,7 @@ async function rec4OnAsk(rt) {
 }
 async function rec4OnConfirm(rt) {
   const { S, ctx, env, text } = rt;
-  if (REC4_YES_RE.test(text)) return rec4Finalize(rt);
+  if (REC4_YES_RE.test(text)) return (S.mode === 'dual' && S.dualRound !== 'b') ? rec4DualAdvanceToB(rt) : rec4Finalize(rt); // V10.10：雙表單——用戶A按「確認送出」時先不存，轉去問一輪用戶B；用戶B按了才是真的存
   if (REC4_EDIT_RE.test(text)) {
     S.i = 0; S.editPage = 0; S.cur = '';
     S.stage = S.items.length > 1 ? 'edit_item' : 'edit_pick';
@@ -6440,6 +6509,26 @@ async function rec4OnEdit(rt) {
   const lost = sch.fields.filter((x) => x.key !== f.key && hadBefore[x.key] && !rec4Has(it, x.key)).map((x) => x.label.replace('（選填）', ''));
   return rec4Done(rt, await rec4Render(S, ctx, env, [], '已更新「' + f.label.replace('（選填）', '') + '」。' + (lost.length ? '\n⚠️ 因為這個修改，下面這些欄位已經不符合，先清除了：' + lost.join('、') + '。確認送出前會請你重新填。' : '')));
 }
+// 哪一筆、缺哪些必填欄位（沒有缺 → null）；rec4Finalize 跟雙表單用戶A那輪(rec4DualAdvanceToB)共用這個檢查
+function rec4FirstMissing(S, sch) {
+  for (let i = 0; i < S.items.length; i++) {
+    const miss = sch.fields.filter((f) => rec4Active(S, S.items[i], f) && rec4IsReq(S, S.items[i], f) && (!rec4Has(S.items[i], f.key) || !!(f.invalid && f.invalid(S, S.items[i]))));
+    if (miss.length) return { i, miss };
+  }
+  return null;
+}
+// V10.10：雙表單模式——用戶A按「確認送出」時不是真的存檔，是先把A的結果保留起來（S.dualA），重新走一次 rec4Begin 問用戶B同一套問題；
+// 用戶B按「確認送出」時 S.dualRound 已經是 'b'，rec4OnConfirm 會改呼叫 rec4Finalize，兩邊的結果才真正合併寫入。
+async function rec4DualAdvanceToB(rt) {
+  const { S, ctx, env } = rt;
+  const sch = REC4_SCHEMAS[S.module];
+  const missing = rec4FirstMissing(S, sch);
+  if (missing) { S.i = missing.i; S.cur = ''; S.stage = 'ask'; return rec4Done(rt, await rec4Advance(S, [rec4TextMsg('還缺少必填的「' + missing.miss.map((f) => f.label).join('、') + '」，補完才能送出。')], ctx, env)); }
+  S.dualA = { items: S.items };
+  S.dualRound = 'b';
+  const mateName = (S.dualMate && S.dualMate.mateName) || '另一位';
+  return rec4Begin(rt, [rec4TextMsg('✅ 用戶A的部分已經記好，接著問用戶B（' + mateName + '）的——欄位一樣，請重新回答一次 👇')]);
+}
 
 // ---------- 確認送出：寫入 ----------
 function rec4RawItems(S) {
@@ -6459,11 +6548,13 @@ function rec4RawText(S) {
 function rec4BuildRecord(S, it, idx, ctx) {
   const sch = REC4_SCHEMAS[S.module];
   const f = it.fields;
+  const owner = it._dualOwner; // V10.10：雙表單模式——這一筆改歸戶用戶A或用戶B，不一定是講話的這個人
   const rec = {
-    id: 'L' + S.startTs, item: '', amount: Number(f[sch.moneyKey]) || 0, category: sch.cat,
-    userId: ctx.userId, userName: S.userName || '', groupId: ctx.groupId || '', groupName: S.groupName || '',
+    id: 'L' + S.startTs + (it._dualTag ? '-' + it._dualTag : ''), item: '', amount: Number(f[sch.moneyKey]) || 0, category: sch.cat,
+    userId: (owner && owner.id) || ctx.userId, userName: (owner && owner.name) || S.userName || '', groupId: ctx.groupId || '', groupName: S.groupName || '',
     ts: S.startTs, msgId: S.recId + '#' + idx, detailed: true, tier: S.version,
   };
+  if (it._pairId) rec.pairId = it._pairId; // 跟網頁 fmPairUp 的 pairId 是同一個欄位、同一個格式，雙表單兩筆共用同一個值
   if (sch.kind === 'drink') {
     rec.item = f.drink || '';
     rec.brand = f.brand || ''; rec.size = f.size || ''; rec.topping = f.topping && f.topping !== '無' ? f.topping : '';
@@ -6501,13 +6592,32 @@ async function rec4Finalize(rt) {
   const { S, ctx, ev, token, env, cfg } = rt;
   const sch = REC4_SCHEMAS[S.module];
   const ver = REC4_VERSIONS[S.version];
-  for (let i = 0; i < S.items.length; i++) { // 必填欄位保險：缺的話退回去補問，不寫入
-    const miss = sch.fields.filter((f) => rec4Active(S, S.items[i], f) && rec4IsReq(S, S.items[i], f) && (!rec4Has(S.items[i], f.key) || !!(f.invalid && f.invalid(S, S.items[i]))));
-    if (miss.length) { S.i = i; S.cur = ''; S.stage = 'ask'; return rec4Done(rt, await rec4Advance(S, [rec4TextMsg('還缺少必填的「' + miss.map((f) => f.label).join('、') + '」，補完才能送出。')], ctx, env)); }
-  }
+  const missing = rec4FirstMissing(S, sch);
+  if (missing) { S.i = missing.i; S.cur = ''; S.stage = 'ask'; return rec4Done(rt, await rec4Advance(S, [rec4TextMsg('還缺少必填的「' + missing.miss.map((f) => f.label).join('、') + '」，補完才能送出。')], ctx, env)); }
   const again = { label: '再記一筆', text: '紀錄' + sch.name + ' ' + ver.name };
   const mode = await rec4Mode(ctx.userId, env, cfg);
   const NO_DRAFT_TEXT = '⚠️ 現在沒辦法建立網頁草稿（同步資料不見了，或管理員關閉了草稿模式）。這一筆先保留在這裡，沒有寫入任何資料。請先確認已綁定同步碼、App 已同步過一次，再按「確認送出」重試。';
+  // V10.10：雙表單——用戶A、用戶B都問完了，這裡才合併成同一次要存的清單並標記配對編號。安全網：needLists 這支已經在 rec4Begin 就不會問表單模式了，
+  // draft 這支是防「問表單模式之後、確認送出之前，草稿模式才被改開」這種中途變卦；萬一真的走到這裡，寧可只存用戶A、說明清楚，也不要把兩人的資料存錯歸屬。
+  // 這兩個先看 S 有沒有存過（重試時要讀回上一次合併好的結果，不能重算）：let 是因為下面兩個分支都只有「第一次」會真的賦值
+  let dualNote = S.dualNote || '';
+  let pairInfo = S.dualPairInfo || null;
+  if (S.mode === 'dual' && S.dualA && !S.dualMerged) { // !S.dualMerged：只能合併一次。存檔中途失敗、使用者照指示再按一次「確認送出」時 S.items 已經是「A＋B合併後」的陣列，
+    // 如果沒有這個檔，會把合併後的陣列當成「B那一輪」再合併一次：兩個陣列共用同一批物件參照，等於把A的那筆也改標成B，還會多出一個新配對編號——不是沒效果，是會把資料改錯。
+    if (mode === 'draft' || sch.needLists) {
+      dualNote = '\n⚠️ 雙表單目前只支援直接寫入，現在沒辦法把兩人分開歸戶，所以這筆先只存用戶A（你）的部分；用戶B的部分請他自己再記一次。';
+      S.items = S.dualA.items;
+    } else {
+      const pairId = rec4NewPairId();
+      const aName = S.dualMate.selfName || S.userName || '用戶A';
+      const bName = S.dualMate.mateName || '用戶B';
+      S.dualA.items.forEach((it, i) => { it._dualOwner = { id: S.dualMate.selfId, name: aName }; it._dualTag = 'a' + i; it._pairId = pairId; });
+      S.items.forEach((it, i) => { it._dualOwner = { id: S.dualMate.mateId, name: bName }; it._dualTag = 'b' + i; it._pairId = pairId; });
+      pairInfo = { pairId, aName, bName, aCount: S.dualA.items.length, bCount: S.items.length };
+      S.items = S.dualA.items.concat(S.items);
+    }
+    S.dualMerged = true; S.dualNote = dualNote; S.dualPairInfo = pairInfo;
+  }
   if (sch.needLists && mode !== 'draft') { // 分帳／集點卡／待去清單沒有「直接寫入 LINE 紀錄」這條路：只能建立網頁草稿
     await rec4Save(S, ctx, env);
     await rec4Reply(token, ev.replyToken, [rec4TextMsg(NO_DRAFT_TEXT, REC4_CONFIRM_QUICK)]);
@@ -6542,7 +6652,8 @@ async function rec4Finalize(rt) {
   const head = (allSynced ? '✅ ' : '📝 ') + sch.icon + sch.name + (allSynced ? '紀錄完成' : '紀錄已暫存') + '（' + ver.emoji + ver.name + '）' + who;
   const body = S.items.map((it, idx) => (S.items.length > 1 ? CIRCLED[idx] + ' ' : '') + rec4ItemLines(S, it, false).join('\n')).join('\n\n');
   const bad = records.find((r) => !r.synced);
-  const doneText = head + '\n' + body + '\n' + syncWording(bad || records[0]);
+  const pairTxt = pairInfo ? ('\n👥 雙表單：➊ ' + pairInfo.aName + '（' + pairInfo.aCount + ' 筆）、➋ ' + pairInfo.bName + '（' + pairInfo.bCount + ' 筆），配對編號 ' + pairInfo.pairId) : '';
+  const doneText = head + '\n' + body + '\n' + syncWording(bad || records[0]) + pairTxt + dualNote;
   await rec4Reply(token, ev.replyToken, [rec4TextMsg(doneText, [again, '功能選單'])]);
   return true;
 }
@@ -6625,6 +6736,7 @@ async function handleRec4Message(ev, token, env) {
   switch (S.stage) {
     case 'pick_module': return rec4OnPickModule(rt);
     case 'pick_version': return rec4OnPickVersion(rt);
+    case 'pick_mode': return rec4OnPickMode(rt);
     case 'collect': return rec4OnCollect(rt);
     case 'ask': return rec4OnAsk(rt);
     case 'confirm': return rec4OnConfirm(rt);
@@ -6661,7 +6773,7 @@ async function handleRec4Image(ev, token, env) {
     const av = checkAvailability(REC4_SCHEMAS[S.module].fn, ctx, cfg);
     if (!av.ok) { await clearFlagshipSession(ctx.userId, env); await rec4Reply(token, ev.replyToken, [rec4TextMsg(av.message, ['功能選單'])]); return true; }
   }
-  if (S.stage === 'pick_module' || S.stage === 'pick_version') {
+  if (S.stage === 'pick_module' || S.stage === 'pick_version' || S.stage === 'pick_mode') {
     S.photos = (S.photos || []).concat([msg]).slice(0, 3);
     return rec4Done(rt, await rec4Render(S, ctx, env, [rec4TextMsg('📷 收到照片了（已先收下 ' + S.photos.length + ' 張），選好功能與版本後，我會幫你辨識。')], ''));
   }
@@ -6687,8 +6799,8 @@ async function rec4StartVersionPhoto(ctx, ev, token, env, cfg, msg) {
 // （官方帳號看起來沒更新時，先用這個查：傳「機器人版本」給官方帳號，或打開 /api/health 看 worker 欄位）
 // 只回報版本，以及各項「有沒有設定」（是／否）；不會顯示任何金鑰、密碼或同步碼本身。
 // ============================================================
-const BOT_LINE_VERSION = '10.9.1'; // 要跟網頁 index.html 的 LINE_VERSION、BUILD_ID 一致（backend105 測試會逐一比對）
-const BOT_BUILD = '2026-11-12f';
+const BOT_LINE_VERSION = '10.11.0'; // 要跟網頁 index.html 的 LINE_VERSION、BUILD_ID 一致（backend105 測試會逐一比對）
+const BOT_BUILD = '2026-11-13b';
 const BOT_VERSION_CMD_RE = /^(機器人版本|機器人版號|bot版本)$/i;
 async function botVersionText(env, userId) {
   const lines = [
