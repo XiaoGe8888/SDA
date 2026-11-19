@@ -1598,7 +1598,8 @@ function iconButton(label, text, style, opts) {
     type: 'box', layout: 'horizontal', paddingAll: isLink ? 'none' : 'sm', spacing: 'xs',
     alignItems: 'center', justifyContent: 'center', action,
     contents: [
-      { type: 'image', url: icon, flex: 0, size: 'sm', aspectRatio: '1:1', gravity: 'center' },
+      // 使用者反應功能選單的圖示太大，把 size 從 'sm' 降成 'xs'，跟 iconRow 的圖示大小一致、看起來比較接近原本 emoji 的份量。
+      { type: 'image', url: icon, flex: 0, size: 'xs', aspectRatio: '1:1', gravity: 'center' },
       { type: 'text', text: rest, size: 'sm', color: palette.fg, align: 'center', gravity: 'center', wrap: true },
     ],
   };
@@ -6093,9 +6094,12 @@ function rec4VersionCardMsg(title, sub, textFor, back, sch, cfg) {
   const viewOnly = !textFor; // V10.7.0：只看說明的版本卡（群組裡的分帳／集點卡／待去清單）：沒有「選這個版本」的按鈕，所以不可能在群組裡按下去開始記錄
   const bubbles = REC4_ORDER.map((v) => {
     const x = REC4_VERSIONS[v];
-    const body = [iconRow({ type: 'text', text: title, size: 'xs', color: '#8b8b8b', wrap: true })];
-    if (sub) body.push(iconRow(viewOnly ? { type: 'text', text: sub, size: 'xs', weight: 'bold', color: '#a04a00', wrap: true, margin: 'sm' } : { type: 'text', text: sub, size: 'xs', color: '#8b8b8b', wrap: true }));
-    body.push(iconRow({ type: 'text', text: x.emoji + ' ' + x.name + '｜' + x.tag, weight: 'bold', size: 'lg', color: '#5c4b37', wrap: true, margin: 'md' }));
+    // V10.?：使用者反應這裡的版本圓點圖示比原本 emoji 視覺上大很多、太搶眼，整張「選擇版本」卡片
+    //   （標題模組圖示／版本圓點／下面返回鍵箭頭）都改回原本純文字＋emoji，不走 iconRow／iconButton；
+    //   只有這個函式（rec4VersionCardMsg）不套用圖示，其餘選單、卡片不受影響。
+    const body = [{ type: 'text', text: title, size: 'xs', color: '#8b8b8b', wrap: true }];
+    if (sub) body.push(viewOnly ? { type: 'text', text: sub, size: 'xs', weight: 'bold', color: '#a04a00', wrap: true, margin: 'sm' } : { type: 'text', text: sub, size: 'xs', color: '#8b8b8b', wrap: true });
+    body.push({ type: 'text', text: x.emoji + ' ' + x.name + '｜' + x.tag, weight: 'bold', size: 'lg', color: '#5c4b37', wrap: true, margin: 'md' });
     { // V10.12.1：rec4VerLines 裡的空字串是「空一行」的標記，不能直接送給 LINE 的 Flex Message（text 不能是空字串，送空字串整張卡會被 LINE 拒收）；改成讓下一行的 margin 變大，用間距做出空一行的視覺效果
       // V10.13.0：「範例：」那一行、進階／旗艦版的提問清單那一行（ask），改成粗體＋跟網頁 --br 一致的顏色（#8b7355），方便使用者一眼找到重點；其他行維持原樣。
       //   規則／互動規則那一行是否出現，由 rec4VerLinesFor 依後台「規則顯示」開關決定（這裡改用 rec4VerLinesFor，不是 rec4VerLines）。
@@ -6110,8 +6114,9 @@ function rec4VersionCardMsg(title, sub, textFor, back, sch, cfg) {
         big = false; realIdx++;
       });
     }
-    const foot = viewOnly ? [] : [iconButton(x.emoji + ' ' + x.name, textFor(v), 'primary', { color: '#8b7355' })];
-    if (back) foot.push(iconButton(back.label, back.text, 'link'));
+    // 同上：「選這個版本」「返回」這兩顆按鈕也都改回原本純文字＋emoji 的按鈕樣式（不是圖示＋色塊的 box）。
+    const foot = viewOnly ? [] : [{ type: 'button', style: 'primary', height: 'sm', color: '#8b7355', action: { type: 'message', label: (x.emoji + ' ' + x.name).slice(0, 40), text: textFor(v) } }];
+    if (back) foot.push({ type: 'button', style: 'link', height: 'sm', action: { type: 'message', label: String(back.label).slice(0, 40), text: String(back.text) } });
     const bubble = { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'xs', contents: body } };
     if (foot.length) bubble.footer = { type: 'box', layout: 'vertical', spacing: 'xs', contents: foot };
     return bubble;
