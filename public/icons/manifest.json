@@ -1,0 +1,366 @@
+[
+  {
+    "emoji": "↩",
+    "slug": "return_menu",
+    "source": "corner-up-left",
+    "note": "返回／回功能選單",
+    "isDot": false
+  },
+  {
+    "emoji": "⚠",
+    "slug": "warning",
+    "source": "triangle-alert",
+    "note": "不確定提醒",
+    "isDot": false
+  },
+  {
+    "emoji": "⚪",
+    "slug": "dot_white",
+    "source": "custom:dot",
+    "note": "營業狀態：資訊未提供",
+    "isDot": true
+  },
+  {
+    "emoji": "✅",
+    "slug": "check",
+    "source": "circle-check",
+    "note": "已送出／完成",
+    "isDot": false
+  },
+  {
+    "emoji": "✊",
+    "slug": "rps_rock",
+    "source": "hand-fist",
+    "note": "剪刀石頭布：石頭",
+    "isDot": false
+  },
+  {
+    "emoji": "✋",
+    "slug": "rps_paper",
+    "source": "hand",
+    "note": "剪刀石頭布：布",
+    "isDot": false
+  },
+  {
+    "emoji": "✌",
+    "slug": "rps_scissors",
+    "source": "scissors",
+    "note": "剪刀石頭布：剪刀",
+    "isDot": false
+  },
+  {
+    "emoji": "✍",
+    "slug": "write",
+    "source": "pencil-line",
+    "note": "自己輸入",
+    "isDot": false
+  },
+  {
+    "emoji": "❌",
+    "slug": "close",
+    "source": "x",
+    "note": "取消",
+    "isDot": false
+  },
+  {
+    "emoji": "➡",
+    "slug": "arrow_right",
+    "source": "arrow-right",
+    "note": "下一頁",
+    "isDot": false
+  },
+  {
+    "emoji": "⬅",
+    "slug": "arrow_left",
+    "source": "arrow-left",
+    "note": "上一頁",
+    "isDot": false
+  },
+  {
+    "emoji": "⭐",
+    "slug": "star",
+    "source": "star",
+    "note": "推薦星等",
+    "isDot": false
+  },
+  {
+    "emoji": "🌟",
+    "slug": "star_sparkle",
+    "source": "sparkles",
+    "note": "集點卡",
+    "isDot": false
+  },
+  {
+    "emoji": "🍱",
+    "slug": "bento",
+    "source": "custom:bento",
+    "note": "美食",
+    "isDot": false
+  },
+  {
+    "emoji": "🍽",
+    "slug": "fork_knife",
+    "source": "utensils-crossed",
+    "note": "美食紀錄（選單）",
+    "isDot": false
+  },
+  {
+    "emoji": "🍾",
+    "slug": "bottle-wine",
+    "source": "bottle-wine",
+    "note": "轉瓶子",
+    "isDot": false
+  },
+  {
+    "emoji": "🎁",
+    "slug": "gift",
+    "source": "gift",
+    "note": "驚喜製造所",
+    "isDot": false
+  },
+  {
+    "emoji": "🎟",
+    "slug": "ticket",
+    "source": "ticket",
+    "note": "集點卡（選單）",
+    "isDot": false
+  },
+  {
+    "emoji": "🎡",
+    "slug": "ferris_wheel",
+    "source": "ferris-wheel",
+    "note": "轉盤",
+    "isDot": false
+  },
+  {
+    "emoji": "🎲",
+    "slug": "dice",
+    "source": "dices",
+    "note": "骰子",
+    "isDot": false
+  },
+  {
+    "emoji": "🏷️",
+    "slug": "tag",
+    "source": "tag",
+    "note": "分類",
+    "isDot": false
+  },
+  {
+    "emoji": "💬",
+    "slug": "chat",
+    "source": "message-circle",
+    "note": "原因／備註",
+    "isDot": false
+  },
+  {
+    "emoji": "💰",
+    "slug": "money",
+    "source": "coins",
+    "note": "記帳／分帳（選單）",
+    "isDot": false
+  },
+  {
+    "emoji": "📋",
+    "slug": "clipboard",
+    "source": "clipboard",
+    "note": "待確認草稿",
+    "isDot": false
+  },
+  {
+    "emoji": "📌",
+    "slug": "pushpin",
+    "source": "pin",
+    "note": "狀態",
+    "isDot": false
+  },
+  {
+    "emoji": "📍",
+    "slug": "map_pin",
+    "source": "map-pin",
+    "note": "待去清單／地址",
+    "isDot": false
+  },
+  {
+    "emoji": "📝",
+    "slug": "memo",
+    "source": "notebook-pen",
+    "note": "紀錄（選單）／草稿標題",
+    "isDot": false
+  },
+  {
+    "emoji": "📦",
+    "slug": "package",
+    "source": "package",
+    "note": "隨機盒子",
+    "isDot": false
+  },
+  {
+    "emoji": "📱",
+    "slug": "phone",
+    "source": "smartphone",
+    "note": "開啟 App",
+    "isDot": false
+  },
+  {
+    "emoji": "📷",
+    "slug": "camera",
+    "source": "camera",
+    "note": "拍照",
+    "isDot": false
+  },
+  {
+    "emoji": "🔎",
+    "slug": "search",
+    "source": "search",
+    "note": "查詢",
+    "isDot": false
+  },
+  {
+    "emoji": "🔒",
+    "slug": "lock",
+    "source": "lock",
+    "note": "僅限 1 對 1",
+    "isDot": false
+  },
+  {
+    "emoji": "🔙",
+    "slug": "back",
+    "source": "undo-2",
+    "note": "返回主選單",
+    "isDot": false
+  },
+  {
+    "emoji": "🔴",
+    "slug": "dot_red",
+    "source": "custom:dot",
+    "note": "營業狀態：休息中",
+    "isDot": true
+  },
+  {
+    "emoji": "🔵",
+    "slug": "dot_blue",
+    "source": "custom:dot",
+    "note": "旗艦版",
+    "isDot": true
+  },
+  {
+    "emoji": "🕒",
+    "slug": "clock",
+    "source": "clock",
+    "note": "營業時間",
+    "isDot": false
+  },
+  {
+    "emoji": "🖼",
+    "slug": "picture",
+    "source": "image",
+    "note": "相簿",
+    "isDot": false
+  },
+  {
+    "emoji": "🗓️",
+    "slug": "calendar",
+    "source": "calendar-days",
+    "note": "預計時間",
+    "isDot": false
+  },
+  {
+    "emoji": "🗺",
+    "slug": "map",
+    "source": "map",
+    "note": "在地圖開啟",
+    "isDot": false
+  },
+  {
+    "emoji": "🚆",
+    "slug": "train",
+    "source": "train-front",
+    "note": "交通紀錄",
+    "isDot": false
+  },
+  {
+    "emoji": "🚗",
+    "slug": "car",
+    "source": "car-front",
+    "note": "交通紀錄（選單）",
+    "isDot": false
+  },
+  {
+    "emoji": "🛠",
+    "slug": "tools",
+    "source": "wrench",
+    "note": "設備管理中心",
+    "isDot": false
+  },
+  {
+    "emoji": "🟠",
+    "slug": "dot_orange",
+    "source": "custom:dot",
+    "note": "營業狀態：即將營業／進階版",
+    "isDot": true
+  },
+  {
+    "emoji": "🟡",
+    "slug": "dot_yellow",
+    "source": "custom:dot",
+    "note": "營業狀態：即將打烊／標準版",
+    "isDot": true
+  },
+  {
+    "emoji": "🟢",
+    "slug": "dot_green",
+    "source": "custom:dot",
+    "note": "營業狀態：營業中／簡易版",
+    "isDot": true
+  },
+  {
+    "emoji": "🤖",
+    "slug": "robot",
+    "source": "bot",
+    "note": "自動剪刀石頭布",
+    "isDot": false
+  },
+  {
+    "emoji": "🥤",
+    "slug": "cup",
+    "source": "cup-soda",
+    "note": "飲料紀錄（選單）",
+    "isDot": false
+  },
+  {
+    "emoji": "🧋",
+    "slug": "tea",
+    "source": "custom:tea",
+    "note": "飲料（模組圖示）",
+    "isDot": false
+  },
+  {
+    "emoji": "🧭",
+    "slug": "compass",
+    "source": "compass",
+    "note": "奇遇羅盤",
+    "isDot": false
+  },
+  {
+    "emoji": "🧰",
+    "slug": "toolbox",
+    "source": "toolbox",
+    "note": "工具（選單）",
+    "isDot": false
+  },
+  {
+    "emoji": "🧾",
+    "slug": "receipt",
+    "source": "receipt",
+    "note": "分帳／記帳",
+    "isDot": false
+  },
+  {
+    "emoji": "🪙",
+    "slug": "coin",
+    "source": "circle-dollar-sign",
+    "note": "拋硬幣",
+    "isDot": false
+  }
+]
