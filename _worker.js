@@ -1592,7 +1592,10 @@ function iconButton(label, text, style, opts) {
   const isLink = style === 'link';
   const palette = style === 'primary' ? { fg: '#ffffff', bg: opts.color || '#8b7355', border: opts.color || '#8b7355' } : isLink ? { fg: opts.color || '#8b7355', bg: '', border: '' } : { fg: '#5c4b37', bg: '#ffffff', border: '#d9cfc2' };
   const box = {
-    type: 'box', layout: 'horizontal', height: 'sm', paddingAll: isLink ? 'none' : 'sm', spacing: 'xs',
+    // 注意：box 的 height 只能給像素／百分比（例如 '40px'），不能像 button 一樣用 'sm'／'md' 這種關鍵字——
+    // 之前這裡誤寫成 height:'sm'，LINE 收到後會整則判定格式錯誤直接拒絕，導致「按了沒反應、卡片消失」。
+    // box 不設 height 也沒關係，靠 paddingAll／裡面文字的行高自然撐出跟原按鈕差不多的高度。
+    type: 'box', layout: 'horizontal', paddingAll: isLink ? 'none' : 'sm', spacing: 'xs',
     alignItems: 'center', justifyContent: 'center', action,
     contents: [
       { type: 'image', url: icon, flex: 0, size: 'sm', aspectRatio: '1:1', gravity: 'center' },
