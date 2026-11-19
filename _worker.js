@@ -876,18 +876,21 @@ function rec4PickMateMsg(sch, mates) {
 // 配對編號——做法跟網頁 fmNewPairId() 一致（同一個前綴格式），雙表單兩筆記錄共用同一個，才看得出是同一次存的
 function rec4NewPairId() { return 'PR' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase(); }
 // LINE Flex 卡片版的表單模式提醒：headingText 放最上面（可省略）、trailingText 放最下面（例如「要用哪一種？」，可省略），中間固定是單表單／雙表單各一段（說明＋粗體「儲存後效果」，顏色跟網頁 --br 一致）
+// V10.13.2：使用者逐行標出這張卡片原本太擠（標題／說明／「儲存後效果」／分隔線／另一個模式都幾乎沒有間距），
+//   六處各補一個空一行（margin 從 'md'／沒設定 改成 'xl'，跟版本卡的空一行用同一個視覺語言）；分隔線本身沒有粗細可調（LINE Flex 的 separator 只有 type/margin/color 三個欄位），
+//   改成跟「儲存後效果」同一個強調色 #8b7355（原本沒設定顏色，用 LINE 預設的淺灰），讓它更明顯。
 function formModeBubbleContents(headingText, trailingText) {
   const body = [];
   if (headingText) body.push({ type: 'text', text: headingText, size: 'sm', wrap: true, weight: 'bold', color: '#5c4b37' });
   const block = (m, withTopMargin) => {
-    body.push({ type: 'text', text: m.label, size: 'sm', weight: 'bold', color: '#5c4b37', margin: withTopMargin ? 'md' : 'none' });
+    body.push({ type: 'text', text: m.label, size: 'sm', weight: 'bold', color: '#5c4b37', margin: withTopMargin ? 'xl' : 'none' });
     body.push({ type: 'text', text: m.desc, size: 'xs', wrap: true, color: '#5c4b37' });
-    body.push({ type: 'text', text: m.hi, size: 'xs', wrap: true, weight: 'bold', color: '#8b7355' });
+    body.push({ type: 'text', text: m.hi, size: 'xs', wrap: true, weight: 'bold', color: '#8b7355', margin: 'xl' });
   };
   block(FORM_MODE_TEXT.single, !!headingText);
-  body.push({ type: 'separator', margin: 'md' });
+  body.push({ type: 'separator', margin: 'xl', color: '#8b7355' });
   block(FORM_MODE_TEXT.dual, true);
-  if (trailingText) body.push({ type: 'text', text: trailingText, size: 'sm', wrap: true, weight: 'bold', color: '#5c4b37', margin: 'md' });
+  if (trailingText) body.push({ type: 'text', text: trailingText, size: 'sm', wrap: true, weight: 'bold', color: '#5c4b37', margin: 'xl' });
   return { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'xs', paddingAll: '16px', backgroundColor: '#f5ede4', contents: body } };
 }
 // 問「要用哪種模式」：送 Flex 卡片（有粗體、有顏色，跟網頁的視覺效果一致）＋快速回覆按鈕；LINE 拒絕卡片格式時，改送純文字備援（FORM_MODE_REMINDER），一樣帶按鈕，確保使用者一定看得到、一定能選
@@ -1476,15 +1479,152 @@ function postbackAsTextEvent(ev) {
   if (!text || !ev.replyToken) return null;
   return Object.assign({}, ev, { type: 'message', fromPostback: true, message: { type: 'text', id: 'pb:' + String(ev.webhookEventId || ev.timestamp || ''), text } });
 }
+// ---------- Icon 圖示（emoji → 自訂圖示，圖檔放在 public/icons/，走靜態資源）----------
+//   LINE 的三種畫面元件，能不能放「圖示」規則不一樣：
+//   · Flex 文字（type:'text'）本身不能放圖，要拆成「圖＋文字」兩個元件橫排，看起來才像「圖示＋文字」
+//   · Flex 按鈕（type:'button'）沒有圖示欄位，要整個改成「長得像按鈕的 box」（action 放在 box 上）才能塞圖
+//   · 快速回覆（quick reply）的每一項本來就有 imageUrl 欄位，不用重搭結構，直接補網址即可
+//   以下三組 helper 對應這三種情況，共用同一份 ICON_MAP（emoji → 圖示檔名）判斷「有沒有圖示可以換」。
+//   查不到對應圖示時，全部照舊顯示原來的 emoji／文字，不會壞掉、不會漏字——這是刻意設計的保底行為：
+//   選單 emoji 是後台可自由輸入的文字欄位（見 lcMainFields／lcSubFields），不是固定在這 52 個字以內，
+//   管理員之後新增的選單如果用了圖示清單外的 emoji，是正常狀況，不是錯誤。
+const ICON_BASE_URL = 'https://sda.hongxiaoge0615.workers.dev/icons/';
+const ICON_MAP = {
+  '↩': 'return_menu', // 返回／回功能選單
+  '⚠': 'warning', // 不確定提醒
+  '⚪': 'dot_white', // 營業狀態：資訊未提供
+  '✅': 'check', // 已送出／完成
+  '✊': 'rps_rock', // 剪刀石頭布：石頭
+  '✋': 'rps_paper', // 剪刀石頭布：布
+  '✌': 'rps_scissors', // 剪刀石頭布：剪刀
+  '✍': 'write', // 自己輸入
+  '❌': 'close', // 取消
+  '➡': 'arrow_right', // 下一頁
+  '⬅': 'arrow_left', // 上一頁
+  '⭐': 'star', // 推薦星等
+  '🌟': 'star_sparkle', // 集點卡
+  '🍱': 'bento', // 美食
+  '🍽': 'fork_knife', // 美食紀錄（選單）
+  '🍾': 'bottle-wine', // 轉瓶子
+  '🎁': 'gift', // 驚喜製造所
+  '🎟': 'ticket', // 集點卡（選單）
+  '🎡': 'ferris_wheel', // 轉盤
+  '🎲': 'dice', // 骰子
+  '🏷': 'tag', // 分類
+  '💬': 'chat', // 原因／備註
+  '💰': 'money', // 記帳／分帳（選單）
+  '📋': 'clipboard', // 待確認草稿
+  '📌': 'pushpin', // 狀態
+  '📍': 'map_pin', // 待去清單／地址
+  '📝': 'memo', // 紀錄（選單）／草稿標題
+  '📦': 'package', // 隨機盒子
+  '📱': 'phone', // 開啟 App
+  '📷': 'camera', // 拍照
+  '🔎': 'search', // 查詢
+  '🔒': 'lock', // 僅限 1 對 1
+  '🔙': 'back', // 返回主選單
+  '🔴': 'dot_red', // 營業狀態：休息中
+  '🔵': 'dot_blue', // 旗艦版
+  '🕒': 'clock', // 營業時間
+  '🖼': 'picture', // 相簿
+  '🗓': 'calendar', // 預計時間
+  '🗺': 'map', // 在地圖開啟
+  '🚆': 'train', // 交通紀錄
+  '🚗': 'car', // 交通紀錄（選單）
+  '🛠': 'tools', // 設備管理中心
+  '🟠': 'dot_orange', // 營業狀態：即將營業／進階版
+  '🟡': 'dot_yellow', // 營業狀態：即將打烊／標準版
+  '🟢': 'dot_green', // 營業狀態：營業中／簡易版
+  '🤖': 'robot', // 自動剪刀石頭布
+  '🥤': 'cup', // 飲料紀錄（選單）
+  '🧋': 'tea', // 飲料（模組圖示）
+  '🧭': 'compass', // 奇遇羅盤
+  '🧰': 'toolbox', // 工具（選單）
+  '🧾': 'receipt', // 分帳／記帳
+  '🪙': 'coin', // 拋硬幣
+};
+// ICON_MAP 的 key 跟程式裡實際的 emoji 字面值，都先拿掉「變化選擇符」(U+FE0F) 再比對——
+// 有些複製來的 emoji 後面會多帶這個看不見的字（例如 '↩️' 其實是 '↩' + FE0F），兩邊沒統一處理會比對不到。
+const stripVS16 = (s) => String(s == null ? '' : s).replace(/️/g, '');
+function iconUrl(emoji) {
+  const slug = ICON_MAP[stripVS16(emoji)];
+  return slug ? ICON_BASE_URL + slug + '.png' : '';
+}
+// 抓一串字「開頭」的 emoji（含後面可能跟著的 FE0F），例如 '🧋 飲料' → '🧋'；抓不到回傳空字串。
+const LEADING_EMOJI_RE = /^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}])️?/u;
+function leadingEmoji(s) {
+  const m = String(s == null ? '' : s).match(LEADING_EMOJI_RE);
+  return m ? m[1] : '';
+}
+// 把「emoji 開頭的一串字」拆成 { icon, rest }：icon 是圖示網址（查不到就是空字串，這時 rest 會是原始整串字，emoji 留著不拆）；
+// rest 是拿掉 emoji、trim 過的剩下文字——但如果拿掉以後變成空字串（這串字整個就是一顆 emoji，沒有其他文字），
+// 保留原始整串字當 rest，避免畫面出現「有圖示、旁邊文字空白」的怪狀況。
+function splitIcon(s) {
+  const str = String(s == null ? '' : s);
+  const e = leadingEmoji(str);
+  const url = e ? iconUrl(e) : '';
+  if (!url) return { icon: '', rest: str };
+  const rest = str.slice(str.indexOf(e) + e.length).replace(/^️?\s*/, '');
+  return { icon: url, rest: rest && rest.trim() ? rest : str };
+}
+// Flex 文字元件（例如 {type:'text', text:'🧋 飲料', ...其他樣式}）：開頭 emoji 換成圖示＋文字橫排的 box；
+// 查無圖示時原封不動傳回同一個文字元件（emoji 仍留在文字開頭），畫面跟轉換前完全一樣。
+function iconRow(textNode) {
+  const { icon, rest } = splitIcon(textNode.text);
+  if (!icon) return textNode;
+  const text = Object.assign({}, textNode, { text: rest, flex: 1 });
+  delete text.margin; // margin 移到外層 box，裡面的文字不用重複留白
+  const box = { type: 'box', layout: 'horizontal', spacing: 'xs', alignItems: 'center', contents: [
+    { type: 'image', url: icon, flex: 0, size: 'xs', aspectRatio: '1:1', gravity: 'center' },
+    text,
+  ] };
+  if (textNode.margin) box.margin = textNode.margin;
+  return box;
+}
+// Flex 按鈕：type:'button' 沒有圖示欄位，查到圖示時整個改成「長得像按鈕的 box」（底色＋邊框＋圓角，action 放在 box 上）；
+// 查無圖示時維持原來的 type:'button'，外觀和行為都跟轉換前一樣。style 只接受 'primary'／'secondary'（對應原本 Flex 按鈕的兩種樣式）。
+function iconButton(label, text, style, opts) {
+  opts = opts || {}; // opts.action：自訂 action 的其他欄位（例如 uri），label 仍統一由這裡算；opts.color：原本按鈕的 color 屬性（primary 樣式常見）
+  const { icon, rest } = splitIcon(label);
+  const action = opts.action ? Object.assign({}, opts.action, { label: String(icon ? rest : label).slice(0, 40) }) : { type: 'message', label: String(icon ? rest : label).slice(0, 40), text: String(text) };
+  if (!icon) { const b = { type: 'button', style: style || 'secondary', height: 'sm', action }; if (opts.color) b.color = opts.color; return b; }
+  // style:'link' 原本是「純文字可以點」，沒有底色、沒有邊框——圖示＋文字的 box 也不給底色／邊框，看起來才一致。
+  const isLink = style === 'link';
+  const palette = style === 'primary' ? { fg: '#ffffff', bg: opts.color || '#8b7355', border: opts.color || '#8b7355' } : isLink ? { fg: opts.color || '#8b7355', bg: '', border: '' } : { fg: '#5c4b37', bg: '#ffffff', border: '#d9cfc2' };
+  const box = {
+    type: 'box', layout: 'horizontal', height: 'sm', paddingAll: isLink ? 'none' : 'sm', spacing: 'xs',
+    alignItems: 'center', justifyContent: 'center', action,
+    contents: [
+      { type: 'image', url: icon, flex: 0, size: 'sm', aspectRatio: '1:1', gravity: 'center' },
+      { type: 'text', text: rest, size: 'sm', color: palette.fg, align: 'center', gravity: 'center', wrap: true },
+    ],
+  };
+  if (!isLink) { box.cornerRadius = 'md'; box.backgroundColor = palette.bg; box.borderWidth = '1px'; box.borderColor = palette.border; }
+  return box;
+}
 const hq = (label, text) => ({ label, text, hidden: true }); // 隱藏指令的快速回覆按鈕
 function quickReplyItems(list) {
+  // V10.? LINE Emoji → Icon：快速回覆每一項本來就有 imageUrl 欄位，不用重搭結構。
+  //   做法：label 開頭有對應圖示就補上 imageUrl，並把 emoji 從顯示文字拿掉（不然會「圖示＋emoji＋文字」重複兩次）；
+  //   查無圖示時完全不動，label 原封不動（含 emoji），跟轉換前一模一樣。這一個函式改完，全部 Category B 的
+  //   快速回覆按鈕（含隱藏指令、camera 類型）都會自動套用，不用一個個按鈕改。
   return {
     items: list.slice(0, 13).map((x) => {
-      if (x && typeof x === 'object' && x.lineAction) return { type: 'action', action: { type: x.lineAction, label: String(x.label).slice(0, 20) } }; // V10.3：camera／cameraRoll（拍照、相簿）
-      const label = typeof x === 'string' ? x : x.label;
+      if (x && typeof x === 'object' && x.lineAction) { // V10.3：camera／cameraRoll（拍照、相簿）
+        const { icon, rest } = splitIcon(x.label);
+        const item = { type: 'action', action: { type: x.lineAction, label: String(icon ? rest : x.label).slice(0, 20) } };
+        return icon ? Object.assign({ imageUrl: icon }, item) : item;
+      }
+      const rawLabel = typeof x === 'string' ? x : x.label;
       const text = typeof x === 'string' ? x : x.text;
-      if (x && typeof x === 'object' && x.hidden) { const d = postbackData(text); if (d) return { type: 'action', action: { type: 'postback', label: String(label).slice(0, 20), data: d } }; } // 字太長塞不進 data → 退回一般按鈕
-      return { type: 'action', action: { type: 'message', label: String(label).slice(0, 20), text: String(text) } };
+      const { icon, rest } = splitIcon(rawLabel);
+      const label = icon ? rest : rawLabel;
+      if (x && typeof x === 'object' && x.hidden) {
+        const d = postbackData(text); // 字太長塞不進 data → 退回一般按鈕
+        if (d) { const item = { type: 'action', action: { type: 'postback', label: String(label).slice(0, 20), data: d } }; return icon ? Object.assign({ imageUrl: icon }, item) : item; }
+      }
+      const item = { type: 'action', action: { type: 'message', label: String(label).slice(0, 20), text: String(text) } };
+      return icon ? Object.assign({ imageUrl: icon }, item) : item;
     }),
   };
 }
@@ -1503,7 +1643,7 @@ function gridLabelParts(name, hint) {
 }
 function gridCell(c) {
   const contents = [];
-  if (c.emoji) contents.push({ type: 'text', text: c.emoji, size: 'xxl', align: 'center' });
+  if (c.emoji) { const url = iconUrl(c.emoji); contents.push(url ? { type: 'image', url, size: 'xxl', aspectRatio: '1:1', align: 'center' } : { type: 'text', text: c.emoji, size: 'xxl', align: 'center' }); }
   contents.push({ type: 'text', text: c.main, size: 'xs', weight: 'bold', color: '#5c4b37', align: 'center', wrap: true, margin: 'sm' });
   if (c.hint) contents.push({ type: 'text', text: c.hint, size: 'xxs', color: '#8b8b8b', align: 'center', wrap: true });
   const data = postbackData(c.text);
@@ -1522,7 +1662,7 @@ function gridRows(cells) {
 
 // ---------- 功能選單（依設定產生）----------
 function buildMenuMessage(cfg, ctx, onlyMainId) {
-  const btn = (label, text) => ({ type: 'button', style: 'secondary', height: 'sm', action: { type: 'message', label: String(label).slice(0, 40), text } });
+  const btn = (label, text) => iconButton(label, text, 'secondary'); // 查到圖示會自動變成「長得像按鈕的 box」，查不到維持原來的 type:'button'
   const withEmoji = (e, n) => (e ? e + ' ' + n : n);
   // 顯示規則：根選單（功能選單）只列第一層——每個主選單一顆按鈕；按下去才看到它自己的子項目（或直接執行它對應的單一功能）。
   // 設定 menu.style 改成 'expanded' 可以回到「全部展開」的舊樣子。
@@ -1549,13 +1689,13 @@ function buildMenuMessage(cfg, ctx, onlyMainId) {
   const fallback = sections.length ? heading + '\n請直接輸入想用的功能名稱：\n' + lines.join('\n') : '目前沒有可用的功能。';
   if (!sections.length) return { message: { type: 'text', text: fallback }, fallback };
   const body = [
-    { type: 'text', text: heading, weight: 'bold', size: 'xl', color: '#5c4b37', wrap: true },
+    iconRow({ type: 'text', text: heading, weight: 'bold', size: 'xl', color: '#5c4b37', wrap: true }),
     { type: 'text', text: gridSec ? '點一下就開始（結果直接回在這個聊天室）' : onlyMainId ? '請選擇，或直接輸入名稱（輸入「功能選單」回到主選單）' : '請選擇要使用的功能，也可以直接輸入功能名稱', size: 'xs', color: '#8b8b8b', wrap: true, margin: 'sm' },
   ];
   if (gridSec) body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: gridRows(gridSec.cells.concat([GRID_BACK])) });
   else if (collapsed) body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: sections.map((s) => s.buttons[0]) });
   else if (onlyMainId) body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: sections[0].buttons.concat([btn('↩️ 功能選單', '功能選單')]) }); // V10.9.1：點進某個主選單（非九宮格）看子項目時，原本只有子項目按鈕、沒有能點的「返回主選單」（九宮格、待去清單／分帳管理這類範本式選單都有，只有這裡缺），補上
-  else sections.forEach((s) => body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: [{ type: 'text', text: s.title, weight: 'bold', size: 'sm', color: '#8b7355' }].concat(s.buttons) }));
+  else sections.forEach((s) => body.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: [iconRow({ type: 'text', text: s.title, weight: 'bold', size: 'sm', color: '#8b7355' })].concat(s.buttons) }));
   const alt = (onlyMainId ? heading : '功能選單') + '：' + (collapsed ? sections.map((s) => s.names[0]) : sections.map((s) => s.names.join('／'))).join('／');
   return {
     message: { type: 'flex', altText: alt.slice(0, 300), contents: { type: 'bubble', body: { type: 'box', layout: 'vertical', contents: body } } },
@@ -2978,10 +3118,14 @@ function wishCardMessage(it, st, header) {
   const src = bizSource(it);
   const hours = src.legacy ? src.times : (src.times + (src.rest ? (src.times ? ' ' : '') + '(' + src.rest + '休)' : '')); // 和網頁 bizSummary 一樣的寫法
   const rating = Math.max(0, Math.min(5, Math.round(Number(it.rating) || 0))); // 推薦指數最多 5 顆星（資料裡寫 9 也只算 5）
-  const row = (label, value) => ({ type: 'box', layout: 'baseline', spacing: 'sm', contents: [
-    { type: 'text', text: label, size: 'xs', color: '#8b8b8b', flex: 2 },
-    { type: 'text', text: value, size: 'sm', color: '#5c4b37', wrap: true, flex: 5 },
-  ] });
+  const row = (label, value) => {
+    // label 開頭的 emoji 查到圖示時，這一欄排版從 baseline 改成 horizontal＋靠上對齊（圖示＋文字橫排才好看）；
+    // 查無圖示時 layout 維持原來的 baseline，跟轉換前一模一樣。
+    const cell = iconRow({ type: 'text', text: label, size: 'xs', color: '#8b8b8b', flex: 2 });
+    const box = { type: 'box', layout: cell.type === 'box' ? 'horizontal' : 'baseline', spacing: 'sm', contents: [cell, { type: 'text', text: value, size: 'sm', color: '#5c4b37', wrap: true, flex: 5 }] };
+    if (cell.type === 'box') box.alignItems = 'flex-start';
+    return box;
+  };
   const rows = [row('📍 地址', addr || '資訊未提供'), row('🕒 營業', hours || '資訊未提供')];
   const cat = String(it.category || '').trim();
   if (cat) rows.push(row('🏷️ 分類', cat));
@@ -2997,13 +3141,13 @@ function wishCardMessage(it, st, header) {
   const bubble = {
     type: 'bubble',
     body: { type: 'box', layout: 'vertical', spacing: 'md', contents: [
-      { type: 'text', text: header, size: 'xs', color: '#8b7355', weight: 'bold', wrap: true },
+      iconRow({ type: 'text', text: header, size: 'xs', color: '#8b7355', weight: 'bold', wrap: true }),
       { type: 'text', text: name, size: 'xl', weight: 'bold', color: '#5c4b37', wrap: true },
-      { type: 'box', layout: 'vertical', spacing: 'xs', contents: [{ type: 'text', text: stLine, size: 'sm', weight: 'bold', color: BIZ_COLORS[st.key] || '#8b8b8b' }].concat(detail ? [{ type: 'text', text: detail, size: 'xs', color: '#8b8b8b', wrap: true }] : []) },
+      { type: 'box', layout: 'vertical', spacing: 'xs', contents: [iconRow({ type: 'text', text: stLine, size: 'sm', weight: 'bold', color: BIZ_COLORS[st.key] || '#8b8b8b' })].concat(detail ? [{ type: 'text', text: detail, size: 'xs', color: '#8b8b8b', wrap: true }] : []) },
       { type: 'separator' },
       { type: 'box', layout: 'vertical', spacing: 'sm', contents: rows },
     ] },
-    footer: { type: 'box', layout: 'vertical', contents: [{ type: 'button', style: 'primary', height: 'sm', color: '#8b7355', action: { type: 'uri', label: '🗺️ 在 Google 地圖開啟', uri: url } }] },
+    footer: { type: 'box', layout: 'vertical', contents: [iconButton('🗺️ 在 Google 地圖開啟', null, 'primary', { action: { type: 'uri', uri: url }, color: '#8b7355' })] },
   };
   const fallback = [header, name, stLine + (detail ? '｜' + detail : ''), '📍 ' + (addr || '資訊未提供'), '🕒 ' + (hours || '資訊未提供'), '🗺️ ' + url].join('\n');
   return { message: { type: 'flex', altText: (name + '・' + stLine).slice(0, 400), contents: bubble }, fallback };
@@ -4791,14 +4935,29 @@ function buildDraftsReply(drafts, url, opts) {
   opts = opts || {};
   const title = opts.title || ('📝 已建立 ' + drafts.length + ' 張待確認草稿');
   const sub = opts.sub || '還沒有正式儲存 — 請到網頁核對資料卡片，按【確認新增】後才會建立紀錄並產生流水號；按【取消】則不會留下任何紀錄。';
-  const rows = drafts.map((d, i) => ({ head: (drafts.length > 1 ? CIRCLED[i] + ' ' : '') + (DRAFT_KIND_LABEL[d.kind] || ''), brief: draftBrief(d), unc: draftUncertainText(d) }));
+  const rows = drafts.map((d, i) => {
+    const numPrefix = drafts.length > 1 ? CIRCLED[i] + ' ' : ''; // ①②③ 這種圈號不是 emoji，不會被圖示比對命中，特別留著跟 kindLabel 分開放
+    const kindLabel = DRAFT_KIND_LABEL[d.kind] || '';
+    return { head: numPrefix + kindLabel, numPrefix, kindLabel, brief: draftBrief(d), unc: draftUncertainText(d) };
+  });
   const body = [
-    { type: 'text', text: title, weight: 'bold', size: 'lg', color: '#5c4b37', wrap: true },
+    iconRow({ type: 'text', text: title, weight: 'bold', size: 'lg', color: '#5c4b37', wrap: true }),
     { type: 'text', text: sub, size: 'xs', color: '#8b8b8b', wrap: true, margin: 'sm' },
   ];
   rows.forEach((r) => {
-    const box = [{ type: 'text', text: r.head + '　' + r.brief, size: 'sm', weight: 'bold', wrap: true, color: '#3f3f3f' }];
-    if (r.unc) box.push({ type: 'text', text: '⚠ ' + r.unc, size: 'xs', color: '#b45309', wrap: true, margin: 'xs' });
+    // kindLabel（例如「🧋 飲料」）單獨拆 emoji，不含前面的圈號——避免「①🧋」被誤判成抓不到開頭 emoji。
+    const { icon, rest } = splitIcon(r.kindLabel);
+    let box;
+    if (icon) {
+      const contents = [];
+      if (r.numPrefix) contents.push({ type: 'text', text: r.numPrefix.trim(), size: 'sm', weight: 'bold', color: '#3f3f3f', flex: 0 });
+      contents.push({ type: 'image', url: icon, flex: 0, size: 'xs', aspectRatio: '1:1', gravity: 'center' });
+      contents.push({ type: 'text', text: rest + '　' + r.brief, size: 'sm', weight: 'bold', wrap: true, color: '#3f3f3f', flex: 1 });
+      box = [{ type: 'box', layout: 'horizontal', spacing: 'xs', alignItems: 'center', contents }];
+    } else {
+      box = [{ type: 'text', text: r.head + '　' + r.brief, size: 'sm', weight: 'bold', wrap: true, color: '#3f3f3f' }];
+    }
+    if (r.unc) box.push(iconRow({ type: 'text', text: '⚠ ' + r.unc, size: 'xs', color: '#b45309', wrap: true, margin: 'xs' }));
     body.push({ type: 'box', layout: 'vertical', margin: 'md', contents: box });
   });
   const message = {
@@ -4807,8 +4966,8 @@ function buildDraftsReply(drafts, url, opts) {
       type: 'bubble',
       body: { type: 'box', layout: 'vertical', contents: body },
       footer: { type: 'box', layout: 'vertical', spacing: 'sm', contents: [
-        { type: 'button', style: 'primary', height: 'sm', color: '#9a7d52', action: { type: 'uri', label: '📝 開啟網頁確認', uri: url } },
-        { type: 'button', style: 'secondary', height: 'sm', action: { type: 'message', label: '📋 待確認草稿', text: '待確認草稿' } },
+        iconButton('📝 開啟網頁確認', null, 'primary', { action: { type: 'uri', uri: url }, color: '#9a7d52' }),
+        iconButton('📋 待確認草稿', '待確認草稿', 'secondary'),
       ] },
     },
   };
@@ -5074,6 +5233,7 @@ const REC4_VERSIONS = {
   advanced: {
     emoji: '🟠', name: '進階版', tag: '動態問答紀錄',
     how: '由機器人逐項提問，使用者依序回答；系統依照使用者選擇的功能，讀取該功能的原始表單欄位，逐項進行提問。',
+    how2: '透過照片辨識及一問一答，完成完整資料建檔。', // V10.13.1：進階版補上第二種操作方式（原本只講逐題問答，沒講清楚也支援照片辨識），獨立成第二行，不是接在第一句後面
     ruleLabel: '互動規則', rule: '一次只詢問一個欄位；使用者回答後，再接續詢問下一個欄位；已經從文字或照片辨識出的資訊，不必重複詢問；使用者可以回答「無」、「略過」或「不知道」，依欄位規則處理；必填欄位不得直接跳過；選填欄位可以略過；所有問題完成後，顯示完整紀錄摘要，供使用者確認及送出。',
   },
   flagship: {
@@ -5096,12 +5256,15 @@ function rec4AskLine(v, sch) {
 }
 // 某個版本的說明行（sch＝某模組的 schema 時，範例與欄位舉例換成該模組自己的；沒給＝通用版，就是使用者指定的原文）
 //   V10.12.1：段落之間插入空字串（沿用 rec4Intro 的 ['', 內容] 空一行寫法），讓 LINE 版本卡、首頁通用卡、後台規格頁在「操作方式」「範例」「規則」之間空一行，不要擠成一段
+//   V10.13.1：①「支援輸入」跟「操作方式」之間原本沒空一行，這次補上，四個版本都適用②進階版「操作方式」拆成❶❷兩句（❶逐題問答、❷照片輔助建檔），❶❷之間只換行、不空一行③進階／旗艦版「操作方式」（進階版是❷）跟下面的提問欄位清單之間原本也沒空一行，這次補上（簡易／標準版的「操作方式／範例」之間本來就有空一行，不用再加）
 function rec4VerLines(v, sch) {
   const x = REC4_VERSIONS[v];
   const t = (sch && sch.vtext && sch.vtext[v]) || {};
-  const lines = [REC4_INPUT_LINE, '操作方式：' + (t.how || x.how).replace('{F}', t.fields || x.fields || '')]; // 某個模組的簡易版輸入方式不一樣（集點卡＝孩子＋行為、待去清單＝地點名稱）時，用該模組自己的說明
+  const howLabel = v === 'advanced' ? '操作方式❶：' : '操作方式：'; // V10.13.1：進階版有兩種操作方式（逐題問答／照片辨識），標❶❷區分；其他版本維持單句、不標號
+  const lines = [REC4_INPUT_LINE, '', howLabel + (t.how || x.how).replace('{F}', t.fields || x.fields || '')]; // V10.13.1：「支援輸入」跟「操作方式」之間也補一個空一行標記（原本只有「操作方式／範例」「範例／規則」之間有）；某個模組的簡易版輸入方式不一樣（集點卡＝孩子＋行為、待去清單＝地點名稱）時，用該模組自己的說明
+  if (v === 'advanced') lines.push('操作方式❷：' + x.how2); // V10.13.1：補上「也支援照片辨識」這一種操作方式，自己獨立一行（換行，不是空一行、不是接在❶後面）
   const ask = rec4AskLine(v, sch);
-  if (ask) lines.push(ask);
+  if (ask) lines.push('', ask); // V10.13.1：進階／旗艦版「操作方式」跟提問欄位清單之間也補一個空一行標記（簡易／標準版的「操作方式／範例」之間本來就有，見下面 ex 那段）
   const ex = t.example || x.example;
   if (ex) lines.push('', '範例：' + ex);
   lines.push('', x.ruleLabel + '：' + (t.rule || x.rule));
@@ -5927,9 +6090,9 @@ function rec4VersionCardMsg(title, sub, textFor, back, sch, cfg) {
   const viewOnly = !textFor; // V10.7.0：只看說明的版本卡（群組裡的分帳／集點卡／待去清單）：沒有「選這個版本」的按鈕，所以不可能在群組裡按下去開始記錄
   const bubbles = REC4_ORDER.map((v) => {
     const x = REC4_VERSIONS[v];
-    const body = [{ type: 'text', text: title, size: 'xs', color: '#8b8b8b', wrap: true }];
-    if (sub) body.push(viewOnly ? { type: 'text', text: sub, size: 'xs', weight: 'bold', color: '#a04a00', wrap: true, margin: 'sm' } : { type: 'text', text: sub, size: 'xs', color: '#8b8b8b', wrap: true });
-    body.push({ type: 'text', text: x.emoji + ' ' + x.name + '｜' + x.tag, weight: 'bold', size: 'lg', color: '#5c4b37', wrap: true, margin: 'md' });
+    const body = [iconRow({ type: 'text', text: title, size: 'xs', color: '#8b8b8b', wrap: true })];
+    if (sub) body.push(iconRow(viewOnly ? { type: 'text', text: sub, size: 'xs', weight: 'bold', color: '#a04a00', wrap: true, margin: 'sm' } : { type: 'text', text: sub, size: 'xs', color: '#8b8b8b', wrap: true }));
+    body.push(iconRow({ type: 'text', text: x.emoji + ' ' + x.name + '｜' + x.tag, weight: 'bold', size: 'lg', color: '#5c4b37', wrap: true, margin: 'md' }));
     { // V10.12.1：rec4VerLines 裡的空字串是「空一行」的標記，不能直接送給 LINE 的 Flex Message（text 不能是空字串，送空字串整張卡會被 LINE 拒收）；改成讓下一行的 margin 變大，用間距做出空一行的視覺效果
       // V10.13.0：「範例：」那一行、進階／旗艦版的提問清單那一行（ask），改成粗體＋跟網頁 --br 一致的顏色（#8b7355），方便使用者一眼找到重點；其他行維持原樣。
       //   規則／互動規則那一行是否出現，由 rec4VerLinesFor 依後台「規則顯示」開關決定（這裡改用 rec4VerLinesFor，不是 rec4VerLines）。
@@ -5938,12 +6101,14 @@ function rec4VersionCardMsg(title, sub, textFor, back, sch, cfg) {
       rec4VerLinesFor(v, sch, cfg).forEach((ln) => {
         if (ln === '') { big = true; return; }
         const emph = ln === ask || ln.indexOf('範例：') === 0;
-        body.push({ type: 'text', text: ln, size: 'xs', color: emph ? '#8b7355' : (realIdx === 0 ? '#8b8b8b' : '#3f3f3f'), weight: emph ? 'bold' : 'regular', wrap: true, margin: big ? 'xl' : 'sm' });
+        // V10.13.2：第一行（支援輸入）跟上面的版本名稱之間也要空一行——這一行本身不在 rec4VerLines 的陣列裡（版本名稱是 rec4VersionCardMsg 自己組的，不經過那個陣列），
+        //   所以 big 這個標記（陣列內部的空字串）管不到它，這裡用 realIdx===0 直接強制第一行一定是 'xl'，不管 big 是不是 true
+        body.push({ type: 'text', text: ln, size: 'xs', color: emph ? '#8b7355' : (realIdx === 0 ? '#8b8b8b' : '#3f3f3f'), weight: emph ? 'bold' : 'regular', wrap: true, margin: (realIdx === 0 || big) ? 'xl' : 'sm' });
         big = false; realIdx++;
       });
     }
-    const foot = viewOnly ? [] : [{ type: 'button', style: 'primary', height: 'sm', color: '#8b7355', action: { type: 'message', label: (x.emoji + ' ' + x.name).slice(0, 20), text: textFor(v) } }];
-    if (back) foot.push({ type: 'button', style: 'link', height: 'sm', action: { type: 'message', label: back.label.slice(0, 20), text: back.text } });
+    const foot = viewOnly ? [] : [iconButton(x.emoji + ' ' + x.name, textFor(v), 'primary', { color: '#8b7355' })];
+    if (back) foot.push(iconButton(back.label, back.text, 'link'));
     const bubble = { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'xs', contents: body } };
     if (foot.length) bubble.footer = { type: 'box', layout: 'vertical', spacing: 'xs', contents: foot };
     return bubble;
@@ -5981,10 +6146,13 @@ function rec4ListHint(S) {
 function rec4Intro(S, cfg) {
   const sch = REC4_SCHEMAS[S.module], ver = REC4_VERSIONS[S.version];
   const head = ver.emoji + ' ' + ver.name + '｜' + ver.tag + '・' + sch.icon + ' ' + sch.name + '紀錄';
-  const goDef = { simple: '👉 現在請輸入「品項＋金額」（也可以直接傳照片）', standard: '👉 現在請用一句話描述（也可以直接傳照片）' };
+  // V10.13.2：進階／旗艦版原本問完版本卡直接送第一題，使用者說要跟簡易／標準版一樣先有一句引導語再開始問；
+  //   逐題問答（不是像標準版自由輸入一句話），所以文字改寫成符合這個流程的說法，不是沿用標準版「請用一句話描述」那句
+  const goDef = { simple: '👉 現在請輸入「品項＋金額」（也可以直接傳照片）', standard: '👉 現在請用一句話描述（也可以直接傳照片）', advanced: '👉 準備好了嗎？接下來將依序為您提問', flagship: '👉 準備好了嗎？接下來將依序為您提問' };
   const go = (sch.goText && sch.goText[S.version]) || goDef[S.version];
   const hint = sch.needLists ? rec4ListHint(S) : '';
-  return [head].concat(rec4VerLinesFor(S.version, sch, cfg), hint ? ['', hint] : [], go ? ['', go] : []).join('\n');
+  // V10.13.2：標題（版本名稱・模組名稱紀錄）跟下面「支援輸入」之間也補一個空一行標記，四個版本都適用，跟 Flex 版本卡的同一處改動一致
+  return [head, ''].concat(rec4VerLinesFor(S.version, sch, cfg), hint ? ['', hint] : [], go ? ['', go] : []).join('\n');
 }
 function rec4QuickList(lead, options, controls) {
   const room = Math.max(0, 13 - lead.length - controls.length);
@@ -6870,8 +7038,8 @@ async function rec4StartVersionPhoto(ctx, ev, token, env, cfg, msg) {
 // （官方帳號看起來沒更新時，先用這個查：傳「機器人版本」給官方帳號，或打開 /api/health 看 worker 欄位）
 // 只回報版本，以及各項「有沒有設定」（是／否）；不會顯示任何金鑰、密碼或同步碼本身。
 // ============================================================
-const BOT_LINE_VERSION = '10.13.0'; // 要跟網頁 index.html 的 LINE_VERSION、BUILD_ID 一致（backend105 測試會逐一比對）
-const BOT_BUILD = '2026-11-19b';
+const BOT_LINE_VERSION = '10.13.2'; // 要跟網頁 index.html 的 LINE_VERSION、BUILD_ID 一致（backend105 測試會逐一比對）
+const BOT_BUILD = '2026-11-19d';
 const BOT_VERSION_CMD_RE = /^(機器人版本|機器人版號|bot版本)$/i;
 async function botVersionText(env, userId) {
   const lines = [
@@ -6896,6 +7064,11 @@ async function botVersionText(env, userId) {
   return lines.join('\n');
 }
 
+// ---------- 圖示（Icon）檔案：/icons/<檔名>.png ----------
+//   V10.?（改版）：原本設計走 R2（見這裡之前的版本與交付報告第四節），但 R2 需要先在 Cloudflare 帳號
+//   加付款方式才能開通，使用者選擇改用現有的靜態資源空間（跟 index.html 同一套 env.ASSETS）——
+//   52 張圖示放在 public/icons/ 下，不用另外設定 binding，不用碰 R2／付款，交給最下面「其餘交給
+//   靜態資源」那一行處理即可，所以這裡不再攔截 /icons/、不再需要 handleIconAsset／ICONS_BUCKET。
 // ---------- 主路由 ----------
 export default {
   async fetch(request, env, ctx) {
@@ -6907,7 +7080,7 @@ export default {
     if (url.pathname.indexOf('/api/line-config') === 0) return handleLineConfigApi(request, env);
     if (url.pathname === '/api/line-log') return handleLineLog(request, env);
     if (url.pathname === '/api/line-log-remove') return handleLineLogRemove(request, env);
-    // 其餘交給靜態資源（你的 index.html 等）
+    // 其餘交給靜態資源（你的 index.html、/icons/ 下的 52 張圖示都在這裡）
     return env.ASSETS.fetch(request);
   },
 };
