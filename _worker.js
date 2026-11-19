@@ -831,24 +831,31 @@ const FORM_MODE_TEXT = {
 const FORM_MODE_REMINDER = FORM_MODE_TEXT.single.label + '：' + FORM_MODE_TEXT.single.desc + FORM_MODE_TEXT.single.hi + '\n' + FORM_MODE_TEXT.dual.label + '：' + FORM_MODE_TEXT.dual.desc + FORM_MODE_TEXT.dual.hi;
 // V10.10：「表單模式」正式接進 LINE 的 REC4 引擎（六大功能×四版本）——使用者確認過的範圍與做法：
 //   ・6 個模組都要，後台可以個別開關（預設全部關閉，cfg.formMode.modules）；
-//   ・雙表單模式下「用戶A＝現在講話的這個人、用戶B＝另一位」：要先在後台把這兩人的LINE User ID綁定好（cfg.formMode.aId／bId），沒綁好就不會問、直接當單表單（不卡流程）；
 //   ・問法＝先把用戶A整套欄位問完，再整套問一次用戶B（跟網頁「先填➊再填➋」一樣）；兩筆用配對編號（pairId）連起來，做法跟網頁 fmPairUp 一致。
 //   ・只支援「直接寫入」（saveLineLogRecord）這條路：草稿系統（createDraftsAndReply／buildDrafts）目前整批草稿只認一個 owner，沒有「同一批兩筆各自歸屬不同人」的機制，
 //     擴充草稿系統是另一個獨立工程，這次沒有做——使用者開著「LINE 草稿模式」、或分帳／集點卡／待去清單（一律只能走草稿）時，雙表單會禮貌退回單表單並說明原因，不會送出歸屬錯誤的資料。
+// V10.12：拿掉「雙表單模式下用戶A／用戶B要先在後台綁定LINE User ID」這個前提——使用者實際用過 V10.10.0 之後，
+//   明確表示後台先設定太麻煩，要求「機器人主動辨識，不用設定」。改成：選了雙表單模式之後，當場從「已經傳過訊息給機器人、
+//   查得到LINE顯示名稱」的已知使用者名單裡列出來（排除正在講話的這個人自己），點選哪一位就是這次的對方；一個都沒有時
+//   （例如全新安裝、目前只有自己跟機器人說過話）就說明原因、退回單表單，不卡流程。cfg.formMode.aId／bId 這兩個舊欄位
+//   不再被讀取（後台也拿掉對應的設定介面），但保留在設定檔結構裡不特別清除，避免沒必要的資料搬移風險。
 const FORM_MODE_MODULE_KEYS = ['drink', 'food', 'travel', 'split', 'sticker', 'wish'];
 // 這個模組有沒有開啟「表單模式」步驟（後台設定，預設全部關閉）
 function formModeEnabled(cfg, modFn) { return !!(cfg && cfg.formMode && cfg.formMode.modules && cfg.formMode.modules[modFn]); }
-// 講話的這個 LINE 使用者，是不是後台綁定的用戶A／用戶B之一；是的話回傳對方（配偶／隊友）的身分，給雙表單用。
-// 沒綁好（aId／bId留白）、或講話的人不是這兩人之一 → 回傳 null（這次就不問表單模式，直接當單表單，不卡流程）。
-async function formModeContext(env, cfg, userId) {
-  const fm = (cfg && cfg.formMode) || {};
-  if (!fm.aId || !fm.bId || !userId) return null;
-  if (userId !== fm.aId && userId !== fm.bId) return null;
-  const mateId = userId === fm.aId ? fm.bId : fm.aId;
+// V10.13.0：這個模組的「選擇紀錄版本」卡／起手訊息要不要列出規則／互動規則文字（後台設定，預設全部關閉＝隱藏；跟表單模式一樣六個模組各自一個開關，LINE對話裡的任何指令都不能切換）
+function ruleVisibleEnabled(cfg, modFn) { return !!(cfg && cfg.ruleVisible && cfg.ruleVisible.modules && cfg.ruleVisible.modules[modFn]); }
+// 已知使用者名冊（line:registry 裡的 users，任何跟機器人說過話的人都會被記錄 LINE 顯示名稱）——V10.12 雙表單「對方是誰」當場選用的資料來源，跟後台「版本規格」頁列出的已知使用者是同一份。
+async function rec4KnownUsers(env) {
   let reg = {};
   try { reg = JSON.parse((env.SYNC_KV ? await env.SYNC_KV.get(REGISTRY_KEY) : null) || '{}'); } catch (e) { reg = {}; }
-  const nameOf = (uid) => (reg && reg.users && reg.users[uid] && reg.users[uid].name) || '';
-  return { selfId: userId, mateId, selfName: nameOf(userId), mateName: nameOf(mateId) };
+  return (reg && reg.users && typeof reg.users === 'object' && !Array.isArray(reg.users)) ? reg.users : {};
+}
+// 雙表單「對方」候選名單：已知使用者裡排除自己、排除查不到LINE顯示名稱的人（按鈕要給使用者認人用，沒有名字沒辦法選、也不猜）。
+async function rec4MateCandidates(env, selfId) {
+  const users = await rec4KnownUsers(env);
+  return Object.keys(users)
+    .filter((uid) => uid !== selfId && users[uid] && users[uid].name)
+    .map((uid) => ({ userId: uid, name: users[uid].name }));
 }
 // 問「要用哪種模式」的 Flex 卡片訊息物件（REC4 用——跟 askFormMode 共用同一套 formModeBubbleContents／FORM_MODE_TEXT 文字與樣式，
 // 但用 REC4 既有的「回傳訊息物件、由 rec4Reply 統一送出、送失敗自動退回 altText」機制，不另外直接呼叫 lineReplyMessages）
@@ -857,6 +864,14 @@ function rec4FormModeMsg(sch) {
   const trailingText = '要用哪一種？';
   const altText = (headingText + '\n' + FORM_MODE_TEXT.single.label.replace(/（.*/, '') + '：' + FORM_MODE_TEXT.single.hi + '\n' + FORM_MODE_TEXT.dual.label.replace(/（.*/, '') + '：' + FORM_MODE_TEXT.dual.hi + '\n' + trailingText).slice(0, 390);
   return { type: 'flex', altText, contents: formModeBubbleContents(headingText, trailingText), quickReply: quickReplyItems(['單表單模式', '雙表單模式', '結束']) };
+}
+// V10.12：問「這次的另一位是誰」——選了雙表單模式之後，把候選人姓名直接列成快速回覆按鈕（最多 12 位＋「結束」，LINE快速回覆上限13顆）。
+// 候選名單在問這一題的當下就固定住（存在 S.mateCandidates），使用者回答時照這份名單核對，不會因為名冊在回答途中又多了新人而改變這一題的選項。
+function rec4PickMateMsg(sch, mates) {
+  const text = sch.icon + ' ' + sch.name + '（雙表單）：這次的另一位是誰？';
+  const opts = mates.slice(0, 12).map((m) => ({ label: m.name, text: m.name }));
+  opts.push('結束');
+  return rec4TextMsg(text, opts);
 }
 // 配對編號——做法跟網頁 fmNewPairId() 一致（同一個前綴格式），雙表單兩筆記錄共用同一個，才看得出是同一次存的
 function rec4NewPairId() { return 'PR' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase(); }
@@ -1117,9 +1132,13 @@ function defaultLineConfig() {
     draft: { enabled: true }, // V9：LINE 輸入的飲料／美食／交通，先建立「待確認草稿」到網頁確認後才儲存（關閉＝回到 LINE 裡確認儲存）
     menu: { style: 'collapsed', rulesV: MENU_RULES_V, toolsV: TOOLS_V }, // V10.4：功能選單只列第一層；各選單只顯示自己的項目（toolsV：V10.6.0「工具」格子的版本）
     // V10.10：「表單模式」正式接進 LINE（飲料／美食／交通／分帳／集點卡／待去清單紀錄時可以選單表單／雙表單）。
-    //   aId／bId：用戶A／用戶B綁定的LINE User ID（留白＝還沒設定，這個功能不會啟動，不影響原本的紀錄流程）；
+    //   aId／bId：V10.10.0 原本用來綁定用戶A／用戶B的LINE User ID；V10.12 起不再讀取（雙表單的「對方是誰」改成當場從已知使用者選），
+    //     這兩個欄位留著只是不破壞舊設定檔結構，沒有實際作用；
     //   modules：6個模組各自的開關，預設全部關閉，後台設定頁打開才會在對應模組問「要用哪種模式」。
     formMode: { aId: '', bId: '', modules: { drink: false, food: false, travel: false, split: false, sticker: false, wish: false } },
+    // V10.13.0：「規則顯示」開關——6個模組各自控制「選擇紀錄版本」卡、起手訊息要不要列出規則／互動規則文字；
+    //   預設全部關閉＝隱藏（不主動說明、複述或暗示規則存在），使用者在LINE對話裡輸入任何指令都無法切換，只能在後台開。
+    ruleVisible: { modules: { drink: false, food: false, travel: false, split: false, sticker: false, wish: false } },
   };
   TOOL_FNS.forEach((f) => { cfg.permissions[f] = perm(); }); // 工具：1 對 1、群組都能用，結果直接回在同一個聊天室
   return cfg;
@@ -1219,12 +1238,17 @@ function sanitizeConfig(input) {
   const formMode = { aId: str(fmIn.aId, 64), bId: str(fmIn.bId, 64), modules: {} };
   FORM_MODE_MODULE_KEYS.forEach((k) => { formMode.modules[k] = bool(fmModIn[k], false); });
   if (formMode.aId && formMode.bId && formMode.aId === formMode.bId) { errors.push('表單模式：用戶A、用戶B不能是同一個 LINE 帳號'); formMode.bId = ''; }
+  // V10.13.0：「規則顯示」開關——沿用表單模式同一組六個模組 key；預設全部關閉（隱藏）
+  const rvIn = inp.ruleVisible && typeof inp.ruleVisible === 'object' ? inp.ruleVisible : {};
+  const rvModIn = rvIn.modules && typeof rvIn.modules === 'object' ? rvIn.modules : {};
+  const ruleVisible = { modules: {} };
+  FORM_MODE_MODULE_KEYS.forEach((k) => { ruleVisible.modules[k] = bool(rvModIn[k], false); });
   const mIn = inp.menu && typeof inp.menu === 'object' ? inp.menu : null;
   const legacySaved = !mIn && Array.isArray(inp.mainMenus) && inp.mainMenus.length > 0; // 有存選單、但沒有 menu 欄位＝V10.3 以前存下來的設定：維持舊的展開方式，後台會提示可以套用新版（完全沒存選單的不算）
   const menu = legacySaved
     ? { style: 'expanded', rulesV: 1 }
     : { style: pick(mIn && mIn.style, ['collapsed', 'expanded'], d.menu.style), rulesV: mIn ? Math.max(1, Math.min(MENU_RULES_V, Math.floor(num(mIn.rulesV, MENU_RULES_V)))) : d.menu.rulesV, toolsV: mIn ? Math.max(1, Math.min(TOOLS_V, Math.floor(num(mIn.toolsV, 1)))) : d.menu.toolsV }; // V10.6.0：存過設定、但沒有 toolsV ＝ 1（還沒有「自動剪刀石頭布」格子）
-  const cfg = { v: 1, mainMenus: mains, subMenus: subs, keywords: kws, permissions: perms, groups, fuzzy, query, draft, menu, formMode };
+  const cfg = { v: 1, mainMenus: mains, subMenus: subs, keywords: kws, permissions: perms, groups, fuzzy, query, draft, menu, formMode, ruleVisible };
 
   // 衝突檢查：同一個「完全相同的關鍵字」，在同一種聊天室裡不能同時指向兩個不同的功能
   const exact = buildRules(cfg).filter((r) => r.enabled && r.type === 'exact');
@@ -1982,9 +2006,9 @@ async function sendOpMenu(token, ev, mod) {
     },
   }], '「' + mod.name + '」要做什麼？\n・紀錄：輸入「紀錄' + mod.name + '」\n・查詢：輸入「查詢' + mod.name + '」');
 }
-async function sendVersionMenu(token, ev, mod, op, restClean) {
+async function sendVersionMenu(token, ev, mod, op, restClean, cfg) {
   if (op !== 'query' && REC4_SCHEMAS[mod.fn]) { // V10.3：紀錄 → 四種版本（簡易／標準／進階／旗艦）
-    await rec4Reply(token, ev.replyToken, [rec4VersionCardMsg(REC4_SCHEMAS[mod.fn].icon + ' ' + mod.name + '紀錄：選擇紀錄版本', '先選好版本，再開始輸入；文字、照片都可以。', (v) => '紀錄' + mod.name + ' ' + REC4_VERSIONS[v].name, { label: '↩️ 返回', text: mod.name }, REC4_SCHEMAS[mod.fn])]);
+    await rec4Reply(token, ev.replyToken, [rec4VersionCardMsg(REC4_SCHEMAS[mod.fn].icon + ' ' + mod.name + '紀錄：選擇紀錄版本', '先選好版本，再開始輸入；文字、照片都可以。', (v) => '紀錄' + mod.name + ' ' + REC4_VERSIONS[v].name, { label: '↩️ 返回', text: mod.name }, REC4_SCHEMAS[mod.fn], cfg)]);
     return;
   }
   const word = op === 'query' ? '查詢' : '紀錄';
@@ -2145,7 +2169,7 @@ async function runCommand(cmd, ctx, ev, token, env, cfg) {
   const restClean = condRest(cond);
   if (cmd.op === 'record') {
     if (mod.wish) return ctx.isGroup || !cond.version ? executeFunction('wish_add', ctx, ev, token, env, cfg) : rec4StartModule('wish', cond.version, ctx, ev, token, env, cfg); // V10.4：待去清單有四種版本（沒指定版本 → 版本卡片；群組是個人資料，維持原本的說明）。仍然是先建立草稿，到網頁確認後才寫入
-    if (!cond.version) { await sendVersionMenu(token, ev, mod, 'record', ''); return true; }
+    if (!cond.version) { await sendVersionMenu(token, ev, mod, 'record', '', cfg); return true; }
     return launchRecord(mod, cond.version, ctx, ev, token, env);
   }
   const version = (cond.version && cond.version !== 'advanced' ? cond.version : null) || (cfg.query && cfg.query.defaultVersion) || null; // 查詢只有簡易／標準／旗艦三種顯示詳細程度
@@ -2154,7 +2178,7 @@ async function runCommand(cmd, ctx, ev, token, env, cfg) {
     await lineReplyMessages(token, ev.replyToken, [{ type: 'text', text: '待去清單有三種日期，你要用哪一種來篩選？', quickReply: quickReplyItems(items.concat([{ label: '功能選單', text: '功能選單' }])) }]).catch(() => {});
     return true;
   }
-  if (!version) { await sendVersionMenu(token, ev, mod, 'query', restClean + (cond.dateKey ? ' ' + WISH_DATE_KEYS[cond.dateKey] : '')); return true; }
+  if (!version) { await sendVersionMenu(token, ev, mod, 'query', restClean + (cond.dateKey ? ' ' + WISH_DATE_KEYS[cond.dateKey] : ''), cfg); return true; }
   if (!hasConditions(cond)) {
     await setFlagshipSession(ctx.userId, { flow: 'op', stage: 'await_cond', module: mod.fn, version }, env);
     await lineReplyAsk(token, ev.replyToken, '🔎 ' + mod.name + '查詢（' + VERSION_INFO[version] + '）\n請輸入查詢條件：年份、月份、日期、關鍵字，可以單獨輸入，也可以組合，例如：\n・2026年\n・10月\n・2026年10月18日\n・2026年10月 咖啡\n・咖啡\n想看全部，輸入「全部」', [BACK_LABEL, '全部']);
@@ -5054,7 +5078,7 @@ const REC4_VERSIONS = {
   },
   flagship: {
     emoji: '🔵', name: '旗艦版', tag: '完整資料紀錄',
-    how: '透過照片辨識及一問一答，完成完整資料建檔。',
+    how: '透過一問一答或照片辨識，完成完整資料建檔。',
     ruleLabel: '互動規則', rule: '依照完整表單順序一次一問，不擅自刪除、合併或縮減欄位；已辨識的資料會自動帶入並請您確認，未提及資料不自行編造；金額若未寫明幣別，預設為新臺幣 (TWD)；資料全部填寫完成後，顯示完整紀錄供您確認後存檔。',
   },
 };
@@ -5071,6 +5095,7 @@ function rec4AskLine(v, sch) {
   return head + fs.map((f, i) => (i + 1) + '.' + f.label + (f.askNote || '')).join('　');
 }
 // 某個版本的說明行（sch＝某模組的 schema 時，範例與欄位舉例換成該模組自己的；沒給＝通用版，就是使用者指定的原文）
+//   V10.12.1：段落之間插入空字串（沿用 rec4Intro 的 ['', 內容] 空一行寫法），讓 LINE 版本卡、首頁通用卡、後台規格頁在「操作方式」「範例」「規則」之間空一行，不要擠成一段
 function rec4VerLines(v, sch) {
   const x = REC4_VERSIONS[v];
   const t = (sch && sch.vtext && sch.vtext[v]) || {};
@@ -5078,14 +5103,24 @@ function rec4VerLines(v, sch) {
   const ask = rec4AskLine(v, sch);
   if (ask) lines.push(ask);
   const ex = t.example || x.example;
-  if (ex) lines.push('範例：' + ex);
-  lines.push(x.ruleLabel + '：' + (t.rule || x.rule));
+  if (ex) lines.push('', '範例：' + ex);
+  lines.push('', x.ruleLabel + '：' + (t.rule || x.rule));
   return lines;
+}
+// V10.13.0：規則／互動規則文字預設隱藏（後台「規則顯示」開關，六模組各自控制，預設全部關閉）——只影響這兩個 LINE 使用者看得到的地方：
+//   「選擇紀錄版本」卡（rec4VersionCardMsg）、選好版本後的起手訊息（rec4Intro）；後台「版本規格」頁一律照常完整顯示（buildSpecs 直接呼叫 rec4VerLines，不經過這支，不受影響）。
+//   rec4VerLines 的規則行一定是陣列最後兩個元素（空字串空一行標記＋規則本文，就是上面這行 push 的），所以關閉時用 slice(0,-2) 去掉剛好這兩個；
+//   沒給 sch（首頁通用「日常小秘書」卡，不屬於任何單一模組）＝一律隱藏，沒有對應的後台開關可以打開它。
+//   用 sch.cat（跟 FORM_MODE_MODULE_KEYS、後台開關、S.module 同一套簡單模組代號：drink/food/travel/split/sticker/wish）比對，不是 sch.fn
+//   （sch.fn 是草稿系統內部用的動作代號，分帳是 'split_add'、待去清單是 'wish_add'，跟後台開關的 key 對不起來）。
+function rec4VerLinesFor(v, sch, cfg) {
+  const lines = rec4VerLines(v, sch);
+  return (sch && ruleVisibleEnabled(cfg, sch.cat)) ? lines : lines.slice(0, -2);
 }
 const REC4_TRIGGERS = {};
 REC4_ORDER.forEach((v) => { const x = REC4_VERSIONS[v]; REC4_TRIGGERS[x.name] = v; REC4_TRIGGERS[x.emoji + ' ' + x.name] = v; REC4_TRIGGERS[x.emoji + x.name] = v; });
 const REC4_MODULE_WORDS = { 飲料: 'drink', 飲料紀錄: 'drink', '🧋 飲料': 'drink', 美食: 'food', 美食紀錄: 'food', '🍱 美食': 'food', 交通: 'travel', 交通紀錄: 'travel', '🚆 交通': 'travel', 分帳: 'split', 分帳紀錄: 'split', 記一筆分帳: 'split', 集點卡: 'sticker', 集點: 'sticker', 集點卡紀錄: 'sticker', 待去清單: 'wish', 待去: 'wish', 待去地點: 'wish', 新增待去地點: 'wish', 待去清單紀錄: 'wish' }; // V10.4：分帳、集點卡、待去清單也有四種版本
-const REC4_PICK_STAGES = { pick_module: 1, pick_version: 1, pick_mode: 1 };
+const REC4_PICK_STAGES = { pick_module: 1, pick_version: 1, pick_mode: 1, pick_mate: 1 };
 const REC4_VS16 = String.fromCharCode(0xFE0F);
 function rec4Clean(t) { return String(t === undefined || t === null ? '' : t).split(REC4_VS16).join('').trim(); }
 const REC4_SKIP_RE = /^(略過|跳過|無|沒有|沒|不知道|不確定|不清楚|skip|n\/a|na|-|－|—|無資料)$/i;
@@ -5888,14 +5923,25 @@ function rec4VersionFallback(title, textFor, note) {
   const lines = REC4_ORDER.map((v) => REC4_VERSIONS[v].emoji + ' ' + REC4_VERSIONS[v].name + '｜' + REC4_VERSIONS[v].tag + (textFor ? '：輸入「' + textFor(v) + '」' : ''));
   return title + '\n' + (!textFor && note ? note + '\n' : '') + lines.join('\n');
 }
-function rec4VersionCardMsg(title, sub, textFor, back, sch) {
+function rec4VersionCardMsg(title, sub, textFor, back, sch, cfg) {
   const viewOnly = !textFor; // V10.7.0：只看說明的版本卡（群組裡的分帳／集點卡／待去清單）：沒有「選這個版本」的按鈕，所以不可能在群組裡按下去開始記錄
   const bubbles = REC4_ORDER.map((v) => {
     const x = REC4_VERSIONS[v];
     const body = [{ type: 'text', text: title, size: 'xs', color: '#8b8b8b', wrap: true }];
     if (sub) body.push(viewOnly ? { type: 'text', text: sub, size: 'xs', weight: 'bold', color: '#a04a00', wrap: true, margin: 'sm' } : { type: 'text', text: sub, size: 'xs', color: '#8b8b8b', wrap: true });
     body.push({ type: 'text', text: x.emoji + ' ' + x.name + '｜' + x.tag, weight: 'bold', size: 'lg', color: '#5c4b37', wrap: true, margin: 'md' });
-    rec4VerLines(v, sch).forEach((ln, i) => body.push({ type: 'text', text: ln, size: 'xs', color: i === 0 ? '#8b8b8b' : '#3f3f3f', wrap: true, margin: 'sm' }));
+    { // V10.12.1：rec4VerLines 裡的空字串是「空一行」的標記，不能直接送給 LINE 的 Flex Message（text 不能是空字串，送空字串整張卡會被 LINE 拒收）；改成讓下一行的 margin 變大，用間距做出空一行的視覺效果
+      // V10.13.0：「範例：」那一行、進階／旗艦版的提問清單那一行（ask），改成粗體＋跟網頁 --br 一致的顏色（#8b7355），方便使用者一眼找到重點；其他行維持原樣。
+      //   規則／互動規則那一行是否出現，由 rec4VerLinesFor 依後台「規則顯示」開關決定（這裡改用 rec4VerLinesFor，不是 rec4VerLines）。
+      const ask = rec4AskLine(v, sch);
+      let big = false, realIdx = 0;
+      rec4VerLinesFor(v, sch, cfg).forEach((ln) => {
+        if (ln === '') { big = true; return; }
+        const emph = ln === ask || ln.indexOf('範例：') === 0;
+        body.push({ type: 'text', text: ln, size: 'xs', color: emph ? '#8b7355' : (realIdx === 0 ? '#8b8b8b' : '#3f3f3f'), weight: emph ? 'bold' : 'regular', wrap: true, margin: big ? 'xl' : 'sm' });
+        big = false; realIdx++;
+      });
+    }
     const foot = viewOnly ? [] : [{ type: 'button', style: 'primary', height: 'sm', color: '#8b7355', action: { type: 'message', label: (x.emoji + ' ' + x.name).slice(0, 20), text: textFor(v) } }];
     if (back) foot.push({ type: 'button', style: 'link', height: 'sm', action: { type: 'message', label: back.label.slice(0, 20), text: back.text } });
     const bubble = { type: 'bubble', body: { type: 'box', layout: 'vertical', spacing: 'xs', contents: body } };
@@ -5909,13 +5955,13 @@ function rec4VersionCardMsg(title, sub, textFor, back, sch) {
 function rec4ViewNote(sch) {
   return '🔒 群組、多人聊天室只能看說明。要記錄請到 1 對 1 聊天室（私訊我）。\n「' + sch.name + '」會用到你自己的' + sch.listWord + '，為了保護個人資料，記錄只在 1 對 1 進行。';
 }
-function rec4ViewCardMsg(sch) {
-  return rec4VersionCardMsg(sch.icon + ' ' + sch.name + '紀錄：版本說明', rec4ViewNote(sch), null, { label: '↩️ 功能選單', text: '功能選單' }, sch);
+function rec4ViewCardMsg(sch, cfg) {
+  return rec4VersionCardMsg(sch.icon + ' ' + sch.name + '紀錄：版本說明', rec4ViewNote(sch), null, { label: '↩️ 功能選單', text: '功能選單' }, sch, cfg);
 }
 // 回覆說明卡。功能被停用、或管理員限定了可以用的人時，照樣說明原因（不裝作能用）；群組有沒有被授權、這個功能是不是「只限 1 對 1」都不影響看說明
 async function rec4ViewOnly(sch, ctx, ev, token, cfg) {
   const av = checkAvailability(sch.fn, ctx, cfg, { view: true });
-  await rec4Reply(token, ev.replyToken, [av.ok ? rec4ViewCardMsg(sch) : rec4TextMsg(av.message, ['功能選單'])]);
+  await rec4Reply(token, ev.replyToken, [av.ok ? rec4ViewCardMsg(sch, cfg) : rec4TextMsg(av.message, ['功能選單'])]);
   return av.ok;
 }
 function rec4ModulePrompt(lead) {
@@ -5932,13 +5978,13 @@ function rec4ListHint(S) {
   if (S.module === 'wish') return S.version === 'simple' ? '' : '分類：' + cut(L.wishCats.length ? L.wishCats : WISH_DEFAULT_CATS, 10); // 簡易版不問分類，不用列
   return '';
 }
-function rec4Intro(S) {
+function rec4Intro(S, cfg) {
   const sch = REC4_SCHEMAS[S.module], ver = REC4_VERSIONS[S.version];
   const head = ver.emoji + ' ' + ver.name + '｜' + ver.tag + '・' + sch.icon + ' ' + sch.name + '紀錄';
   const goDef = { simple: '👉 現在請輸入「品項＋金額」（也可以直接傳照片）', standard: '👉 現在請用一句話描述（也可以直接傳照片）' };
   const go = (sch.goText && sch.goText[S.version]) || goDef[S.version];
   const hint = sch.needLists ? rec4ListHint(S) : '';
-  return [head].concat(rec4VerLines(S.version, sch), hint ? ['', hint] : [], go ? ['', go] : []).join('\n');
+  return [head].concat(rec4VerLinesFor(S.version, sch, cfg), hint ? ['', hint] : [], go ? ['', go] : []).join('\n');
 }
 function rec4QuickList(lead, options, controls) {
   const room = Math.max(0, 13 - lead.length - controls.length);
@@ -6173,12 +6219,17 @@ async function rec4Render(S, ctx, env, pre, err) {
     case 'pick_module':
       msgs.push(rec4ModulePrompt(err || (S.version ? '已選擇 ' + REC4_VERSIONS[S.version].emoji + ' ' + REC4_VERSIONS[S.version].name + '。' : '')));
       break;
-    case 'pick_version':
-      msgs.push(rec4VersionCardMsg(sch.icon + ' ' + sch.name + '紀錄：選擇紀錄版本', err || '先選好版本，再開始輸入。', (v) => REC4_VERSIONS[v].name, { label: '↩️ 返回選功能', text: '返回' }, sch));
+    case 'pick_version': {
+      // V10.13.0：rec4Render 呼叫端很多，沒有全部線上 cfg 參數；這裡當場讀一次後台設定，只為了「規則顯示」開關判斷要不要列出規則文字
+      const cfg = await loadLineConfig(env);
+      msgs.push(rec4VersionCardMsg(sch.icon + ' ' + sch.name + '紀錄：選擇紀錄版本', err || '先選好版本，再開始輸入；文字、照片都可以。', (v) => REC4_VERSIONS[v].name, { label: '↩️ 返回選功能', text: '返回' }, sch, cfg));
       break;
-    case 'collect':
-      msgs.push(rec4TextMsg((err ? '⚠️ ' + err + '\n\n' : '') + rec4Intro(S), rec4CollectQuick(S)));
+    }
+    case 'collect': {
+      const cfg = await loadLineConfig(env);
+      msgs.push(rec4TextMsg((err ? '⚠️ ' + err + '\n\n' : '') + rec4Intro(S, cfg), rec4CollectQuick(S)));
       break;
+    }
     case 'ask': {
       const it = S.items[S.i];
       let q = rec4Queue(S, it);
@@ -6284,10 +6335,11 @@ async function rec4PrepLists(rt, preLists) {
 async function rec4Begin(rt, pre) {
   const { S, ctx, ev, token, env, cfg } = rt;
   const sch = REC4_SCHEMAS[S.module];
-  if (!S.mode) { // V10.10：表單模式——這個模組有開、不是分帳／集點卡／待去清單（這 3 個只能建草稿，草稿系統沒有分開歸戶的能力，所以不管後台設定怎麼改都不問）、講話的人是後台綁定的用戶A/B之一、而且現在是「直接寫入」（不是草稿模式）才會問；其他情況直接當單表單，不卡原本的流程
+  if (!S.mode) { // V10.10：表單模式——這個模組有開、不是分帳／集點卡／待去清單（這 3 個只能建草稿，草稿系統沒有分開歸戶的能力，所以不管後台設定怎麼改都不問）、而且現在是「直接寫入」（不是草稿模式）才會問；其他情況直接當單表單，不卡原本的流程
+    // V10.12：拿掉「講話的人必須是後台綁定的用戶A/B之一」這個條件——現在只要模組開關開著就會問，「對方是誰」改成選了雙表單之後當場問（見 rec4OnPickMode／rec4OnPickMate）。
     if (formModeEnabled(cfg, S.module) && !sch.needLists && (await rec4Mode(ctx.userId, env, cfg)) !== 'draft') {
-      const fmCtx = await formModeContext(env, cfg, ctx.userId);
-      if (fmCtx) { S.dualMate = fmCtx; S.stage = 'pick_mode'; return rec4Done(rt, (pre || []).concat([rec4FormModeMsg(sch)])); }
+      S.stage = 'pick_mode';
+      return rec4Done(rt, (pre || []).concat([rec4FormModeMsg(sch)]));
     }
     S.mode = 'single';
   }
@@ -6315,13 +6367,13 @@ async function rec4Begin(rt, pre) {
   }
   const msgs = (pre || []).slice();
   if (S.version === 'simple' || S.version === 'standard') {
-    msgs.push(rec4TextMsg(rec4Intro(S), rec4CollectQuick(S)));
+    msgs.push(rec4TextMsg(rec4Intro(S, cfg), rec4CollectQuick(S)));
     if (photoTexts.length) msgs.push(rec4TextMsg(photoTexts.join('\n\n')));
     if (!gotAny) { S.stage = 'collect'; return rec4Done(rt, msgs); }
     const out = await rec4Advance(S, msgs, ctx, env);
     return rec4Done(rt, out);
   }
-  msgs.push(rec4TextMsg(rec4Intro(S)));
+  msgs.push(rec4TextMsg(rec4Intro(S, cfg)));
   if (photoTexts.length) msgs.push(rec4TextMsg(photoTexts.join('\n\n')));
   return rec4Done(rt, await rec4Advance(S, msgs, ctx, env));
 }
@@ -6333,7 +6385,7 @@ async function rec4StartModule(modFn, version, ctx, ev, token, env, cfg, preList
   const rt = { S, ctx, ev, token, env, cfg, text: '' };
   if (sch.needLists && !(await rec4PrepLists(rt, preLists))) return true; // V10.4：分帳／集點卡／待去清單先讀使用者的清單；沒辦法用四種版本的人，這裡會改走原本的流程
   if (!version) {
-    return rec4Done(rt, [rec4VersionCardMsg(sch.icon + ' ' + sch.name + '紀錄：選擇紀錄版本', '先選好版本，再開始輸入。', (v) => '紀錄' + sch.name + ' ' + REC4_VERSIONS[v].name, { label: '↩️ 返回', text: sch.backText || sch.name }, sch)]);
+    return rec4Done(rt, [rec4VersionCardMsg(sch.icon + ' ' + sch.name + '紀錄：選擇紀錄版本', '先選好版本，再開始輸入；文字、照片都可以。', (v) => '紀錄' + sch.name + ' ' + REC4_VERSIONS[v].name, { label: '↩️ 返回', text: sch.backText || sch.name }, sch, cfg)]);
   }
   return rec4Begin(rt, []);
 }
@@ -6371,19 +6423,37 @@ async function rec4OnPickVersion(rt) {
   if (await rec4SwitchOut(rt)) return true;
   return rec4Done(rt, await rec4Render(S, rt.ctx, rt.env, [], '請點上面的卡片按鈕，選擇紀錄版本。'));
 }
-// 入口：已經選好模組＋版本，正在問「要用哪種表單模式」（V10.10；只有該模組開了開關、且講話的人是後台綁定的用戶A/B之一才會進到這裡）
+// 入口：已經選好模組＋版本，正在問「要用哪種表單模式」（V10.10；只有該模組開了開關才會進到這裡；V10.12 起不再要求講話的人要事先在後台綁定）
 async function rec4OnPickMode(rt) {
-  const { S, text, env, cfg, ctx } = rt;
+  const { S, text, env, ctx } = rt;
   if (/^單/.test(text)) { S.mode = 'single'; return rec4Begin(rt, []); }
   if (/^雙/.test(text)) {
-    const fmCtx = S.dualMate || (await formModeContext(env, cfg, ctx.userId));
-    if (!fmCtx) { S.mode = 'single'; return rec4Begin(rt, [rec4TextMsg('⚠️ 雙表單需要的用戶A／用戶B設定目前不完整，先用單表單繼續。')]); }
-    S.mode = 'dual'; S.dualMate = fmCtx;
-    return rec4Begin(rt, []);
+    const mates = await rec4MateCandidates(env, ctx.userId);
+    if (!mates.length) { S.mode = 'single'; return rec4Begin(rt, [rec4TextMsg('⚠️ 目前還沒有其他已知的使用者可以當雙表單的另一位（請先讓對方也傳一句話給機器人，才會出現在名單裡），先用單表單繼續。')]); }
+    S.mateCandidates = mates; S.stage = 'pick_mate';
+    return rec4Done(rt, [rec4PickMateMsg(REC4_SCHEMAS[S.module], mates)]);
   }
   if (REC4_NO_RE.test(text)) return rec4Cancel(rt, ''); // 畫面上就有「結束」這顆快速回覆按鈕，按下去要真的結束，不能被當成聽不懂又重問一次同一題
   if (await rec4SwitchOut(rt)) return true;
   return rec4Done(rt, [rec4FormModeMsg(REC4_SCHEMAS[S.module])]);
+}
+// 入口：雙表單選完，正在問「這次的另一位是誰」（V10.12 新增：從已知使用者名單當場選，取代舊的後台先綁定用戶A／B）
+async function rec4OnPickMate(rt) {
+  const { S, text, env, ctx } = rt;
+  if (REC4_NO_RE.test(text)) return rec4Cancel(rt, ''); // 畫面上有「結束」按鈕，按下去要真的結束
+  const mates = S.mateCandidates || [];
+  const cleaned = rec4Clean(text);
+  const picked = mates.find((m) => m.name === cleaned);
+  if (picked) {
+    const users = await rec4KnownUsers(env);
+    const selfName = (users[ctx.userId] && users[ctx.userId].name) || '';
+    S.mode = 'dual';
+    S.dualMate = { selfId: ctx.userId, mateId: picked.userId, selfName, mateName: picked.name };
+    S.mateCandidates = null;
+    return rec4Begin(rt, []);
+  }
+  if (await rec4SwitchOut(rt)) return true;
+  return rec4Done(rt, [rec4PickMateMsg(REC4_SCHEMAS[S.module], mates)]); // 打的字不是名單裡的任何一個名字：不猜，重新顯示同一題的按鈕
 }
 function rec4GotText(S) {
   const sch = REC4_SCHEMAS[S.module];
@@ -6737,6 +6807,7 @@ async function handleRec4Message(ev, token, env) {
     case 'pick_module': return rec4OnPickModule(rt);
     case 'pick_version': return rec4OnPickVersion(rt);
     case 'pick_mode': return rec4OnPickMode(rt);
+    case 'pick_mate': return rec4OnPickMate(rt);
     case 'collect': return rec4OnCollect(rt);
     case 'ask': return rec4OnAsk(rt);
     case 'confirm': return rec4OnConfirm(rt);
@@ -6773,7 +6844,7 @@ async function handleRec4Image(ev, token, env) {
     const av = checkAvailability(REC4_SCHEMAS[S.module].fn, ctx, cfg);
     if (!av.ok) { await clearFlagshipSession(ctx.userId, env); await rec4Reply(token, ev.replyToken, [rec4TextMsg(av.message, ['功能選單'])]); return true; }
   }
-  if (S.stage === 'pick_module' || S.stage === 'pick_version' || S.stage === 'pick_mode') {
+  if (S.stage === 'pick_module' || S.stage === 'pick_version' || S.stage === 'pick_mode' || S.stage === 'pick_mate') {
     S.photos = (S.photos || []).concat([msg]).slice(0, 3);
     return rec4Done(rt, await rec4Render(S, ctx, env, [rec4TextMsg('📷 收到照片了（已先收下 ' + S.photos.length + ' 張），選好功能與版本後，我會幫你辨識。')], ''));
   }
@@ -6799,8 +6870,8 @@ async function rec4StartVersionPhoto(ctx, ev, token, env, cfg, msg) {
 // （官方帳號看起來沒更新時，先用這個查：傳「機器人版本」給官方帳號，或打開 /api/health 看 worker 欄位）
 // 只回報版本，以及各項「有沒有設定」（是／否）；不會顯示任何金鑰、密碼或同步碼本身。
 // ============================================================
-const BOT_LINE_VERSION = '10.11.0'; // 要跟網頁 index.html 的 LINE_VERSION、BUILD_ID 一致（backend105 測試會逐一比對）
-const BOT_BUILD = '2026-11-13b';
+const BOT_LINE_VERSION = '10.13.0'; // 要跟網頁 index.html 的 LINE_VERSION、BUILD_ID 一致（backend105 測試會逐一比對）
+const BOT_BUILD = '2026-11-19b';
 const BOT_VERSION_CMD_RE = /^(機器人版本|機器人版號|bot版本)$/i;
 async function botVersionText(env, userId) {
   const lines = [
