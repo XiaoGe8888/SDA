@@ -1598,8 +1598,9 @@ function iconButton(label, text, style, opts) {
     type: 'box', layout: 'horizontal', paddingAll: isLink ? 'none' : 'sm', spacing: 'xs',
     alignItems: 'center', justifyContent: 'center', action,
     contents: [
-      // 使用者反應功能選單的圖示太大，把 size 從 'sm' 降成 'xs'，跟 iconRow 的圖示大小一致、看起來比較接近原本 emoji 的份量。
-      { type: 'image', url: icon, flex: 0, size: 'xs', aspectRatio: '1:1', gravity: 'center' },
+      // 使用者反應功能選單的圖示太大：先從 'sm' 降到 'xs' 不夠明顯，這裡再降到 LINE 官方清單裡最小的關鍵字 'xxs'
+      // （官方文件列出的完整順序由小到大是 xxs/xs/sm/md/lg/xl/xxl/3xl/4xl/5xl/full，xxs 已經是最小的）。
+      { type: 'image', url: icon, flex: 0, size: 'xxs', aspectRatio: '1:1', gravity: 'center' },
       { type: 'text', text: rest, size: 'sm', color: palette.fg, align: 'center', gravity: 'center', wrap: true },
     ],
   };
