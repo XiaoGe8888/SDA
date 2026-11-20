@@ -1388,10 +1388,43 @@ function onDrop(e){
 }
 
 // =====================================================================
+// 外部分享接收：手機「捷徑」App 把分享清單的內容轉送過來時使用。
+// 網址後面帶 ?url=網址&title=標題（title可省略），或帶 ?text=一段文字（裡面只要含一個網址就會自動抓出來，
+// 其餘文字會放進備註），開啟頁面時就會自動新增一筆收藏，不用手動點＋新增。
+// =====================================================================
+function extractUrlFromText(text){
+  var m=String(text||'').match(/https?:\/\/[^\s]+/i);
+  return m?m[0]:'';
+}
+function handleIncomingShare(){
+  var qs;
+  try{ qs=new URLSearchParams(location.search); }catch(e){ return; }
+  if(!qs.has('url')&&!qs.has('text')) return; // 沒帶分享參數，正常開啟頁面即可
+  var rawUrl=(qs.get('url')||'').trim();
+  var rawText=(qs.get('text')||'').trim();
+  var rawTitle=(qs.get('title')||'').trim();
+  var rawNote=(qs.get('note')||qs.get('notes')||'').trim();
+  var url=rawUrl||extractUrlFromText(rawText);
+  if(!url){ history.replaceState(null,'',location.pathname+location.hash); return; } // 抓不到網址就不留空白收藏
+  var notes=rawNote;
+  if(!notes&&rawText){ var leftover=rawText.split(url).join('').trim(); if(leftover) notes=leftover; }
+  var platform=detectPlatform(url);
+  var data={title:rawTitle,url:url,platform:platform,folderId:'',tags:[],notes:notes,coverUrl:'',fileData:null,fileName:''};
+  data.title=fallbackTitle(Object.assign({},data,{_fileName:''}));
+  var now=new Date().toISOString();
+  snapshot('從分享新增「'+data.title+'」');
+  S.items.unshift(Object.assign({id:uid('item')},data,{createdAt:now,updatedAt:now}));
+  saveItems();
+  toast('📥 已從分享新增收藏：'+data.title);
+  history.replaceState(null,'',location.pathname+location.hash);
+}
+
+// =====================================================================
 // 啟動
 // =====================================================================
 function init(){
   loadAll();
+  handleIncomingShare();
   document.addEventListener('click',onBodyClick);
   document.addEventListener('input',onBodyInput);
   document.addEventListener('change',onBodyChange);
@@ -1405,7 +1438,7 @@ function init(){
 }
 
 // 給測試或除錯用（不影響正常使用）
-window.SDA_COLLECT = { S:S, LS:LS, COLORS:COLORS, PLATFORMS:PLATFORMS, detectPlatform:detectPlatform, render:render };
+window.SDA_COLLECT = { S:S, LS:LS, COLORS:COLORS, PLATFORMS:PLATFORMS, detectPlatform:detectPlatform, render:render, handleIncomingShare:handleIncomingShare };
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
 else init();
