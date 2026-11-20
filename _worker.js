@@ -979,6 +979,60 @@ const FUNCTION_CATALOG = {
   tool_dice: { label: '骰子', writes: false, personal: false },
   tool_rps: { label: '剪刀石頭布', writes: false, personal: false }, // 手動出拳（互動對決）
   tool_rps_auto: { label: '自動剪刀石頭布', writes: false, personal: false }, // V10.6.0：一鍵自動對決（點一下就出結果）
+  // 新增：FAQ常見問答（25題，使用者提供的標準文案核對過實際行為後的版本；純文字回覆，不開始任何流程、不寫入任何資料）
+  faq_name: { label: 'FAQ：自我介紹', writes: false, personal: false },
+  faq_capability: { label: 'FAQ：功能說明', writes: false, personal: false },
+  faq_version: { label: 'FAQ：版本選擇說明', writes: false, personal: false },
+  faq_howto: { label: 'FAQ：系統與LINE使用說明', writes: false, personal: false },
+  faq_linename: { label: 'FAQ：LINE機器人名稱', writes: false, personal: false },
+  faq_lineuse: { label: 'FAQ：LINE操作方式', writes: false, personal: false },
+  faq_formmode: { label: 'FAQ：單雙表單差別', writes: false, personal: false },
+  faq_groupsilent: { label: 'FAQ：群組沒反應說明', writes: false, personal: false },
+  faq_restart: { label: 'FAQ：重新開始操作', writes: false, personal: false },
+  faq_draftmode: { label: 'FAQ：草稿模式說明', writes: false, personal: false },
+  faq_iconissue: { label: 'FAQ：圖示異常排除', writes: false, personal: false },
+  faq_forgotpw: { label: 'FAQ：忘記密碼', writes: false, personal: false },
+  faq_tools: { label: 'FAQ：互動小工具列表', writes: false, personal: false },
+  faq_crosssync: { label: 'FAQ：跨裝置同步說明', writes: false, personal: false },
+  faq_statcenter: { label: 'FAQ：統計中心分類', writes: false, personal: false },
+  faq_customopt: { label: 'FAQ：自訂選項說明', writes: false, personal: false },
+  faq_dualsave: { label: 'FAQ：雙表單儲存方式', writes: false, personal: false },
+  faq_dualpartial: { label: 'FAQ：雙人紀錄中途離開', writes: false, personal: false },
+  faq_bizhours: { label: 'FAQ：待去清單營業狀態', writes: false, personal: false },
+  faq_photolimit: { label: 'FAQ：照片限制說明', writes: false, personal: false },
+  faq_midnight: { label: 'FAQ：午夜時區說明', writes: false, personal: false },
+  faq_doubletap: { label: 'FAQ：防重複送出說明', writes: false, personal: false },
+  faq_snnoreuse: { label: 'FAQ：流水號不補號', writes: false, personal: false },
+  faq_csvexport: { label: 'FAQ：CSV匯出說明', writes: false, personal: false },
+  faq_synccode: { label: 'FAQ：同步碼說明', writes: false, personal: false },
+};
+// FAQ：每個 fn 對應的固定回覆文字。內容已對照程式實際行為核對過，跟使用者原始文案描述不一致的地方（忘記密碼、草稿模式、待去清單營業狀態判斷、互動小工具名稱、同步碼用語）已修正為真實行為，不是照抄原文。
+const FAQ_REPLIES = {
+  faq_name: '我是「日常小秘書」！專門協助你整理日常飲食消費、同行分帳、集點與待去清單，個人視窗或群組都能用。',
+  faq_capability: '我可以幫你管理生活紀錄，主要有：\n・六大模組：飲料、美食、交通、分帳、集點卡、待去清單，快速建檔與查詢\n・8種免開網頁的互動小工具，直接對話就能玩\n・LINE與網頁版資料即時互通',
+  faq_version: '輸入「紀錄○○」（例如紀錄飲料）或「日常小秘書」會跳出選版本卡：🟢簡易版／🟡標準版／🟠進階版／🔵旗艦版。旗艦版目前只有🧋飲料做完整流程，其他模組的旗艦版還在開發中，會誠實告知。',
+  faq_howto: 'LINE適合外出時單手快速記帳、拍照上傳或玩小工具；網頁版適合一次檢視雙表單並列輸入、看統計中心報表、做進階設定。兩邊資料即時互通。',
+  faq_linename: '我在LINE上的名字是「日常小秘書」。1對1聊天室可以直接輸入指令或點選單；群組裡要打對關鍵字（模組名稱＋「紀錄」，或輸入「日常小秘書」）我才會回應——目前還不支援用@標註我來啟動。',
+  faq_lineuse: '在LINE使用很簡單：①點底部圖文選單直接選功能；②照卡片提示一步步填寫；③操作到一半想重新開始，隨時輸入「返回主選單」清空暫存。',
+  faq_formmode: '單表單模式只填一位使用者，存檔後建立1筆個人紀錄；雙表單模式左右兩側同時填兩位使用者，存檔後雙方紀錄一次建立。',
+  faq_groupsilent: '為了不打擾大家在群組裡聊天，群組模式需要明確指令（按鈕或關鍵字）才會啟動回覆；一般聊天我會保持安靜、不插話。',
+  faq_restart: '請直接點卡片下方「返回主選單」，或在對話框輸入「返回主選單」或「取消」，會立即清空剛剛未完成的暫存步驟。',
+  faq_draftmode: '這是你自己設定的開關：到網頁「系統設定」打開「草稿模式」，六個模組在LINE送出後都會先進網頁「待確認草稿」，到網頁確認後才正式寫入；關閉的話就直接寫入，不用再到網頁確認。',
+  faq_iconissue: '圖示沒顯示通常是網路不穩或圖床暫時延遲，建議切換網路（Wi-Fi／行動網路）或重新開啟對話視窗，持續發生可以輸入「功能選單」確認其他功能是否正常。',
+  faq_forgotpw: '請在網頁登入畫面點「忘記密碼」，目前會引導你點「建立新帳號」重新註冊——目前沒有寄送Email驗證信重設密碼的機制。',
+  faq_tools: '免開網頁的互動小工具共8個，LINE點選互動選單就能玩：🧭奇遇羅盤（選地點）、🎁驚喜製造所（選店家）、🎡轉盤、🪙拋硬幣、🍾轉瓶子、📦隨機盒子、🎲骰子，以及✌️剪刀／✊石頭／✋布／🤖自動對決。',
+  faq_crosssync: '可以！只要兩台裝置輸入同一組「同步碼」，手機LINE確認送出的紀錄會即時同步到電腦、平板的網頁版，編號也會自動排序不重複。',
+  faq_statcenter: '統計中心提供7項分類檢視：🌐全館、🧋飲料、🍱美食、🚆交通、🧾分帳、🌟集點卡、🗺️待去清單，可以隨時切換分類查看明細與累積紀錄。',
+  faq_customopt: '下拉選單找不到想要的項目時，點選「自訂...」就會展開輸入框讓你手動填寫；常用的項目建議到上方參數設定新增，之後可以直接點選。',
+  faq_dualsave: '雙表單模式下，畫面左側是用戶A、右側是用戶B，兩邊可以同時各自填寫，全部填妥後點畫面下方共用的「確認儲存」一次送出，系統會自動檢查兩側必填欄位。',
+  faq_dualpartial: '不會喔！填寫過程中資料只會先放在暫存區，必須等你按下最後的「確認」才會正式寫入資料庫；中途離開不會留下殘缺的單邊紀錄。',
+  faq_bizhours: '待去清單的營業狀態是即時比對「現在的時間」與店家營業時間自動判斷的（不是你預計到訪的時間），每30秒自動更新，狀態分5種：🟢營業中／🟡即將打烊／🟠即將營業／🔴休息中／⚪資訊未提供。',
+  faq_photolimit: '單張照片請盡量不要太大，建議用LINE一般畫質傳送，避免傳送超大原始檔；如果傳了沒反應，可能是檔案過大或網路不穩，建議重新用一般畫質傳送一次。',
+  faq_midnight: '系統統一鎖定台灣標準時間（GMT+8），只要過了午夜00:00，所有建檔紀錄都會精準歸入當天的日期。',
+  faq_doubletap: '系統有防重複寫入機制，短時間內重複點擊同一個送出指令只會執行一次寫入，不會產生重複紀錄。',
+  faq_snnoreuse: '不會。每一筆資料的流水號都是獨立且鎖定的，刪除舊紀錄後，新紀錄一律依目前最大號往後加1，不會回收或補用舊編號。',
+  faq_csvexport: '可以！在網頁版的資料管理或設定區，支援將紀錄匯出成通用的.csv表格檔案，用Excel就能直接檢視、篩選與備份。',
+  faq_synccode: '只要在兩台裝置的「系統設定」輸入同一組「同步碼」，你的收藏、資料夾與紀錄就會在手機、平板、電腦之間自動即時同步。',
 };
 const QUICK_KINDS = {
   food: { fn: 'food', label: '🍽️ 美食紀錄', category: 'food', examples: ['拉麵 180', '鼎泰豐小籠包中份現金380'] },
@@ -1002,6 +1056,9 @@ function makeCtx(ev) {
 const MENU_RULES_V = 2;
 // V10.6.0：「工具」格子的版本。2＝多了「自動剪刀石頭布」；V10.9.0：3＝「✌️ 剪刀石頭布」（手動單一格，按了要再選一次）拆成「剪刀」「石頭」「布」3 個各自一點就直接出結果的格子。存過設定、但 menu 裡沒有 toolsV 的舊設定視為 1：載入時（upgradeToolsMenu）補上新格子；管理員到後台存檔後，設定裡就有 toolsV=3，不會再補
 const TOOLS_V = 3;
+// 新增：FAQ常見問答關鍵字的版本。存過設定、但 menu 裡沒有 faqKwV 的舊設定視為 0：載入時（upgradeFaqKeywords）自動補上這批新關鍵字；
+//   已經存在的關鍵字（不論是不是這批新增的）不會被覆蓋或重複加；管理員到後台存檔後，設定裡就有 faqKwV=1，不會再補
+const FAQ_KW_V = 1;
 // V10.3.0 以前的預設選單與關鍵字（只用來判斷「存在 KV 裡的設定有沒有被使用者改過」；不要修改）
 function legacyDefaultLineConfigV103() {
   let n = 0;
@@ -1120,6 +1177,32 @@ function defaultLineConfig() {
       kw('擲骰子', 'tool_dice', 'exact', 'both', 2), kw('骰骰子', 'tool_dice', 'exact', 'both', 2), kw('猜拳', 'tool_rps', 'exact', 'both', 2),
       kw('擲硬幣', 'tool_coin', 'exact', 'both', 2), kw('丟硬幣', 'tool_coin', 'exact', 'both', 2), kw('選地點', 'tool_compass', 'exact', 'both', 2), kw('選店家', 'tool_surprise', 'exact', 'both', 2),
       kw('自動猜拳', 'tool_rps_auto', 'exact', 'both', 2, { id: 'kw_rps_auto' }),
+      // 新增：FAQ常見問答（25題）——關鍵字＝使用者會問的完整問句，完全比對才觸發，不影響其他較短的關鍵字
+      kw('請告訴我你的名字', 'faq_name', 'exact', 'both', 3),
+      kw('請告訴我你可以做什麼？', 'faq_capability', 'exact', 'both', 3),
+      kw('請告知我如何使用，並選擇要詢問的版本', 'faq_version', 'exact', 'both', 3),
+      kw('請告知我系統及LINE怎麼使用', 'faq_howto', 'exact', 'both', 3),
+      kw('請告知我LINE聊天機器人的名字', 'faq_linename', 'exact', 'both', 3),
+      kw('請告知我LINE聊天機器人如何使用', 'faq_lineuse', 'exact', 'both', 3),
+      kw('單表單模式與雙表單模式有什麼差別？', 'faq_formmode', 'exact', 'both', 3),
+      kw('為什麼我在群組傳訊息，機器人沒有反應？', 'faq_groupsilent', 'exact', 'both', 3),
+      kw('操作到一半按錯或畫面卡住，要怎麼重新開始？', 'faq_restart', 'exact', 'both', 3),
+      kw('哪些紀錄在LINE會直接儲存，哪些會變成網頁草稿？', 'faq_draftmode', 'exact', 'both', 3),
+      kw('為什麼畫面上的Icon圖示沒有顯示出來？', 'faq_iconissue', 'exact', 'both', 3),
+      kw('忘記網頁版的登入帳號或密碼怎麼辦？', 'faq_forgotpw', 'exact', 'both', 3),
+      kw('免開網頁的互動小工具有哪些？怎麼玩？', 'faq_tools', 'exact', 'both', 3),
+      kw('我在手機LINE記的資料，電腦網頁版看得到嗎？', 'faq_crosssync', 'exact', 'both', 3),
+      kw('統計中心可以查看哪些資料？', 'faq_statcenter', 'exact', 'both', 3),
+      kw('選單裡沒有我要的品項、店家或平台怎麼辦？', 'faq_customopt', 'exact', 'both', 3),
+      kw('網頁版的「左A右B」雙表單要怎麼一起儲存？', 'faq_dualsave', 'exact', 'both', 3),
+      kw('填雙人紀錄填到一半離開，資料會留一半嗎？', 'faq_dualpartial', 'exact', 'both', 3), // 原文含①②➊➋➔特殊符號，使用者實際打不出來，改成可以直接輸入的同義問句
+      kw('「待去清單」要怎麼知道店家現在有沒有營業？', 'faq_bizhours', 'exact', 'both', 3),
+      kw('傳送照片給機器人有什麼限制？為什麼有時候傳了沒反應？', 'faq_photolimit', 'exact', 'both', 3),
+      kw('凌晨12點過後記帳，日期會算在今天還是昨天？', 'faq_midnight', 'exact', 'both', 3),
+      kw('不小心連點了兩次儲存按鈕，會變成兩筆重複的紀錄嗎？', 'faq_doubletap', 'exact', 'both', 3),
+      kw('刪除紀錄後，原本的流水編號會補號或重複使用嗎？', 'faq_snnoreuse', 'exact', 'both', 3),
+      kw('我可以把系統裡的紀錄匯出成Excel檔案備份嗎？', 'faq_csvexport', 'exact', 'both', 3),
+      kw('什麼是「同步空間代碼」？怎麼跟另一台手機或電腦同步？', 'faq_synccode', 'exact', 'both', 3),
     ],
     permissions: {
       drink: perm(), food: perm(), travel: perm(), ledger: perm(), split: perm(), split_add: perm(),
@@ -1133,7 +1216,7 @@ function defaultLineConfig() {
     fuzzy: { suggest: 0.6, auto: 0.9 },
     query: { defaultVersion: '' },
     draft: { enabled: true }, // V9：LINE 輸入的飲料／美食／交通，先建立「待確認草稿」到網頁確認後才儲存（關閉＝回到 LINE 裡確認儲存）
-    menu: { style: 'collapsed', rulesV: MENU_RULES_V, toolsV: TOOLS_V }, // V10.4：功能選單只列第一層；各選單只顯示自己的項目（toolsV：V10.6.0「工具」格子的版本）
+    menu: { style: 'collapsed', rulesV: MENU_RULES_V, toolsV: TOOLS_V, faqKwV: FAQ_KW_V }, // V10.4：功能選單只列第一層；各選單只顯示自己的項目（toolsV：V10.6.0「工具」格子的版本；faqKwV：FAQ常見問答關鍵字的版本）
     // V10.10：「表單模式」正式接進 LINE（飲料／美食／交通／分帳／集點卡／待去清單紀錄時可以選單表單／雙表單）。
     //   aId／bId：V10.10.0 原本用來綁定用戶A／用戶B的LINE User ID；V10.12 起不再讀取（雙表單的「對方是誰」改成當場從已知使用者選），
     //     這兩個欄位留著只是不破壞舊設定檔結構，沒有實際作用；
@@ -1144,6 +1227,7 @@ function defaultLineConfig() {
     ruleVisible: { modules: { drink: false, food: false, travel: false, split: false, sticker: false, wish: false } },
   };
   TOOL_FNS.forEach((f) => { cfg.permissions[f] = perm(); }); // 工具：1 對 1、群組都能用，結果直接回在同一個聊天室
+  Object.keys(FAQ_REPLIES).forEach((f) => { cfg.permissions[f] = perm(); }); // FAQ：1對1、群組都能用，純文字回覆，不寫入任何資料
   return cfg;
 }
 
@@ -1250,7 +1334,7 @@ function sanitizeConfig(input) {
   const legacySaved = !mIn && Array.isArray(inp.mainMenus) && inp.mainMenus.length > 0; // 有存選單、但沒有 menu 欄位＝V10.3 以前存下來的設定：維持舊的展開方式，後台會提示可以套用新版（完全沒存選單的不算）
   const menu = legacySaved
     ? { style: 'expanded', rulesV: 1 }
-    : { style: pick(mIn && mIn.style, ['collapsed', 'expanded'], d.menu.style), rulesV: mIn ? Math.max(1, Math.min(MENU_RULES_V, Math.floor(num(mIn.rulesV, MENU_RULES_V)))) : d.menu.rulesV, toolsV: mIn ? Math.max(1, Math.min(TOOLS_V, Math.floor(num(mIn.toolsV, 1)))) : d.menu.toolsV }; // V10.6.0：存過設定、但沒有 toolsV ＝ 1（還沒有「自動剪刀石頭布」格子）
+    : { style: pick(mIn && mIn.style, ['collapsed', 'expanded'], d.menu.style), rulesV: mIn ? Math.max(1, Math.min(MENU_RULES_V, Math.floor(num(mIn.rulesV, MENU_RULES_V)))) : d.menu.rulesV, toolsV: mIn ? Math.max(1, Math.min(TOOLS_V, Math.floor(num(mIn.toolsV, 1)))) : d.menu.toolsV, faqKwV: mIn ? Math.max(0, Math.min(FAQ_KW_V, Math.floor(num(mIn.faqKwV, 0)))) : d.menu.faqKwV }; // V10.6.0：存過設定、但沒有 toolsV ＝ 1（還沒有「自動剪刀石頭布」格子）；沒有 faqKwV ＝ 0（還沒有這批FAQ關鍵字）
   const cfg = { v: 1, mainMenus: mains, subMenus: subs, keywords: kws, permissions: perms, groups, fuzzy, query, draft, menu, formMode, ruleVisible };
 
   // 衝突檢查：同一個「完全相同的關鍵字」，在同一種聊天室裡不能同時指向兩個不同的功能
@@ -1319,19 +1403,30 @@ function upgradeToolsMenu(cfg) {
   if (dk && !kws.some((k) => normalizeKeyword(k.keyword) === normalizeKeyword(dk.keyword))) kws.push(Object.assign({}, dk));
   return Object.assign({}, cfg, { subMenus: subs, keywords: kws, menu: Object.assign({}, cfg.menu, { toolsV: TOOLS_V }) });
 }
+// 新增：存在KV裡、已經是目前選單版本（rulesV）的舊設定，載入時自動補上這批FAQ關鍵字（見FAQ_REPLIES／FAQ_KW_V）；
+//   管理員已經刪掉或改過某一題的關鍵字，不會被動補回來；都不寫回KV，管理員到後台存檔後才算定案（跟 upgradeToolsMenu 同一套做法）
+function upgradeFaqKeywords(cfg) {
+  if (!cfg || !cfg.menu || (cfg.menu.faqKwV || 0) >= FAQ_KW_V) return cfg;
+  const d = defaultLineConfig();
+  const kws = (cfg.keywords || []).map((k) => Object.assign({}, k));
+  d.keywords.filter((k) => FAQ_REPLIES[k.fn]).forEach((dk2) => {
+    if (!kws.some((k) => normalizeKeyword(k.keyword) === normalizeKeyword(dk2.keyword))) kws.push(Object.assign({}, dk2));
+  });
+  return Object.assign({}, cfg, { keywords: kws, menu: Object.assign({}, cfg.menu, { faqKwV: FAQ_KW_V }) });
+}
 async function loadLineConfig(env) {
   let stored = null;
   try { const raw = env.SYNC_KV ? await env.SYNC_KV.get(CONFIG_KEY) : null; if (raw) stored = JSON.parse(raw); } catch (e) { stored = null; }
   const cfg = sanitizeConfig(stored || {}).config;
   if (!stored) return cfg;
-  if (cfg.menu && cfg.menu.rulesV >= MENU_RULES_V) return upgradeToolsMenu(cfg);
+  if (cfg.menu && cfg.menu.rulesV >= MENU_RULES_V) return upgradeFaqKeywords(upgradeToolsMenu(cfg));
   // V10.3 以前存下來的設定：選單和關鍵字跟當時的預設一模一樣（沒被改過）→ 直接換成新版預設；改過的 → 原樣保留（不偷偷覆蓋），後台會提示可以一鍵套用
   const legacy = sanitizeConfig(legacyDefaultLineConfigV103()).config;
   if (menuSignature(cfg) === menuSignature(legacy)) {
     const nd = defaultLineConfig();
-    return sanitizeConfig(Object.assign({}, stored, { mainMenus: nd.mainMenus, subMenus: nd.subMenus, keywords: nd.keywords, menu: nd.menu })).config;
+    return upgradeFaqKeywords(sanitizeConfig(Object.assign({}, stored, { mainMenus: nd.mainMenus, subMenus: nd.subMenus, keywords: nd.keywords, menu: nd.menu })).config);
   }
-  return cfg;
+  return upgradeFaqKeywords(cfg);
 }
 // 只比會影響行為的欄位（不比 id、說明文字）
 function menuSignature(c) {
@@ -2477,7 +2572,9 @@ async function executeFunction(fn, ctx, ev, token, env, cfg) {
     case 'device': return sendDeviceCenter(token, ev);
     case 'tool_compass': case 'tool_surprise': case 'tool_wheel': case 'tool_coin': case 'tool_bottle': case 'tool_box': case 'tool_dice': case 'tool_rps': case 'tool_rps_auto':
       return runLineTool(fn, ctx, ev, token, env, cfg, '');
-    default: return false;
+    default:
+      if (FAQ_REPLIES[fn]) { await lineReplyQuick(token, ev.replyToken, FAQ_REPLIES[fn], ['功能選單']); return true; } // 新增：FAQ常見問答，純文字回覆，不開始任何流程、不寫入任何資料
+      return false;
   }
 }
 
