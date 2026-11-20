@@ -1057,8 +1057,10 @@ const MENU_RULES_V = 2;
 // V10.6.0：「工具」格子的版本。2＝多了「自動剪刀石頭布」；V10.9.0：3＝「✌️ 剪刀石頭布」（手動單一格，按了要再選一次）拆成「剪刀」「石頭」「布」3 個各自一點就直接出結果的格子。存過設定、但 menu 裡沒有 toolsV 的舊設定視為 1：載入時（upgradeToolsMenu）補上新格子；管理員到後台存檔後，設定裡就有 toolsV=3，不會再補
 const TOOLS_V = 3;
 // 新增：FAQ常見問答關鍵字的版本。存過設定、但 menu 裡沒有 faqKwV 的舊設定視為 0：載入時（upgradeFaqKeywords）自動補上這批新關鍵字；
-//   已經存在的關鍵字（不論是不是這批新增的）不會被覆蓋或重複加；管理員到後台存檔後，設定裡就有 faqKwV=1，不會再補
-const FAQ_KW_V = 1;
+//   已經存在的關鍵字（不論是不是這批新增的）不會被覆蓋或重複加；管理員到後台存檔後，設定裡就是目前這個版本號，不會再補。
+//   V10.15（2→）：25題原本只有「完全比對規格原句」，使用者實際上幾乎打不出一字不差的句子，等於形同沒有這個功能——
+//   每題再補2～3組口語版關鍵字（contains・1對1限定），upgradeFaqKeywords 不用改，既有的「用keyword文字比對是否已存在」邏輯會自動連這批也一起補上。
+const FAQ_KW_V = 2;
 // V10.3.0 以前的預設選單與關鍵字（只用來判斷「存在 KV 裡的設定有沒有被使用者改過」；不要修改）
 function legacyDefaultLineConfigV103() {
   let n = 0;
@@ -1178,31 +1180,59 @@ function defaultLineConfig() {
       kw('擲硬幣', 'tool_coin', 'exact', 'both', 2), kw('丟硬幣', 'tool_coin', 'exact', 'both', 2), kw('選地點', 'tool_compass', 'exact', 'both', 2), kw('選店家', 'tool_surprise', 'exact', 'both', 2),
       kw('自動猜拳', 'tool_rps_auto', 'exact', 'both', 2, { id: 'kw_rps_auto' }),
       // 新增：FAQ常見問答（25題）——關鍵字＝使用者會問的完整問句，完全比對才觸發，不影響其他較短的關鍵字
+      // V10.15：每題再補2～3組口語版關鍵字（contains・優先度20）。
+      // V10.16：口語版改成跟規格原句一樣 scope:'both'，群組也會生效（使用者明確要求）——
+      //   跟專案裡其他模組的 contains 版本（例如「飲料紀錄」）只限1對1不同，這批FAQ口語詞是刻意的例外，見交付說明裡的風險提醒。
       kw('請告訴我你的名字', 'faq_name', 'exact', 'both', 3),
+      kw('你叫什麼名字', 'faq_name', 'contains', 'both', 20), kw('你的名字是什麼', 'faq_name', 'contains', 'both', 20), kw('你是誰', 'faq_name', 'contains', 'both', 20),
       kw('請告訴我你可以做什麼？', 'faq_capability', 'exact', 'both', 3),
+      kw('你可以做什麼', 'faq_capability', 'contains', 'both', 20), kw('你有什麼功能', 'faq_capability', 'contains', 'both', 20), kw('你能幫我做什麼', 'faq_capability', 'contains', 'both', 20),
       kw('請告知我如何使用，並選擇要詢問的版本', 'faq_version', 'exact', 'both', 3),
+      kw('版本有哪些', 'faq_version', 'contains', 'both', 20), kw('版本差在哪', 'faq_version', 'contains', 'both', 20), kw('版本怎麼選', 'faq_version', 'contains', 'both', 20),
       kw('請告知我系統及LINE怎麼使用', 'faq_howto', 'exact', 'both', 3),
+      kw('LINE跟網頁差別', 'faq_howto', 'contains', 'both', 20), kw('手機跟電腦差別', 'faq_howto', 'contains', 'both', 20), kw('怎麼用這個系統', 'faq_howto', 'contains', 'both', 20),
       kw('請告知我LINE聊天機器人的名字', 'faq_linename', 'exact', 'both', 3),
+      kw('LINE上的名字', 'faq_linename', 'contains', 'both', 20), kw('LINE機器人叫什麼', 'faq_linename', 'contains', 'both', 20), kw('機器人叫什麼名字', 'faq_linename', 'contains', 'both', 20),
       kw('請告知我LINE聊天機器人如何使用', 'faq_lineuse', 'exact', 'both', 3),
+      kw('LINE怎麼用', 'faq_lineuse', 'contains', 'both', 20), kw('LINE怎麼操作', 'faq_lineuse', 'contains', 'both', 20), kw('怎麼在LINE使用', 'faq_lineuse', 'contains', 'both', 20),
       kw('單表單模式與雙表單模式有什麼差別？', 'faq_formmode', 'exact', 'both', 3),
+      kw('表單模式差別', 'faq_formmode', 'contains', 'both', 20), kw('單雙表單差在哪', 'faq_formmode', 'contains', 'both', 20), kw('單人雙人模式差別', 'faq_formmode', 'contains', 'both', 20),
       kw('為什麼我在群組傳訊息，機器人沒有反應？', 'faq_groupsilent', 'exact', 'both', 3),
+      kw('群組沒反應', 'faq_groupsilent', 'contains', 'both', 20), kw('群組叫不動', 'faq_groupsilent', 'contains', 'both', 20), kw('群組沒用', 'faq_groupsilent', 'contains', 'both', 20),
       kw('操作到一半按錯或畫面卡住，要怎麼重新開始？', 'faq_restart', 'exact', 'both', 3),
+      kw('卡住怎麼辦', 'faq_restart', 'contains', 'both', 20), kw('按錯怎麼重來', 'faq_restart', 'contains', 'both', 20), kw('怎麼重新開始', 'faq_restart', 'contains', 'both', 20),
       kw('哪些紀錄在LINE會直接儲存，哪些會變成網頁草稿？', 'faq_draftmode', 'exact', 'both', 3),
+      kw('草稿模式是什麼', 'faq_draftmode', 'contains', 'both', 20), kw('什麼是草稿模式', 'faq_draftmode', 'contains', 'both', 20), kw('草稿怎麼用', 'faq_draftmode', 'contains', 'both', 20),
       kw('為什麼畫面上的Icon圖示沒有顯示出來？', 'faq_iconissue', 'exact', 'both', 3),
+      kw('圖示不見了', 'faq_iconissue', 'contains', 'both', 20), kw('圖示顯示不出來', 'faq_iconissue', 'contains', 'both', 20), kw('圖示壞了', 'faq_iconissue', 'contains', 'both', 20),
       kw('忘記網頁版的登入帳號或密碼怎麼辦？', 'faq_forgotpw', 'exact', 'both', 3),
+      kw('忘記密碼', 'faq_forgotpw', 'contains', 'both', 20), kw('密碼忘記了', 'faq_forgotpw', 'contains', 'both', 20), kw('忘記帳號', 'faq_forgotpw', 'contains', 'both', 20),
       kw('免開網頁的互動小工具有哪些？怎麼玩？', 'faq_tools', 'exact', 'both', 3),
+      kw('有什麼小工具', 'faq_tools', 'contains', 'both', 20), kw('小工具怎麼玩', 'faq_tools', 'contains', 'both', 20), kw('好玩的工具', 'faq_tools', 'contains', 'both', 20),
       kw('我在手機LINE記的資料，電腦網頁版看得到嗎？', 'faq_crosssync', 'exact', 'both', 3),
+      kw('手機跟電腦會同步嗎', 'faq_crosssync', 'contains', 'both', 20), kw('資料會同步嗎', 'faq_crosssync', 'contains', 'both', 20), kw('手機記的電腦看得到嗎', 'faq_crosssync', 'contains', 'both', 20),
       kw('統計中心可以查看哪些資料？', 'faq_statcenter', 'exact', 'both', 3),
+      kw('統計中心是什麼', 'faq_statcenter', 'contains', 'both', 20), kw('統計中心可以看什麼', 'faq_statcenter', 'contains', 'both', 20), kw('哪裡看統計', 'faq_statcenter', 'contains', 'both', 20),
       kw('選單裡沒有我要的品項、店家或平台怎麼辦？', 'faq_customopt', 'exact', 'both', 3),
+      kw('沒有我要的選項', 'faq_customopt', 'contains', 'both', 20), kw('找不到我要的店家', 'faq_customopt', 'contains', 'both', 20), kw('選單沒有我要的', 'faq_customopt', 'contains', 'both', 20),
       kw('網頁版的「左A右B」雙表單要怎麼一起儲存？', 'faq_dualsave', 'exact', 'both', 3),
+      kw('雙表單怎麼存', 'faq_dualsave', 'contains', 'both', 20), kw('左A右B怎麼儲存', 'faq_dualsave', 'contains', 'both', 20), kw('雙人表單怎麼一起存', 'faq_dualsave', 'contains', 'both', 20),
       kw('填雙人紀錄填到一半離開，資料會留一半嗎？', 'faq_dualpartial', 'exact', 'both', 3), // 原文含①②➊➋➔特殊符號，使用者實際打不出來，改成可以直接輸入的同義問句
+      kw('填一半會不會存檔', 'faq_dualpartial', 'contains', 'both', 20), kw('填到一半離開會怎樣', 'faq_dualpartial', 'contains', 'both', 20), kw('雙人紀錄填一半', 'faq_dualpartial', 'contains', 'both', 20),
       kw('「待去清單」要怎麼知道店家現在有沒有營業？', 'faq_bizhours', 'exact', 'both', 3),
+      kw('怎麼知道店家有沒有營業', 'faq_bizhours', 'contains', 'both', 20), kw('店家現在營業嗎', 'faq_bizhours', 'contains', 'both', 20), kw('待去清單營業狀態', 'faq_bizhours', 'contains', 'both', 20),
       kw('傳送照片給機器人有什麼限制？為什麼有時候傳了沒反應？', 'faq_photolimit', 'exact', 'both', 3),
+      kw('照片傳不出去', 'faq_photolimit', 'contains', 'both', 20), kw('傳照片沒反應', 'faq_photolimit', 'contains', 'both', 20), kw('照片有限制嗎', 'faq_photolimit', 'contains', 'both', 20),
       kw('凌晨12點過後記帳，日期會算在今天還是昨天？', 'faq_midnight', 'exact', 'both', 3),
+      kw('凌晨記帳算哪天', 'faq_midnight', 'contains', 'both', 20), kw('跨過午夜算今天還是昨天', 'faq_midnight', 'contains', 'both', 20), kw('半夜記帳日期算誰', 'faq_midnight', 'contains', 'both', 20),
       kw('不小心連點了兩次儲存按鈕，會變成兩筆重複的紀錄嗎？', 'faq_doubletap', 'exact', 'both', 3),
+      kw('連點兩次會不會重複', 'faq_doubletap', 'contains', 'both', 20), kw('按兩次儲存會怎樣', 'faq_doubletap', 'contains', 'both', 20), kw('點太多次會重複紀錄嗎', 'faq_doubletap', 'contains', 'both', 20),
       kw('刪除紀錄後，原本的流水編號會補號或重複使用嗎？', 'faq_snnoreuse', 'exact', 'both', 3),
+      kw('刪除後編號會補回來嗎', 'faq_snnoreuse', 'contains', 'both', 20), kw('流水號會重複用嗎', 'faq_snnoreuse', 'contains', 'both', 20), kw('編號刪掉會不會補', 'faq_snnoreuse', 'contains', 'both', 20),
       kw('我可以把系統裡的紀錄匯出成Excel檔案備份嗎？', 'faq_csvexport', 'exact', 'both', 3),
+      kw('可以匯出excel嗎', 'faq_csvexport', 'contains', 'both', 20), kw('怎麼備份', 'faq_csvexport', 'contains', 'both', 20), kw('匯出csv', 'faq_csvexport', 'contains', 'both', 20),
       kw('什麼是「同步空間代碼」？怎麼跟另一台手機或電腦同步？', 'faq_synccode', 'exact', 'both', 3),
+      kw('同步碼是什麼', 'faq_synccode', 'contains', 'both', 20), kw('怎麼跟另一台同步', 'faq_synccode', 'contains', 'both', 20), kw('同步碼怎麼用', 'faq_synccode', 'contains', 'both', 20),
     ],
     permissions: {
       drink: perm(), food: perm(), travel: perm(), ledger: perm(), split: perm(), split_add: perm(),
