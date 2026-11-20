@@ -1236,6 +1236,7 @@ const LAYOUT_LIST = ['list', 'grid'];
 function normalizeScopeOverlap(a, b) { return a === 'both' || b === 'both' || a === b; }
 function isValidFn(fn, mainIds) {
   if (FUNCTION_CATALOG[fn]) return true;
+  if (typeof fn === 'string' && fn.indexOf('url:') === 0) return fn.slice(4).trim().length > 0; // V10.14：對應功能可以是自訂網址（'url:'開頭）；網址格式（必須是http/https）在 sanitizeConfig 另外驗證
   return typeof fn === 'string' && fn.indexOf('menu:') === 0 && mainIds.has(fn.slice(5));
 }
 function sanitizeConfig(input) {
@@ -1252,16 +1253,18 @@ function sanitizeConfig(input) {
   const mainIds = new Set();
   (Array.isArray(inp.mainMenus) ? inp.mainMenus : d.mainMenus).slice(0, 20).forEach((m, i) => {
     m = m || {};
-    const name = str(m.name, 20);
+    const name = str(m.name, 40); // V10.14：按鈕名稱上限跟著 iconButton 實際能顯示的長度放寬（20→40），避免「打得出來、畫面卻被裁掉」
     if (!name) { errors.push('第 ' + (i + 1) + ' 個主選單沒有名稱'); return; }
     const id = str(m.id, 40) || ('m_' + Date.now().toString(36) + i);
     if (mainIds.has(id)) { errors.push('主選單 ID 重複：' + id); return; }
     mainIds.add(id);
     const dm = d.mainMenus.find((x) => x.id === id);
-    mains.push({ id, name, emoji: str(m.emoji, 8), order: num(m.order, i + 1), enabled: bool(m.enabled, true), scope: pick(m.scope, SCOPE_LIST, 'both'), functionId: m.functionId ? str(m.functionId, 60) : null, layout: pick(m.layout, LAYOUT_LIST, (dm && dm.layout) || 'list') }); // V10.5：沒存過 layout 的舊設定，照預設選單（工具＝九宮格，其餘＝清單）；存過的就尊重
+    const mFidRaw = String(m.functionId || '');
+    mains.push({ id, name, emoji: str(m.emoji, 8), order: num(m.order, i + 1), enabled: bool(m.enabled, true), scope: pick(m.scope, SCOPE_LIST, 'both'), functionId: m.functionId ? (mFidRaw.indexOf('url:') === 0 ? 'url:' + str(mFidRaw.slice(4), 500) : str(mFidRaw, 60)) : null, layout: pick(m.layout, LAYOUT_LIST, (dm && dm.layout) || 'list') }); // V10.5：沒存過 layout 的舊設定，照預設選單（工具＝九宮格，其餘＝清單）；存過的就尊重。V10.14：對應功能若是自訂網址（'url:'開頭），放寬到500字（一般功能ID仍是60字）
   });
   mains.forEach((m) => {
     if (m.functionId && m.functionId === 'menu:' + m.id) { errors.push('主選單「' + m.name + '」不能指向自己'); m.functionId = null; }
+    else if (m.functionId && m.functionId.indexOf('url:') === 0 && !/^url:https?:\/\/.+/i.test(m.functionId)) { errors.push('主選單「' + m.name + '」的自訂網址格式不正確，網址開頭要是 http:// 或 https://'); m.functionId = null; }
     else if (m.functionId && !isValidFn(m.functionId, mainIds)) { errors.push('主選單「' + m.name + '」對應的功能不存在：' + m.functionId); m.functionId = null; }
   });
 
@@ -1269,12 +1272,14 @@ function sanitizeConfig(input) {
   const subIds = new Set();
   (Array.isArray(inp.subMenus) ? inp.subMenus : d.subMenus).slice(0, 100).forEach((s, i) => {
     s = s || {};
-    const name = str(s.name, 20);
+    const name = str(s.name, 40); // V10.14：按鈕名稱上限跟著 iconButton 實際能顯示的長度放寬（20→40）
     if (!name) { errors.push('第 ' + (i + 1) + ' 個子選單沒有名稱'); return; }
     const id = str(s.id, 40) || ('s_' + Date.now().toString(36) + i);
     if (subIds.has(id)) { errors.push('子選單 ID 重複：' + id); return; }
     if (!mainIds.has(str(s.mainId, 40))) { errors.push('子選單「' + name + '」所屬的主選單不存在'); return; }
-    const functionId = str(s.functionId, 60);
+    const sFidRaw = String(s.functionId || '');
+    const functionId = sFidRaw.indexOf('url:') === 0 ? 'url:' + str(sFidRaw.slice(4), 500) : str(sFidRaw, 60); // V10.14：自訂網址放寬到500字
+    if (functionId.indexOf('url:') === 0 && !/^url:https?:\/\/.+/i.test(functionId)) { errors.push('子選單「' + name + '」的自訂網址格式不正確，網址開頭要是 http:// 或 https://'); return; }
     if (!isValidFn(functionId, mainIds)) { errors.push('子選單「' + name + '」沒有對應到有效的功能'); return; }
     subIds.add(id);
     const ds = d.subMenus.find((x) => x.id === id);
@@ -1287,7 +1292,9 @@ function sanitizeConfig(input) {
     k = k || {};
     const keyword = str(k.keyword, 30);
     if (!keyword) { errors.push('第 ' + (i + 1) + ' 筆關鍵字是空的'); return; }
-    const fn = str(k.fn, 60);
+    const fnRaw = String(k.fn || '');
+    const fn = fnRaw.indexOf('url:') === 0 ? 'url:' + str(fnRaw.slice(4), 500) : str(fnRaw, 60); // V10.14：自訂網址放寬到500字
+    if (fn.indexOf('url:') === 0 && !/^url:https?:\/\/.+/i.test(fn)) { errors.push('關鍵字「' + keyword + '」的自訂網址格式不正確，網址開頭要是 http:// 或 https://'); return; }
     if (!isValidFn(fn, mainIds)) { errors.push('關鍵字「' + keyword + '」沒有對應到有效的功能'); return; }
     let id = str(k.id, 40) || ('kw_' + Date.now().toString(36) + i);
     if (kwIds.has(id)) id = id + '_' + i;
@@ -1362,6 +1369,7 @@ function fnLabel(fn, cfg) {
 }
 function fnInfo(fn, cfg) {
   if (FUNCTION_CATALOG[fn]) return FUNCTION_CATALOG[fn];
+  if (typeof fn === 'string' && fn.indexOf('url:') === 0) return { label: '🔗 開啟網址', writes: false, personal: false }; // V10.14：自訂網址
   if (typeof fn === 'string' && fn.indexOf('menu:') === 0) {
     const m = ((cfg && cfg.mainMenus) || []).find((x) => x.id === fn.slice(5));
     return m ? { label: m.name, writes: false, personal: false } : null;
@@ -1513,7 +1521,7 @@ function checkAvailability(fn, ctx, cfg, opts) {
   const viewOnly = !!(opts && opts.view); // V10.7.0：只是「看版本說明」（不讀任何人的清單、不寫入、不開始紀錄）：群組授權、「只限 1 對 1」、「群組不開放新增」都不擋；功能停用、「只限指定的人」照樣擋
   const info = fnInfo(fn, cfg);
   if (!info) return { ok: false, message: '找不到這個功能，可能已經被管理員移除。' };
-  if (fn === 'menu' || fn.indexOf('menu:') === 0) return { ok: true, info, perm: permOf(cfg, fn) };
+  if (fn === 'menu' || fn.indexOf('menu:') === 0 || fn.indexOf('url:') === 0) return { ok: true, info, perm: permOf(cfg, fn) }; // V10.14：自訂網址一律可用，跟開啟主選單一樣不受權限設定限制
   const p = permOf(cfg, fn);
   const name = '「' + info.label + '」';
   if (!p.enabled) return { ok: false, message: name + '目前已停用。' };
@@ -2549,6 +2557,7 @@ async function executeFunction(fn, ctx, ev, token, env, cfg) {
   if (!fnInfo(fn, cfg)) { await lineReply(token, ev.replyToken, '找不到這個功能，可能已經被管理員移除。'); return true; }
   if (fn === 'menu') { await sendMenuFor(token, ev, cfg, null); return true; }
   if (fn.indexOf('menu:') === 0) { await sendMenuFor(token, ev, cfg, fn.slice(5)); return true; }
+  if (fn.indexOf('url:') === 0) { await lineReplyMessages(token, ev.replyToken, [{ type: 'template', altText: '🔗 開啟網址', template: { type: 'buttons', text: '點下面的按鈕，開啟網頁', actions: [{ type: 'uri', label: '🔗 開啟網址', uri: fn.slice(4) }] } }]).catch(() => {}); return true; } // V10.14：自訂網址——送出可以直接點開瀏覽器的按鈕，不是純文字連結；跟其他直接呼叫lineReplyMessages的地方一樣，網路失敗不丟例外
   const mainMod = Object.keys(MODULES).map((k) => MODULES[k]).find((m) => m.fn === fn);
   if (mainMod) return runCommand({ mod: mainMod, op: null, rest: '' }, ctx, ev, token, env, cfg); // 先選「紀錄／查詢」
   if (fn === 'wish_add' && ctx.isGroup) { await rec4ViewOnly(REC4_SCHEMAS.wish, ctx, ev, token, cfg); return true; } // V10.7.0：群組不新增待去地點（個人資料）；改回版本說明卡，卡片註明「要記錄請到 1 對 1」。不用先檢查群組授權（只是看說明）
