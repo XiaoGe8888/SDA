@@ -1632,6 +1632,7 @@ const ICON_MAP = {
   '✌': 'rps_scissors', // 剪刀石頭布：剪刀
   '✍': 'write', // 自己輸入
   '❌': 'close', // 取消
+  '❓': 'circle_help', // V11.0：FAQ（選單）
   '➡': 'arrow_right', // 下一頁
   '⬅': 'arrow_left', // 上一頁
   '⭐': 'star', // 推薦星等
@@ -1656,10 +1657,12 @@ const ICON_MAP = {
   '🔎': 'search', // 查詢
   '🔒': 'lock', // 僅限 1 對 1
   '🔙': 'back', // 返回主選單
+  '🔭': 'telescope', // V11.0：探索更多（選單）
   '🔴': 'dot_red', // 營業狀態：休息中
   '🔵': 'dot_blue', // 旗艦版
   '🕒': 'clock', // 營業時間
   '🖼': 'picture', // 相簿
+  '🗃': 'archive', // V11.0：Collect & Tidy（選單）
   '🗓': 'calendar', // 預計時間
   '🗺': 'map', // 在地圖開啟
   '🚆': 'train', // 交通紀錄
@@ -1681,7 +1684,9 @@ const ICON_MAP = {
 const stripVS16 = (s) => String(s == null ? '' : s).replace(/️/g, '');
 function iconUrl(emoji) {
   const slug = ICON_MAP[stripVS16(emoji)];
-  return slug ? ICON_BASE_URL + slug + '.png' : '';
+  // encodeURIComponent：以防萬一之後上傳的圖示檔名又不小心帶了空格、中文字等網址不能直接用的字元；
+  // 對現在全部都是純英數字、底線的檔名（例如 archive、star_sparkle）編碼前後完全一樣，不影響任何現有圖示。
+  return slug ? ICON_BASE_URL + encodeURIComponent(slug) + '.png' : '';
 }
 // 抓一串字「開頭」的 emoji（含後面可能跟著的 FE0F），例如 '🧋 飲料' → '🧋'；抓不到回傳空字串。
 const LEADING_EMOJI_RE = /^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}])️?/u;
@@ -1714,14 +1719,18 @@ function iconRow(textNode) {
   if (textNode.margin) box.margin = textNode.margin;
   return box;
 }
-// Flex 按鈕：type:'button' 沒有圖示欄位，查到圖示時整個改成「長得像按鈕的 box」（底色＋邊框＋圓角，action 放在 box 上）；
-// 查無圖示時維持原來的 type:'button'，外觀和行為都跟轉換前一樣。style 只接受 'primary'／'secondary'（對應原本 Flex 按鈕的兩種樣式）。
+// Flex 按鈕：一律用「長得像按鈕的 box」呈現（底色＋邊框＋圓角，action 放在 box 上），查到圖示就多塞一顆小圖在文字前面。
+// style 只接受 'primary'／'secondary'／'link'（對應原本 Flex 按鈕的樣式）。
+// V11.0：之前「查無圖示時退回LINE原生 type:'button'」——原生按鈕的顏色是LINE客戶端依亮/暗模式決定的，跟這裡固定的底色／邊框／文字色
+// 對不起來。選單上的 emoji 是後台可自由輸入的文字欄位（見 lcMainFields／lcSubFields），新增主選單時留白、或剛好打了 ICON_MAP 以外
+// 的 emoji 都很常見、不是錯誤——但只要發生，那顆按鈕就會退回原生樣式，跟其他按鈕顏色不一致，在亮色／暗色模式下都是如此（這正是使用者
+// 回報「功能選單」裡「Collect & Tidy」「FQA」兩顆按鈕顏色跟其他顆不一樣的真正原因）。改成不管查不查得到圖示都走同一顆 box，兩種情況
+// 底色／邊框／文字色就會完全一致，差別只在查到圖示時文字前面多一顆小圖。
 function iconButton(label, text, style, opts) {
   opts = opts || {}; // opts.action：自訂 action 的其他欄位（例如 uri），label 仍統一由這裡算；opts.color：原本按鈕的 color 屬性（primary 樣式常見）
-  const { icon, rest } = splitIcon(label);
+  const { icon, rest } = splitIcon(label); // 查無圖示時 rest 是原始整串字（見 splitIcon），直接當文字內容用即可
   const action = opts.action ? Object.assign({}, opts.action, { label: String(icon ? rest : label).slice(0, 40) }) : { type: 'message', label: String(icon ? rest : label).slice(0, 40), text: String(text) };
-  if (!icon) { const b = { type: 'button', style: style || 'secondary', height: 'sm', action }; if (opts.color) b.color = opts.color; return b; }
-  // style:'link' 原本是「純文字可以點」，沒有底色、沒有邊框——圖示＋文字的 box 也不給底色／邊框，看起來才一致。
+  // style:'link' 原本是「純文字可以點」，沒有底色、沒有邊框——文字（＋圖示）的 box 也不給底色／邊框，看起來才一致。
   const isLink = style === 'link';
   const palette = style === 'primary' ? { fg: '#ffffff', bg: opts.color || '#8b7355', border: opts.color || '#8b7355' } : isLink ? { fg: opts.color || '#8b7355', bg: '', border: '' } : { fg: '#5c4b37', bg: '#ffffff', border: '#d9cfc2' };
   const box = {
@@ -1730,10 +1739,12 @@ function iconButton(label, text, style, opts) {
     // box 不設 height 也沒關係，靠 paddingAll／裡面文字的行高自然撐出跟原按鈕差不多的高度。
     type: 'box', layout: 'horizontal', paddingAll: isLink ? 'none' : 'sm', spacing: 'xs',
     alignItems: 'center', justifyContent: 'center', action,
-    contents: [
+    contents: icon ? [
       // 使用者反應功能選單的圖示太大：先從 'sm' 降到 'xs' 不夠明顯，這裡再降到 LINE 官方清單裡最小的關鍵字 'xxs'
       // （官方文件列出的完整順序由小到大是 xxs/xs/sm/md/lg/xl/xxl/3xl/4xl/5xl/full，xxs 已經是最小的）。
       { type: 'image', url: icon, flex: 0, size: 'xxs', aspectRatio: '1:1', gravity: 'center' },
+      { type: 'text', text: rest, size: 'sm', color: palette.fg, align: 'center', gravity: 'center', wrap: true },
+    ] : [
       { type: 'text', text: rest, size: 'sm', color: palette.fg, align: 'center', gravity: 'center', wrap: true },
     ],
   };
@@ -4037,6 +4048,161 @@ async function handleExpenseMessage(ev, token, env) {
   await lineReply(token, ev.replyToken, head + '\n' + catLabel + '：' + record.item + '　$' + record.amount + (record.synced ? '' : '\n' + syncWording(record)));
 }
 
+// =================================================================
+// calnote 轉送（Phase 3：calnote 併入同一個LINE官方帳號）
+// -----------------------------------------------------------------
+// 使用者決定 calnote（行事曆／記事／待辦／倒數日／日期計算機）不要另外
+// 申請一個LINE官方帳號，改成跟這支「日常小秘書」共用同一個帳號。做法是
+// 「轉送式整合」：calnote 的程式碼／KV資料庫完全獨立部署在它自己的
+// Cloudflare Worker，這支 _worker.js 只在自己原有的文字指令鏈最前面，
+// 多加一關——這段文字像不像calnote的指令？像的話就用內部API問一下
+// calnote，它有處理就把它的回覆原封不動轉給LINE；它說沒處理、連不上、
+// 或者逾時，就完全不影響，直接往下走原來六種既有判斷。
+//
+// 安全性：CALNOTE_WORKER_URL／CALNOTE_INTERNAL_SECRET 這兩個環境變數只
+// 要有一個沒設定，這整塊就是100%不動作（直接 return false）——不會因為
+// 裝了這段程式碼就改變現有六個功能的任何行為。要啟用才需要：
+//   1) 這支Worker的環境變數加 CALNOTE_WORKER_URL = calnote那支Worker的網址
+//   2) 這支Worker的環境變數加 CALNOTE_INTERNAL_SECRET = 跟calnote那邊設定
+//      的 CALNOTE_INTERNAL_SECRET 完全相同的一串密鑰（兩邊要一致）
+//
+// CALNOTE_TRIGGER_PATTERNS 是從 calnote_worker.js 原封不動複製過來的指令
+// 格式清單（共48條regex，對照 calnote_worker.js 裡每一個 RE_ 開頭的常數）。
+// 這裡只是「值不值得發一次內部API請求」的便宜本地判斷，省掉對每一句聊天
+// 訊息都打一次內部API的成本；真正判斷是不是calnote指令、群組裡有沒有@到
+// 機器人，一律由calnote那邊自己的 handleSingleEvent/extractCommandText
+// 決定（轉送時會把 ev.source、ev.message.mention 原封不動一起送過去）。
+// 如果以後calnote那邊新增/修改了指令格式，要記得回來同步這份清單——沒同
+// 步也不會答錯，只是預篩會不準：漏判只會少轉送一次（那句calnote指令機器
+// 人沒反應，但不會得到錯誤答案）；多轉送只是多一次內部API呼叫，calnote
+// 會回handled:false，一樣正常往下走原來六種判斷，不影響正確性。
+// =================================================================
+const CALNOTE_TRIGGER_PATTERNS = [
+  // 行程 Event
+  /^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})\s+(.+)$/,
+  /^查詢行事曆$/,
+  /^本週行程$/,
+  /^本月行程$/,
+  /^查詢行事曆\s+(\d{4})-(\d{2})$/,
+  /^行事曆\s*#(\d+)\s*改為\s*(.+)$/,
+  /^完成行程\s*#(\d+)$/,
+  /^修改行程\s*#(\d+)\s*時間改為\s*(\d{1,2}):(\d{2})$/,
+  /^刪除行程\s*#(\d+)$/,
+  /^行事曆\s*#(\d+)\s*地點設為\s*(.+)$/,
+  /^行事曆\s*#(\d+)\s*備註\s*(.+)$/,
+  /^將行程\s*#(\d+)\s*設為緊急$/,
+  // 記事 Note
+  /^記事\s+(.+)$/s,
+  /^補充記事\s*#(\d+)[:：]\s*(.+)$/s,
+  /^修改記事\s*#(\d+)\s*內容改為\s*(.+)$/s,
+  /^刪除記事\s*#(\d+)$/,
+  /^置頂記事\s*#(\d+)$/,
+  /^輸出純文字記事\s*#(\d+)$/,
+  // 待辦 Todo
+  /^待辦\s+(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})\s+(.+)$/s,
+  /^待辦\s+(\d{4})-(\d{2})-(\d{2})\s+(.+)$/s,
+  /^待辦\s+(.+)$/s,
+  /^查詢待辦$/,
+  /^今天該做的待辦$/,
+  /^已逾期待辦$/,
+  /^(高|中|低)優先待辦$/,
+  /^(.+)的待辦$/,
+  /^完成待辦\s*#(\d+)$/,
+  /^待辦\s*#(\d+)\s*改[為回]\s*(.+)$/,
+  /^修改待辦\s*#(\d+)\s*期限改為\s*(\d{4})-(\d{2})-(\d{2})$/,
+  /^刪除待辦\s*#(\d+)$/,
+  /^把待辦\s*#(\d+)\s*轉成行事曆\s*(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})$/,
+  // 倒數日 Countdown
+  /^(倒數日|紀念日)\s+(\d{4})-(\d{2})-(\d{2})\s+(.+)$/s,
+  /^(查詢倒數日|我的倒數日清單)$/,
+  /^倒數日\s*#(\d+)\s*設為每年重複$/,
+  /^修改倒數日\s*#(\d+)\s*標題改為\s*(.+)$/s,
+  /^刪除倒數日\s*#(\d+)$/,
+  /^將倒數日\s*#(\d+)\s*關聯到(行事曆|記事)\s*#(\d+)$/,
+  // 日期計算機 DateCalc
+  /^計算\s+(\d{4})-(\d{2})-(\d{2})\s+到\s+(\d{4})-(\d{2})-(\d{2})\s+中間幾天$/,
+  /^到\s+(\d{4})-(\d{2})-(\d{2})\s+還有幾天$/,
+  /^(\d{4})-(\d{2})-(\d{2})\s+(加|減)\s*(\d+)\s*(天|週|個月|月|年)\s*是幾號$/,
+  /^今天(加|減)\s*(\d+)\s*(天|週|個月|月|年)\s*是幾號$/,
+  /^(\d{4})-(\d{2})-(\d{2})\s+星期幾$/,
+  /^(\d{4})-(\d{2})-(\d{2})\s+出生[，,]?\s*現在幾歲$/,
+  /^(\d{4})-(\d{2})-(\d{2})\s+到職[，,]?\s*現在年資幾年$/,
+  /^下(\d+)個星期([一二三四五六日天])是幾號$/,
+  /^下下週([一二三四五六日天])是幾號$/,
+  /^下週([一二三四五六日天])是幾號$/,
+  /^這個月最後一個星期([一二三四五六日天])是幾號$/,
+];
+
+/**
+ * 便宜的本地預篩：這段文字「看起來像不像」calnote的指令格式。
+ * 只決定要不要發內部API，不是最終判斷（見上方整段說明）。
+ * 群組訊息會先模仿 calnote 自己 extractCommandText 的作法，把@到本機器人
+ * 的mention文字片段去掉再比對；完全沒有@到本機器人的群組訊息，直接判定
+ * 「不像」，因為calnote那邊的規則下群組一定會保持靜默，轉送也是白轉。
+ */
+function looksLikeCalnoteCommand(text, ev) {
+  if (!text) return false;
+  let t = text;
+  const source = ev && ev.source;
+  if (isGroupSource(source)) {
+    const mention = ev.message && ev.message.mention;
+    if (mention && Array.isArray(mention.mentionees)) {
+      const selfMention = mention.mentionees.find((m) => m.isSelf === true);
+      if (!selfMention) return false;
+      t = (text.slice(0, selfMention.index) + text.slice(selfMention.index + selfMention.length)).trim();
+    } else if (text.startsWith('@機器人')) {
+      t = text.slice('@機器人'.length).trim();
+    } else {
+      return false;
+    }
+  }
+  return CALNOTE_TRIGGER_PATTERNS.some((re) => re.test(t));
+}
+
+/**
+ * 轉送到 calnote 的內部API。CALNOTE_WORKER_URL／CALNOTE_INTERNAL_SECRET
+ * 兩個環境變數只要有一個沒設定，直接回false（完全不動作，原有六個功能
+ * 不受任何影響）。calnote那邊有處理（handled:true）就把它的reply陣列
+ * 原樣轉給LINE，回true；calnote說沒處理、逾時、或者連不上，都回false，
+ * 讓後面原本的六種判斷繼續正常運作——calnote這邊不管發生什麼問題，都
+ * 不會讓使用者收不到回覆或讓整個訊息處理卡住。
+ */
+async function handleCalnoteForward(ev, token, env) {
+  const base = env.CALNOTE_WORKER_URL;
+  const secret = env.CALNOTE_INTERNAL_SECRET;
+  if (!base || !secret) return false;
+  if (!ev.message || typeof ev.message.text !== 'string') return false;
+  const text = ev.message.text;
+  if (!looksLikeCalnoteCommand(text, ev)) return false;
+
+  let res;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000); // calnote如果掛了或很慢，最多等4秒就放棄，不拖累使用者原本六個功能的回覆
+    try {
+      res = await fetch(base.replace(/\/+$/, '') + '/internal/dispatch', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-internal-secret': secret },
+        body: JSON.stringify({ text, source: ev.source, mention: ev.message.mention }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e) {
+    console.log('calnote 轉送失敗（連不上或逾時），交回原本的指令判斷', e && e.message);
+    return false;
+  }
+  if (!res || !res.ok) return false;
+
+  let data;
+  try { data = await res.json(); } catch (e) { return false; }
+  if (!data || data.handled !== true || !Array.isArray(data.reply) || !data.reply.length) return false;
+
+  await lineReplyMessages(token, ev.replyToken, data.reply); // 轉送成功後的回覆萬一失敗，交給外層既有的 catch 統一處理（跟其他既有handler一致，不另外吞掉）
+  return true;
+}
+
 async function handleLine(request, env) {
   // LINE 的 webhook 只會用 POST。用瀏覽器直接開會是 GET，回個 OK 方便測試。
   if (request.method !== 'POST') return new Response('LINE webhook OK');
@@ -4083,7 +4249,7 @@ async function handleLine(request, env) {
     if (ev.type === 'message' && ev.message && ev.message.type === 'text' && ev.replyToken) {
       try {
         ev.appOrigin = new URL(request.url).origin; // 給「開啟App」按鈕組網址用
-        const handled = (await handleKeywordRouter(ev, token, env)) || (await handleRec4Message(ev, token, env)) || (await handleOpMessage(ev, token, env)) || (await handleQuickMessage(ev, token, env)) || (await handleFlagshipMessage(ev, token, env)) || (await handleStickerCardMessage(ev, token, env));
+        const handled = (await handleCalnoteForward(ev, token, env)) || (await handleKeywordRouter(ev, token, env)) || (await handleRec4Message(ev, token, env)) || (await handleOpMessage(ev, token, env)) || (await handleQuickMessage(ev, token, env)) || (await handleFlagshipMessage(ev, token, env)) || (await handleStickerCardMessage(ev, token, env));
         if (!handled) await handleExpenseMessage(ev, token, env);
       } catch (e) {
         try { await lineReply(token, ev.replyToken, '發生了一點問題 🙏 請再試一次'); } catch (e2) {}
