@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>探索更多｜日常小秘書</title>
+<style>
+/* V11.0：「探索更多」入口頁——刻意「自給自足」：不載入任何外部字型、圖示或 index.html 的程式，
+   跟 backup.html 同一套做法，圖示直接內嵌 SVG，不依賴 /icons/ 底下的檔案是否已經上傳完成。
+   這一頁目前是「新模組總覽」的佔位內容；之後有新模組要推出時，把下面 .card 區塊換成真正的介紹／連結即可，
+   後台「選單」裡「探索更多」這顆按鈕的網址完全不用改（它一直指向 /explore.html 這個檔案本身）。*/
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fcfaf7;--sur:#fff;--bdr:#e5e7eb;--bd:#5c4b37;--br:#8b7355;--amb:#d4a373;--crm:#f5ede4;
+  --t:#5c4b37;--t5:#6b7280;
+}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:520px;margin:0 auto;padding:40px 20px 48px;padding-bottom:max(48px,env(safe-area-inset-bottom));text-align:center}
+.icon{width:72px;height:72px;margin:0 auto 18px}
+.icon svg{width:100%;height:100%;display:block}
+h1{font-size:22px;color:var(--bd);margin-bottom:8px}
+.lead{font-size:14px;color:var(--t5);margin-bottom:28px}
+.card{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:22px 18px;margin-bottom:20px;text-align:left}
+.card p{font-size:14.5px;color:var(--t);margin-bottom:10px}
+.card p:last-child{margin-bottom:0}
+.card .hl{color:var(--br);font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:12px 24px;border-radius:13px;border:1px solid var(--bdr);background:var(--sur);color:var(--bd);font:inherit;font-weight:700;font-size:15px;text-decoration:none;touch-action:manipulation}
+.btn.pri{background:var(--br);border-color:var(--br);color:#fff}
+@media (max-width:380px){.wrap{padding-left:14px;padding-right:14px}.card{padding:18px 14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#8b7355" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m10.065 12.493-6.18 1.318a.934.934 0 0 1-1.108-.702l-.537-2.15a1.07 1.07 0 0 1 .691-1.265l13.504-4.44" />
+      <path d="m13.56 11.747 4.332-.924" />
+      <path d="m16 21-3.105-6.21" />
+      <path d="M16.485 5.94a2 2 0 0 1 1.455-2.425l1.09-.272a1 1 0 0 1 1.212.727l1.515 6.06a1 1 0 0 1-.727 1.213l-1.09.272a2 2 0 0 1-2.425-1.455z" />
+      <path d="m6.158 8.633 1.114 4.456" />
+      <path d="m8 21 3.105-6.21" />
+      <circle cx="12" cy="13" r="2" />
+    </svg>
+    <!-- 圖示來源：lucide-static（ISC 授權）telescope.svg，原樣複製 path 資料並改色，跟 public/icons/ 其他圖示同一套做法 -->
+  </div>
+  <h1>探索更多</h1>
+  <p class="lead">新模組陸續開發中，敬請期待</p>
+  <div class="card">
+    <p>這裡是<span class="hl">日常小秘書</span>之後新模組的統一入口——接下來推出的新功能，都會從這個「探索更多」按鈕連過來，不用等更新小秘書本體也看得到。</p>
+    <p>目前還沒有新模組上線，先讓這一頁跟大家打聲招呼。準備好之後，這裡就會換成真正的介紹。</p>
+  </div>
+  <a class="btn pri" href="/">↩️ 回到小秘書</a>
+</div>
+</body>
+</html>

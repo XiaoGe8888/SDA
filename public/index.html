@@ -1726,7 +1726,13 @@ async function callClaude(messages, system, maxTokens=1000) {
 
 // ============ 雲端同步（同步碼模式）============
 const SYNC_URL = '/api/sync';
-const SYNC_KEYS = ['boba_recs','meal_recs','travel_recs','boba_favs','meal_favs','travel_favs','boba_budget','meal_budget','travel_budget','boba_trash','split_groups','split_group_cats','boba_tool_prob','auth_users','super_password_hash','sticker_kids','sticker_behaviors','sticker_rewards','sticker_events','sticker_redemptions','mutual_events','mutual_rewards','mutual_redemptions','wishlist_data_v2','wishlist_mgmt_v2','wishlist_menu_v1','line_drafts','menu_cfg'];
+// V11.0：補上 wishlist_theme（待去清單頁自己的深色模式開關，見 wishlist.html 的 applyTheme／toggleDarkMode）。
+// 這個 key 之前沒列在這裡，所以完全不會被雲端同步處理到——LINE內建瀏覽器跟Safari各自是獨立的localStorage，
+// 没加入同步清單的key，換瀏覽器看到的永遠是那個瀏覽器自己原本存的值（通常是從沒設定過的預設值），這就是
+// 「主題外觀」跨瀏覽器對不起來的真正原因。待去清單是iframe嵌入的獨立頁面，但它寫入localStorage一樣會觸發
+// 下面的 storage 事件監聽（同網域、不同視窗寫入時的瀏覽器原生事件），所以只要把這個 key 加進清單，不用再
+// 多寫別的橋接程式碼，push／pull 都會自動套用到它。
+const SYNC_KEYS = ['boba_recs','meal_recs','travel_recs','boba_favs','meal_favs','travel_favs','boba_budget','meal_budget','travel_budget','boba_trash','split_groups','split_group_cats','boba_tool_prob','auth_users','super_password_hash','sticker_kids','sticker_behaviors','sticker_rewards','sticker_events','sticker_redemptions','mutual_events','mutual_rewards','mutual_redemptions','wishlist_data_v2','wishlist_mgmt_v2','wishlist_menu_v1','line_drafts','menu_cfg','wishlist_theme'];
 let syncCode = localStorage.getItem('sync_code') || '';
 let syncEnabled = localStorage.getItem('sync_enabled') === '1';
 let applyingRemote = false;
@@ -1820,6 +1826,14 @@ async function syncPush(){
 // 待去清單是用 iframe 嵌入的獨立頁面（wishlist.html），它寫入資料時不會經過上面的攔截；
 // 同網域的其他視窗寫入 localStorage 時，這個視窗會收到 storage 事件，藉此一樣排程上傳，避免回到主頁後被舊的雲端資料覆蓋
 window.addEventListener('storage', function(e){ if(e.key && SYNC_KEYS.indexOf(e.key)>=0 && syncEnabled && !applyingRemote) schedulePush(); });
+// V11.0：換瀏覽器／換App時的「設定不同步」——目前只有「回到deep-link」那一刻會syncPull()一次，之後整段時間都不會再拉。
+// 例如LINE內建瀏覽器改了設定、回到Safari原本就開著的分頁，Safari那分頁沒有重新整理，就一直停在切換前拉到的舊資料。
+// 補上：這個分頁重新變成可見／重新取得焦點時，主動再 syncPull() 一次。syncPull() 本身已經會判斷「資料有沒有不一樣」，
+// 沒變的話只是靜靜更新一下同步狀態文字、不會整頁重新載入；真的有變才會寫回 localStorage 並 reload，讓畫面（含待去清單
+// 的深色模式、下面的九宮格等）換成最新設定。沒開啟雲端同步的人完全不受影響（syncPull 內部一開始就會直接 return）。
+function syncRefreshOnReturn(){ if(document.visibilityState==='visible') syncPull(); }
+document.addEventListener('visibilitychange', syncRefreshOnReturn); // visibilitychange 規格上是發生在 document，不是 window（有些瀏覽器會讓它冒泡上去，但掛在document才是標準做法）
+window.addEventListener('focus', syncRefreshOnReturn);
 async function enableSyncWithCode(code){
   code=(code||'').trim().toUpperCase();
   if(!code){ toast('請先輸入或產生同步碼'); return; }
@@ -7022,6 +7036,21 @@ function closeLineCfg(){
   const f=document.getElementById('lc-form');if(f)f.remove();
   document.body.style.overflow='';
 }
+// V11.0：後台管理面板只在「開啟／登入那一刻」抓一次 lc.cfg，之後就算資料在雲端被別的裝置／瀏覽器改掉，這個分頁也不會知道——
+// 例如在LINE內建瀏覽器改了「規則顯示」開關或「預設版本」，這兩個其實已經是存在伺服器的設定（跟管理密碼綁在一起，不是
+// localStorage），但再切回Safari裡本來就開著的管理面板，Safari那邊看到的還是切換前（面板打開那一刻）的舊設定，要手動
+// 整頁重新整理才會更新——這才是「規則顯隱開關／預設版本跨瀏覽器對不起來」的真正原因，不是localStorage沒同步。
+// 補上：面板開著、且目前沒有編輯表單開著（避免蓋掉正在填的內容）時，這個分頁重新變成可見／取得焦點就重新 lcLoad() 一次。
+// 面板沒開著、或還沒登入（lcKey() 是空的）時完全不做事，不會多打API。
+function lcRefreshOnReturn(){
+  if(document.visibilityState!=='visible')return;
+  if(!document.getElementById('linecfg-modal'))return; // 面板沒開著
+  if(document.getElementById('lc-form'))return; // 有編輯表單開著，不要蓋掉使用者正在填的內容
+  if(!lcKey())return; // 還沒登入
+  lcLoad();
+}
+document.addEventListener('visibilitychange', lcRefreshOnReturn); // 同上，visibilitychange 規格上掛在 document
+window.addEventListener('focus', lcRefreshOnReturn);
 function lcShowLogin(msg){
   const t=document.getElementById('lc-tabs');if(t)t.innerHTML='';
   const b=document.getElementById('lc-body');if(!b)return;
@@ -7063,8 +7092,15 @@ async function lcCommit(mutator,okMsg){
   if(r.status===200){
     lc.cfg=r.json.config;lc.groups=r.json.groups||lc.groups;lc.users=r.json.users||lc.users;
     lcRender();
-    toast(okMsg||'✅ 已儲存並套用到LINE');
-    if(r.json.warnings&&r.json.warnings.length)toast('⚠️ '+r.json.warnings[0]);
+    // V11.0：原本這裡連續呼叫兩次 toast()——先顯示成功訊息，再顯示警告——但 toast() 是同一個DOM元素＋同一個計時器，
+    // 第二次呼叫會立刻蓋掉第一次，等於成功訊息幾乎沒有真正顯示過，使用者只看得到警告，很容易誤會成「儲存失敗」或
+    // 「沒有反應」。這正是「新增主選單後好像沒生效」的部分原因：警告內容其實已經講清楚「目前沒有任何啟用的子選單，
+    // LINE 選單不會顯示它」，但單獨快閃一下就消失，稍不注意就錯過，之後在清單裡也看不到同樣的提醒（另一半原因、
+    // 常駐提示見下面 lcRenderMenus() 的修改）。改成只呼叫一次 toast()，有警告時把成功訊息和警告合併顯示在同一句，
+    // 並依文字長度拉長顯示時間，兩句都看得到。
+    const warnMsg=(r.json.warnings&&r.json.warnings.length)?r.json.warnings[0]:'';
+    const fullMsg=(okMsg||'✅ 已儲存並套用到LINE')+(warnMsg?'　⚠️ '+warnMsg:'');
+    toast(fullMsg, warnMsg?4200:2200);
     return true;
   }
   if(r.status===429){lcShowLogin((r.json&&r.json.message)||'嘗試太多次，請稍後再試。');return false;}
@@ -7159,8 +7195,14 @@ function lcRenderMenus(){
     +lcBtn('全部展開（舊樣子）','lcSetMenuStyle(\'expanded\')',{color:style==='expanded'?'#fff':'var(--t5)',bg:style==='expanded'?'var(--br)':'var(--bg)',bd:style==='expanded'?'var(--br)':'var(--bdr)'})+'</div></div>';
   mains.forEach((m,i)=>{
     const subs=c.subMenus.filter(s=>s.mainId===m.id).sort((a,b)=>a.order-b.order);
+    // V11.0：跟伺服器 sanitizeConfig() 判斷「LINE 選單不會顯示它」用的是同一個條件（已啟用、沒有直接對應的功能、
+    // 也沒有任何已啟用的子選單）——這個狀況在「剛新增主選單、還沒加子選單」時很常見，不是壞掉，但使用者常常以為
+    // 「新增主選單」這顆按鈕本身没有作用。之前只在剛儲存那一刻用 toast 快閃提示一下，離開這個分頁再回來就看不到
+    // 同樣的提醒了；這裡改成常駐顯示，提醒使用者還差「新增子選單」或「編輯→設定對應的功能」這一步。
+    const noShow=m.enabled&&!m.functionId&&!subs.some(s=>s.enabled);
     h+='<div style="border:1px solid var(--bdr);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--sur);'+(m.enabled?'':'opacity:.65')+'">'
-      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px"><div style="flex:1;min-width:130px"><div style="font-size:14px;font-weight:900;color:var(--bd)">'+splitEsc((m.emoji||'')+' '+m.name)+'</div><div style="font-size:10px;color:var(--t5);margin-top:2px">主選單・'+LC_SCOPE_SHORT[m.scope]+(m.functionId?'・直接對應：'+splitEsc(lcFnLabel(m.functionId)):'・排版：'+LC_LAYOUT_SHORT[m.layout==='grid'?'grid':'list'])+'</div></div>'+lcCtl('main',m.id,i===0,i===mains.length-1,m.enabled)+'</div>';
+      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px"><div style="flex:1;min-width:130px"><div style="font-size:14px;font-weight:900;color:var(--bd)">'+splitEsc((m.emoji||'')+' '+m.name)+'</div><div style="font-size:10px;color:var(--t5);margin-top:2px">主選單・'+LC_SCOPE_SHORT[m.scope]+(m.functionId?'・直接對應：'+splitEsc(lcFnLabel(m.functionId)):'・排版：'+LC_LAYOUT_SHORT[m.layout==='grid'?'grid':'list'])+'</div></div>'+lcCtl('main',m.id,i===0,i===mains.length-1,m.enabled)+'</div>'
+      +(noShow?'<div style="margin-bottom:6px;padding:7px 9px;border-radius:9px;background:#fffbeb;border:1px solid #fcd34d;font-size:11px;color:#78350f;line-height:1.6">⚠️ 目前還不會出現在LINE的「功能選單」裡：還沒有對應的功能，也還沒有啟用中的子選單。請按下面「＋ 新增子選單」加一個，或按右上「編輯」直接對應一個功能。</div>':'');
     subs.forEach((s,j)=>{
       h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 0 7px 10px;border-top:1px dashed var(--bdr)'+(s.enabled?'':';opacity:.65')+'"><div style="flex:1;min-width:120px"><div style="font-size:13px;font-weight:700;color:var(--bd)">'+splitEsc((s.emoji||'')+' '+s.name)+'</div><div style="font-size:10px;color:var(--t5)">→ '+splitEsc(lcFnLabel(s.functionId))+(m.layout==='grid'&&s.hint?'・格子小字：'+splitEsc(s.hint):'')+'</div></div>'+lcCtl('sub',s.id,j===0,j===subs.length-1,s.enabled)+'</div>';
     });

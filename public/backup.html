@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>完整備份與還原｜日常小秘書</title>
+<style>
+/* 這一頁刻意「自給自足」：不載入任何外部字型、圖示或 index.html 的程式，主程式出狀況時也打得開。 */
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+:root{
+  --bg:#fcfaf7;--sur:#fff;--bdr:#e5e7eb;--bd:#5c4b37;--br:#8b7355;--amb:#d4a373;--crm:#f5ede4;
+  --t:#5c4b37;--t5:#6b7280;--warn:#b91c1c;--warn-bg:#fef2f2;--warn-bdr:#fecaca;
+  --ok:#15803d;--ok-bg:#f0fdf4;--ok-bdr:#bbf7d0;--note:#92400e;--note-bg:#fffbeb;--note-bdr:#fde68a
+}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:560px;margin:0 auto;padding:14px 16px 48px;padding-bottom:max(48px,env(safe-area-inset-bottom))}
+.back{display:inline-flex;align-items:center;min-height:44px;color:var(--br);font-weight:700;font-size:14px;text-decoration:none}
+h1{font-size:21px;line-height:1.35;color:var(--bd);margin:2px 0 6px}
+.lead{font-size:13px;color:var(--t5);margin-bottom:14px}
+.card{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h2{font-size:16px;color:var(--bd);margin-bottom:4px}
+.sub{font-size:13px;color:var(--t5);margin-bottom:10px}
+table.cnt{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 12px}
+table.cnt th{font-weight:700;text-align:right;color:var(--t5);padding:5px 6px;border-bottom:1px solid var(--bdr);white-space:nowrap}
+table.cnt th:first-child{text-align:left}
+table.cnt td{padding:5px 6px;border-bottom:1px solid #f1ece5;text-align:right;font-variant-numeric:tabular-nums}
+table.cnt td:first-child{text-align:left;color:var(--bd)}
+table.cnt tr.dn td.chg{color:var(--warn);font-weight:700}
+table.cnt tr.up td.chg{color:var(--ok);font-weight:700}
+table.cnt td.chg{white-space:nowrap}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:50px;padding:12px 14px;border-radius:13px;border:1px solid var(--bdr);background:var(--sur);color:var(--bd);font:inherit;font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation;margin-top:8px}
+.btn.pri{background:var(--br);border-color:var(--br);color:#fff}
+.btn.dng{background:var(--warn);border-color:var(--warn);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.small{min-height:44px;font-size:14px;font-weight:600}
+.row{display:flex;gap:8px}
+.row .btn{margin-top:8px}
+.note{font-size:12.5px;line-height:1.7;border-radius:11px;padding:9px 12px;margin:10px 0 0;background:var(--note-bg);border:1px solid var(--note-bdr);color:var(--note)}
+.note.bad{background:var(--warn-bg);border-color:var(--warn-bdr);color:var(--warn)}
+.note.good{background:var(--ok-bg);border-color:var(--ok-bdr);color:var(--ok)}
+.note.plain{background:var(--crm);border-color:var(--bdr);color:var(--t)}
+.note ul{margin:4px 0 0 18px}
+label.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin:10px 0 2px;cursor:pointer}
+label.chk input{width:22px;height:22px;flex:0 0 22px;margin-top:1px}
+input[type=password],textarea{width:100%;font:inherit;font-size:16px;border:1px solid var(--bdr);border-radius:11px;padding:11px 12px;background:#fff;color:var(--t)}
+textarea{min-height:110px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px}  /* 字級要 ≥16px：iPhone 點進字級小於 16px 的欄位會自動放大畫面 */
+input[type=file]{width:100%;font:inherit;font-size:14px;padding:10px;border:1px dashed var(--amb);border-radius:11px;background:var(--crm)}
+details{margin-top:10px;font-size:13px}
+summary{cursor:pointer;color:var(--br);font-weight:700;min-height:36px;display:flex;align-items:center}
+.sel{width:100%;font:inherit;font-size:16px;padding:11px 12px;border-radius:11px;border:1px solid var(--bdr);background:#fff;color:var(--t);margin-top:6px}
+.meta{font-size:12.5px;color:var(--t5);margin-top:4px}
+.err{color:var(--warn);font-size:13px;margin-top:8px}
+#bk-status{font-size:13px;color:var(--br);margin-top:8px;min-height:20px}
+@media (max-width:380px){.wrap{padding-left:12px;padding-right:12px}.card{padding:14px 12px}table.cnt{font-size:12.5px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" id="bk-back" href="/">← 回到小秘書</a>
+  <h1>💾 完整備份與還原</h1>
+  <p class="lead">把小秘書裡的全部資料存成一個檔案。升級、大改之前先備份一次，萬一出狀況就能用它還原。這一頁不依賴主程式，主程式有問題時也打得開。</p>
+
+  <!-- 登入保護：這台裝置有開「登入保護」時，要輸入超級密碼才看得到資料 -->
+  <div class="card" id="bk-gate" hidden>
+    <h2>🔒 需要超級密碼</h2>
+    <p class="sub">這台裝置開啟了登入保護。備份檔會包含所有人的資料，所以要先輸入「超級密碼」才能使用（跟小秘書登入畫面最下面那一欄是同一組）。</p>
+    <input type="password" id="bk-gate-pw" autocomplete="off" aria-label="超級密碼" placeholder="超級密碼">
+    <div class="err" id="bk-gate-err" hidden>⚠️ 密碼不正確</div>
+    <button type="button" class="btn pri" id="bk-gate-go">解鎖</button>
+  </div>
+
+  <div id="bk-main" hidden>
+    <!-- ① 備份 -->
+    <div class="card" id="bk-backup">
+      <h2>① 備份：把資料存成檔案</h2>
+      <p class="sub">下面是目前的資料筆數。備份檔會一次存下全部項目。</p>
+      <table class="cnt" id="bk-count-table" aria-label="目前的資料筆數"></table>
+      <div id="bk-cloud-note" class="meta" hidden></div>
+      <label class="chk" id="bk-cloud-row" hidden><input type="checkbox" id="bk-include-cloud" checked><span>同時備份雲端上的資料（建議）</span></label>
+      <button type="button" class="btn pri" id="bk-download">⬇️ 下載完整備份</button>
+      <button type="button" class="btn small" id="bk-copy">📋 沒有跳出下載？改為複製備份內容</button>
+      <textarea id="bk-copy-box" readonly hidden aria-label="備份內容"></textarea>
+      <div id="bk-status" role="status" aria-live="polite"></div>
+      <div class="meta" id="bk-last"></div>
+      <div class="note bad">🔐 備份檔裡有你全部的紀錄、帳號名稱與密碼的雜湊值，請當成機密保管，不要傳給別人。</div>
+      <div class="note plain">不包含：LINE 管理頁裡的權限設定（哪些功能開放、哪些群組可用，存在伺服器上）、這台裝置的同步碼與登入狀態。</div>
+    </div>
+
+    <!-- ② 還原 -->
+    <div class="card" id="bk-restore-card">
+      <h2>② 還原：用備份檔把資料換回來</h2>
+      <p class="sub">還原前會<strong>自動先存一份「還原前備份」</strong>（下載檔案＋暫存在這台裝置），出錯時也會自動回到原本的樣子。</p>
+      <input type="file" id="bk-file" accept=".json,application/json" aria-label="選擇備份檔">
+      <details id="bk-paste-box">
+        <summary>沒辦法選檔案？改為貼上備份內容</summary>
+        <textarea id="bk-paste" aria-label="貼上備份內容" placeholder="把先前複製的備份內容貼在這裡"></textarea>
+        <button type="button" class="btn small" id="bk-paste-read">讀取貼上的內容</button>
+      </details>
+      <div id="bk-read-err" class="err" hidden></div>
+      <div id="bk-preview" hidden></div>
+    </div>
+
+    <!-- 還原的結果（成功或失敗）：放在 ② 的正下方，按完還原馬上看得到 -->
+    <div id="bk-result" role="status" aria-live="polite"></div>
+
+    <!-- ③ 還原前的備份（暫存在這台裝置） -->
+    <div class="card" id="bk-undo-card" hidden>
+      <h2>③ 上一次「還原前」的備份</h2>
+      <div class="meta" id="bk-undo-info"></div>
+      <p class="sub" style="margin-top:6px">如果還原後發現不對，按「復原」就能回到那時候的樣子（再按一次會回到還原後的樣子）。</p>
+      <button type="button" class="btn" id="bk-undo">↩️ 復原到還原前</button>
+      <div class="row">
+        <button type="button" class="btn small" id="bk-undo-dl">⬇️ 另存成檔案</button>
+        <button type="button" class="btn small" id="bk-undo-del">🗑 刪除這份暫存</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ---------------------------------------------------------------
+// 常數
+// ---------------------------------------------------------------
+var FORMAT = 'sda-backup-v1';
+var PAGE_VERSION = '1.0.0';
+var SYNC_URL = '/api/sync';
+var APP_TOKEN = '';                    // 要和 index.html 的 AI_APP_TOKEN 一樣（目前都是空的）
+var LS_LAST = 'sda_bk_last';           // 上次下載備份的時間（只放這台裝置，不同步）
+var LS_STASH = 'sda_bk_pre_restore';   // 最近一次「還原前備份」暫存（只放這台裝置，不同步）
+var STASH_MAX = 1500000;               // 暫存上限（字元）：太大就不暫存，避免占掉瀏覽器的儲存空間
+var STASH_DAYS = 3;                    // 暫存保留天數
+var NET_TIMEOUT = 15000;
+
+// 29 個「會跟著雲端同步」的資料項目，必須和 index.html 的 SYNC_KEYS 一樣（有測試檢查）。
+// kind：array＝清單、object＝一組設定、number＝數字、string＝文字
+var KEYS = [
+  ['boba_recs','array','飲料紀錄'],['meal_recs','array','美食紀錄'],['travel_recs','array','交通紀錄'],
+  ['boba_favs','array','飲料常用'],['meal_favs','array','美食常用'],['travel_favs','array','交通常用'],
+  ['boba_budget','number','飲料預算'],['meal_budget','number','美食預算'],['travel_budget','number','交通預算'],
+  ['boba_trash','array','回收桶'],['split_groups','array','分帳群組'],['split_group_cats','array','分帳分類'],
+  ['boba_tool_prob','object','飲料抽籤設定'],['auth_users','object','帳號'],['super_password_hash','string','超級密碼'],
+  ['sticker_kids','array','集點卡孩子'],['sticker_behaviors','array','集點卡行為'],['sticker_rewards','array','集點卡獎勵'],
+  ['sticker_events','array','集點卡點數紀錄'],['sticker_redemptions','array','集點卡兌換紀錄'],
+  ['mutual_events','array','互助集點紀錄'],['mutual_rewards','array','互助獎勵'],['mutual_redemptions','array','互助兌換紀錄'],
+  ['wishlist_data_v2','object','待去清單資料'],['wishlist_mgmt_v2','object','待去清單管理設定'],['wishlist_menu_v1','array','待去清單選單'],
+  ['wishlist_theme','string','待去清單主題外觀'],
+  ['line_drafts','array','LINE 待確認草稿'],['menu_cfg','object','選單設定']
+];
+var KIND = Object.create(null), LABEL = Object.create(null);   // 不帶原型：'constructor'、'__proto__' 這種名字不會被當成項目
+KEYS.forEach(function(p){ KIND[p[0]] = p[1]; LABEL[p[0]] = p[2]; });
+function isKey(k){ return typeof k === 'string' && KIND[k] !== undefined; }
+var KEY_NAMES = KEYS.map(function(p){ return p[0]; });
+var SETTING_KEYS = ['boba_budget','meal_budget','travel_budget','boba_tool_prob','split_group_cats','super_password_hash','wishlist_mgmt_v2','wishlist_menu_v1','menu_cfg','wishlist_theme'];
+
+// ---------------------------------------------------------------
+// 小工具
+// ---------------------------------------------------------------
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function fmtTime(t){ var d = new Date(Number(t)); if (!isFinite(d.getTime())) return '未記錄'; return d.getFullYear() + '/' + pad(d.getMonth()+1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function stamp(t){ var d = new Date(t || Date.now()); return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()); }
+function ageText(t){ var days = Math.floor((Date.now() - Number(t)) / 86400000); if (!isFinite(days) || days < 0) return ''; if (days === 0) return '今天'; return days + ' 天前'; }
+function fmtN(n){ return n == null ? '—' : String(n); }
+function setStatus(msg){ var el = $('bk-status'); if (el) el.textContent = msg || ''; }
+
+// 和 index.html 的 simpleHash 完全一樣（用來比對超級密碼）
+function simpleHash(str){
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) { hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0; }
+  return String(hash);
+}
+
+// ---------------------------------------------------------------
+// 登入保護
+// ---------------------------------------------------------------
+function gateRequired(){ return lsGet('login_required') === '1'; }
+function superHash(){ return lsGet('super_password_hash') || simpleHash('admin9999'); }
+function checkSuper(pw){ return simpleHash(String(pw == null ? '' : pw)) === superHash(); }
+
+// ---------------------------------------------------------------
+// 資料檢查與筆數
+// ---------------------------------------------------------------
+// 回傳空字串＝沒問題；否則回傳原因。還原時只有「通過檢查」的項目才會寫入，避免把主程式讀壞。
+function checkValue(k, raw){
+  var kind = KIND[k];
+  if (!kind) return '不認得的項目';
+  if (typeof raw !== 'string') return '不是文字';
+  if (kind === 'array' || kind === 'object') {
+    var v; try { v = JSON.parse(raw); } catch(e){ return '資料壞掉了（讀不懂）'; }
+    if (kind === 'array' && !Array.isArray(v)) return '格式不對（應該是清單）';
+    if (kind === 'object' && (v === null || typeof v !== 'object' || Array.isArray(v))) return '格式不對（應該是一組設定）';
+    return '';
+  }
+  if (kind === 'number') { if (raw.trim() === '' || !isFinite(Number(raw))) return '格式不對（應該是數字）'; return ''; }
+  if (kind === 'string') { if (raw === '' || raw.length > 200) return '內容不正確'; return ''; }
+  return '';
+}
+function parseSafe(raw){ if (typeof raw !== 'string') return undefined; try { return JSON.parse(raw); } catch(e){ return undefined; } }
+function lenOf(K, k){ var v = parseSafe(K[k]); return Array.isArray(v) ? v.length : null; }
+function sumLens(K, ks){ var s = 0, any = false; ks.forEach(function(k){ var n = lenOf(K, k); if (n != null) { s += n; any = true; } }); return any ? s : null; }
+
+var ROWS = [
+  { id:'boba_recs',          icon:'🧋', label:'飲料紀錄',           n:function(K){ return lenOf(K,'boba_recs'); } },
+  { id:'meal_recs',          icon:'🍱', label:'美食紀錄',           n:function(K){ return lenOf(K,'meal_recs'); } },
+  { id:'travel_recs',        icon:'🚆', label:'交通紀錄',           n:function(K){ return lenOf(K,'travel_recs'); } },
+  { id:'boba_trash',         icon:'🗑️', label:'回收桶',             n:function(K){ return lenOf(K,'boba_trash'); } },
+  { id:'split_groups',       icon:'🧾', label:'分帳群組',           n:function(K){ return lenOf(K,'split_groups'); } },
+  { id:'split_expenses',     icon:'🧾', label:'分帳支出（所有群組）', n:function(K){ var v = parseSafe(K.split_groups); if (!Array.isArray(v)) return null; var s = 0; v.forEach(function(g){ if (g && Array.isArray(g.expenses)) s += g.expenses.length; }); return s; } },
+  { id:'sticker_kids',       icon:'🌟', label:'集點卡・孩子',       n:function(K){ return lenOf(K,'sticker_kids'); } },
+  { id:'sticker_behaviors',  icon:'🌟', label:'集點卡・行為',       n:function(K){ return lenOf(K,'sticker_behaviors'); } },
+  { id:'sticker_events',     icon:'🌟', label:'集點卡・點數紀錄',   n:function(K){ return lenOf(K,'sticker_events'); } },
+  { id:'sticker_rewards',    icon:'🌟', label:'集點卡・獎勵',       n:function(K){ return lenOf(K,'sticker_rewards'); } },
+  { id:'sticker_redemptions',icon:'🌟', label:'集點卡・兌換紀錄',   n:function(K){ return lenOf(K,'sticker_redemptions'); } },
+  { id:'mutual_events',      icon:'💑', label:'互助集點・紀錄',     n:function(K){ return lenOf(K,'mutual_events'); } },
+  { id:'mutual_rewards',     icon:'💑', label:'互助集點・獎勵',     n:function(K){ return lenOf(K,'mutual_rewards'); } },
+  { id:'mutual_redemptions', icon:'💑', label:'互助集點・兌換紀錄', n:function(K){ return lenOf(K,'mutual_redemptions'); } },
+  { id:'wish_items',         icon:'🗺️', label:'待去清單・地點',     n:function(K){ if (!(('wishlist_data_v2') in K)) return null; var v = parseSafe(K.wishlist_data_v2); if (v === undefined || v === null || typeof v !== 'object') return null; return Array.isArray(v.wishItems) ? v.wishItems.length : 0; } },
+  { id:'line_drafts',        icon:'📥', label:'LINE 待確認草稿',    n:function(K){ return lenOf(K,'line_drafts'); } },
+  { id:'favs',               icon:'⭐', label:'常用（飲料＋美食＋交通）', n:function(K){ return sumLens(K, ['boba_favs','meal_favs','travel_favs']); } },
+  { id:'auth_users',         icon:'👥', label:'帳號',               n:function(K){ var v = parseSafe(K.auth_users); return (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v).length : null; } },
+  { id:'settings',           icon:'⚙️', label:'其他設定（10 項中有存的）', n:function(K){ var c = 0; SETTING_KEYS.forEach(function(k){ if (typeof K[k] === 'string') c++; }); return c; } }
+];
+function countRows(K){ K = K || {}; return ROWS.map(function(r){ return { id:r.id, icon:r.icon, label:r.label, n:r.n(K) }; }); }
+function countsObject(K){ var o = {}; countRows(K).forEach(function(r){ o[r.id] = r.n; }); return o; }
+function totalOf(K){ var s = 0; countRows(K).forEach(function(r){ if (r.id !== 'settings' && r.n) s += r.n; }); return s; }
+
+// ---------------------------------------------------------------
+// 讀取這台裝置的資料、同步設定
+// ---------------------------------------------------------------
+function readLocal(){ var o = {}; KEY_NAMES.forEach(function(k){ var v = lsGet(k); if (v !== null) o[k] = v; }); return o; }
+function syncInfo(){
+  var code = (lsGet('sync_code') || '').trim();
+  return { enabled: lsGet('sync_enabled') === '1' && !!code, code: code };
+}
+function tokenHeader(){ var h = {}; if (APP_TOKEN) h['x-app-token'] = APP_TOKEN; return h; }
+
+// 連線失敗的原因（說法和主程式一致）
+function explainNet(e){
+  if (e && e.kind === 'notjson') return '伺服器回傳的不是資料（通常是因為不是從正式網址開啟，那裡沒有後端）。';
+  if (e && e.status === 404) return '找不到雲端服務（HTTP 404）。你開啟的可能不是正式網站，那裡沒有後端。';
+  if (e && e.status === 401) return '被伺服器拒絕（HTTP 401）：App 密碼不一致。';
+  if (e && e.status) return '雲端回應異常（HTTP ' + e.status + '）' + (e.serverMsg ? '：' + e.serverMsg : '') + '。';
+  return '連不上雲端。請確認網路；如果不是從正式網址開啟，那裡沒有後端，一定連不上。';
+}
+async function netJson(url, init){
+  var ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = ctl ? setTimeout(function(){ ctl.abort(); }, NET_TIMEOUT) : null;
+  try {
+    var o = Object.assign({}, init || {}); if (ctl) o.signal = ctl.signal;
+    var res = await fetch(url, o);
+    if (!res.ok) {
+      var err = new Error('http ' + res.status); err.status = res.status;
+      try { var j0 = await res.json(); if (j0 && typeof j0.message === 'string') err.serverMsg = j0.message; } catch(_){}
+      throw err;
+    }
+    var j; try { j = await res.json(); } catch(_) { var e2 = new Error('notjson'); e2.kind = 'notjson'; throw e2; }
+    return j;
+  } finally { if (timer) clearTimeout(timer); }
+}
+// 讀雲端目前的資料（不改任何東西）
+async function fetchCloud(code){
+  var j = await netJson(SYNC_URL + '?code=' + encodeURIComponent(code), { headers: tokenHeader() });
+  var keys = {};
+  if (j && j.data && typeof j.data === 'object' && !Array.isArray(j.data)) {
+    Object.keys(j.data).forEach(function(k){ if (typeof j.data[k] === 'string') keys[k] = j.data[k]; });
+  }
+  return { updated_at: (j && j.updated_at) || 0, keys: keys };
+}
+
+// ---------------------------------------------------------------
+// 建立備份
+// ---------------------------------------------------------------
+// reason：'manual'（自己按的）或 'pre-restore'（還原前自動存的）
+async function makeBackup(reason, wantCloud){
+  var local = readLocal();
+  var b = {
+    format: FORMAT,
+    created: new Date().toISOString(),
+    reason: reason,
+    page: { name: 'backup.html', version: PAGE_VERSION },
+    local: { keys: local, counts: countsObject(local) },
+    cloud: null
+  };
+  var s = syncInfo();
+  if (wantCloud && s.enabled) {
+    try {
+      var c = await fetchCloud(s.code);
+      b.cloud = { updated_at: c.updated_at, keys: c.keys, counts: countsObject(c.keys) };
+    } catch(e){ b.cloudError = explainNet(e); }
+  }
+  return b;
+}
+// 檔名只用英數字：含中文的檔名在部分瀏覽器（含手機的內建瀏覽器）會被改成沒有副檔名的 download，之後就選不到了
+function backupFileName(reason){ return (reason === 'pre-restore' ? 'SDA-pre-restore-' : 'SDA-backup-') + stamp() + '.json'; }
+function download(filename, text){
+  var blob = new Blob([text], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ try { a.remove(); URL.revokeObjectURL(url); } catch(_){} }, 4000);
+}
+
+// ---------------------------------------------------------------
+// 讀備份檔、還原計畫
+// ---------------------------------------------------------------
+function parseBackupText(text){
+  if (typeof text !== 'string' || !text.trim()) return { ok:false, error:'檔案是空的。' };
+  if (text.length > 30 * 1024 * 1024) return { ok:false, error:'檔案太大，不像是備份檔。' };
+  var b; try { b = JSON.parse(text); } catch(e){ return { ok:false, error:'這個檔案讀不懂。請選擇之前用「下載完整備份」存下來的 .json 檔。' }; }
+  if (!b || typeof b !== 'object' || Array.isArray(b) || b.format !== FORMAT) {
+    return { ok:false, error:'這不是「完整備份」檔（格式不符）。注意：資料管理中心「匯出資料」存下來的檔案是另一種格式，不能在這裡還原。' };
+  }
+  var hasLocal = !!(b.local && b.local.keys && typeof b.local.keys === 'object' && !Array.isArray(b.local.keys));
+  var hasCloud = !!(b.cloud && b.cloud.keys && typeof b.cloud.keys === 'object' && !Array.isArray(b.cloud.keys));
+  if (!hasLocal && !hasCloud) return { ok:false, error:'備份檔裡沒有任何資料。' };
+  return { ok:true, backup:b, hasLocal:hasLocal, hasCloud:hasCloud };
+}
+// 從備份的某一邊（'local' 這台裝置／'cloud' 雲端）算出：哪些項目會寫入、哪些略過
+function planRestore(backup, source){
+  var sec = backup && backup[source];
+  var keysIn = (sec && sec.keys && typeof sec.keys === 'object' && !Array.isArray(sec.keys)) ? sec.keys : {};
+  var accepted = {}, skipped = [], unknown = 0;
+  Object.keys(keysIn).forEach(function(k){
+    if (!isKey(k)) { unknown++; return; }
+    var why = checkValue(k, keysIn[k]);
+    if (why) skipped.push({ key:k, label:LABEL[k], why:why });
+    else accepted[k] = keysIn[k];
+  });
+  var warnings = [];
+  // 備份檔自己記載的筆數，和重新算出來的對不對得上（對不上＝檔案可能被改過或壞掉）
+  var stated = sec && sec.counts;
+  if (stated && typeof stated === 'object') {
+    var now = countsObject(keysIn), bad = [];
+    Object.keys(now).forEach(function(id){ if (id in stated && stated[id] !== now[id]) bad.push(id); });
+    if (bad.length) warnings.push('備份檔記載的筆數和裡面的內容對不起來（可能被改過或損壞）');
+  }
+  return { source:source, accepted:accepted, skipped:skipped, unknown:unknown, warnings:warnings, counts:countsObject(accepted), nKeys:Object.keys(accepted).length };
+}
+function sameKeys(a, b){
+  var ka = Object.keys(a || {}).filter(isKey).sort();
+  var kb = Object.keys(b || {}).filter(isKey).sort();
+  if (ka.length !== kb.length) return false;
+  for (var i = 0; i < ka.length; i++) { if (ka[i] !== kb[i] || a[ka[i]] !== b[kb[i]]) return false; }
+  return true;
+}
+
+// ---------------------------------------------------------------
+// 寫入（要嘛全部成功、要嘛全部回復）
+// ---------------------------------------------------------------
+function writeKeysAtomic(toWrite){
+  var prev = {}, done = [];
+  try {
+    Object.keys(toWrite).forEach(function(k){
+      prev[k] = localStorage.getItem(k);
+      localStorage.setItem(k, toWrite[k]);
+      done.push(k);
+    });
+    return { ok:true, prev:prev };
+  } catch(e){
+    return { ok:false, error:e, failed:revertKeys(prev, done) };
+  }
+}
+// 把 done 這些項目改回 prev 的值；回傳「回復失敗」的項目
+function revertKeys(prev, done){
+  var failed = [];
+  done.forEach(function(k){
+    try { if (prev[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, prev[k]); }
+    catch(_){ failed.push(k); }
+  });
+  return failed;
+}
+// 把這台裝置現在的資料上傳到雲端（做法和主程式的同步一樣，伺服器會替 LINE 剛傳來的新紀錄留著）
+async function pushCloud(code){
+  var data = readLocal();
+  var body = JSON.stringify({ code:code, data:data, updated_at:Date.now(), base:Number(lsGet('sync_base') || 0) });
+  var headers = Object.assign({ 'Content-Type':'application/json' }, tokenHeader());
+  var rj = await netJson(SYNC_URL, { method:'POST', headers:headers, body:body });
+  try {
+    if (rj && rj.updated_at && !(rj.preserved > 0)) localStorage.setItem('sync_base', String(rj.updated_at));
+    localStorage.setItem('last_sync', String(Date.now()));
+  } catch(_){}
+  return rj || {};
+}
+
+// ---------------------------------------------------------------
+// 「還原前備份」暫存
+// ---------------------------------------------------------------
+function stashSave(pre){
+  var tries = [pre];
+  if (pre.cloud) { tries.push(Object.assign({}, pre, { cloud:null, stashNote:'只暫存了這台裝置的資料' })); }
+  for (var i = 0; i < tries.length; i++) {
+    try {
+      var s = JSON.stringify({ t:Date.now(), backup:tries[i] });
+      if (s.length > STASH_MAX) continue;
+      localStorage.setItem(LS_STASH, s);
+      return i === 0 ? 'full' : 'local';
+    } catch(e){ /* 空間不夠就試下一個，最後放棄 */ }
+  }
+  try { localStorage.removeItem(LS_STASH); } catch(_){}
+  return 'none';
+}
+function stashLoad(){
+  var raw = lsGet(LS_STASH); if (!raw) return null;
+  try { var o = JSON.parse(raw); if (o && o.backup && o.backup.format === FORMAT) return o; } catch(e){}
+  return null;
+}
+function stashDrop(){ try { localStorage.removeItem(LS_STASH); } catch(_){} }
+function stashPurgeOld(){
+  var o = stashLoad();
+  if (!o) { if (lsGet(LS_STASH)) stashDrop(); return; }
+  if (Date.now() - Number(o.t) > STASH_DAYS * 86400000) stashDrop();
+}
+
+// ---------------------------------------------------------------
+// 還原流程
+// ---------------------------------------------------------------
+// 回傳 { ok, ... }。ok:false 時，message 會說清楚「資料有沒有被改動」
+async function doRestore(backup, source){
+  var plan = planRestore(backup, source);
+  if (!plan.nKeys) return { ok:false, changed:false, message:'備份檔裡沒有可以還原的資料，沒有改動任何東西。' };
+  var sync = syncInfo();
+
+  // 1. 先替「現在的資料」做備份（含雲端）。有開同步卻讀不到雲端 → 不還原，免得雲端沒有退路
+  setStatus('正在建立「還原前備份」…');
+  var pre = await makeBackup('pre-restore', true);
+  if (sync.enabled && !pre.cloud) {
+    return { ok:false, changed:false, message:'雲端暫時讀不到（' + (pre.cloudError || '原因不明') + '），沒辦法替雲端的資料做「還原前備份」。為了安全，這次先不還原，什麼都沒有改。請稍後再試。' };
+  }
+  download(backupFileName('pre-restore'), JSON.stringify(pre));   // 先下載（任何改動之前）；暫存要等「真的改了資料」才寫，失敗又沒動到資料時，舊的暫存要留著
+
+  // 2. 寫入這台裝置
+  setStatus('正在還原…');
+  var w = writeKeysAtomic(plan.accepted);
+  if (!w.ok) {
+    if (w.failed.length) return { ok:false, changed:true, message:'寫入失敗（可能是瀏覽器儲存空間不足），而且回復時也出了問題。請立刻用剛下載的「還原前備份」檔案還原。', stashed:stashSave(pre) };
+    return { ok:false, changed:false, message:'寫入失敗（可能是瀏覽器儲存空間不足），已經回到原本的樣子，沒有改動任何資料。' };
+  }
+
+  // 3. 同步到雲端（不然下次開啟小秘書時，雲端的舊資料會把還原的內容蓋回去）
+  var cloud = { enabled:sync.enabled, ok:null, preserved:0 };
+  if (sync.enabled) {
+    setStatus('正在更新雲端…');
+    try {
+      var rj = await pushCloud(sync.code);
+      cloud.ok = true; cloud.preserved = Number(rj.preserved) || 0;
+    } catch(e){
+      var failed = revertKeys(w.prev, Object.keys(plan.accepted));
+      if (failed.length) return { ok:false, changed:true, message:'雲端更新失敗（' + explainNet(e) + '），回復時也出了問題。請立刻用剛下載的「還原前備份」檔案還原。', stashed:stashSave(pre) };
+      return { ok:false, changed:false, message:'雲端更新失敗（' + explainNet(e) + '），已經回到原本的樣子，沒有改動任何資料。請稍後再試。' };
+    }
+  }
+  return { ok:true, changed:true, plan:plan, cloud:cloud, stashed:stashSave(pre), source:source };
+}
+
+// ---------------------------------------------------------------
+// 畫面
+// ---------------------------------------------------------------
+var S = { pending:null, cloudCounts:null, cloudErr:'', busy:false };
+
+function renderCountTable(){
+  var local = readLocal();
+  var sync = syncInfo();
+  var lr = countRows(local), cr = S.cloudCounts;
+  var h = '<tr><th>項目</th><th>這台裝置</th>' + (sync.enabled ? '<th>雲端</th>' : '') + '</tr>';
+  lr.forEach(function(r, i){
+    h += '<tr><td>' + r.icon + ' ' + esc(r.label) + '</td><td>' + fmtN(r.n) + '</td>' + (sync.enabled ? '<td>' + (cr ? fmtN(cr[i].n) : '…') + '</td>' : '') + '</tr>';
+  });
+  $('bk-count-table').innerHTML = h;
+  var note = $('bk-cloud-note');
+  if (sync.enabled) {
+    $('bk-cloud-row').hidden = false;
+    if (S.cloudErr) { note.hidden = false; note.className = 'note bad'; note.textContent = '⚠️ 雲端的資料讀不到：' + S.cloudErr; }
+    else if (cr) {
+      var diff = lr.some(function(r, i){ return r.id !== 'settings' && r.n !== cr[i].n; });
+      note.hidden = !diff; note.className = 'note'; note.textContent = diff ? '這台裝置和雲端的筆數不一樣，可能還沒同步完。備份時兩邊都會存下來。' : '';
+    } else { note.hidden = true; }
+  } else { $('bk-cloud-row').hidden = true; note.hidden = true; }
+}
+async function loadCloudCounts(){
+  var s = syncInfo(); S.cloudCounts = null; S.cloudErr = '';
+  if (!s.enabled) { renderCountTable(); return; }
+  renderCountTable();
+  try { var c = await fetchCloud(s.code); S.cloudCounts = countRows(c.keys); }
+  catch(e){ S.cloudErr = explainNet(e); }
+  renderCountTable();
+}
+function renderLast(){
+  var t = lsGet(LS_LAST);
+  $('bk-last').textContent = t ? ('上次下載備份：' + fmtTime(t) + '（' + ageText(t) + '）') : '上次下載備份：尚未備份過';
+}
+
+async function onDownload(){
+  if (S.busy) return; S.busy = true; $('bk-download').disabled = true;
+  try {
+    setStatus('正在整理備份…');
+    var wantCloud = !$('bk-cloud-row').hidden && $('bk-include-cloud').checked;
+    var b = await makeBackup('manual', wantCloud);
+    var text = JSON.stringify(b);
+    download(backupFileName('manual'), text);
+    try { localStorage.setItem(LS_LAST, String(Date.now())); } catch(_){}
+    renderLast();
+    var msg = '✅ 已產生備份檔（' + Math.max(1, Math.round(text.length / 1024)) + ' KB，共 ' + totalOf(b.local.keys) + ' 筆資料）。請確認它真的存進了手機／電腦的「下載」資料夾。';
+    if (wantCloud && !b.cloud) msg += ' ⚠️ 雲端的資料沒有備份到（' + (b.cloudError || '原因不明') + '），這份只有這台裝置的資料。';
+    setStatus(msg);
+  } catch(e){ setStatus('❌ 備份失敗：' + String((e && e.message) || e).slice(0, 80)); }
+  finally { S.busy = false; $('bk-download').disabled = false; }
+}
+async function onCopy(){
+  if (S.busy) return; S.busy = true;
+  try {
+    setStatus('正在整理備份…');
+    var wantCloud = !$('bk-cloud-row').hidden && $('bk-include-cloud').checked;
+    var b = await makeBackup('manual', wantCloud);
+    var text = JSON.stringify(b);
+    var box = $('bk-copy-box');
+    box.value = text; box.hidden = false;
+    var copied = false;
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(text); copied = true; } } catch(_){}
+    if (!copied) { try { box.focus(); box.select(); } catch(_){} }
+    try { localStorage.setItem(LS_LAST, String(Date.now())); } catch(_){}
+    renderLast();
+    setStatus(copied ? '✅ 已複製備份內容（' + text.length + ' 字）。請貼到備忘錄，或寄給自己保存。' : '請長按下面的文字框「全選」→「拷貝」，再貼到備忘錄或寄給自己保存。');
+  } catch(e){ setStatus('❌ 複製失敗：' + String((e && e.message) || e).slice(0, 80)); }
+  finally { S.busy = false; }
+}
+
+function showReadErr(msg){ var el = $('bk-read-err'); el.hidden = !msg; el.textContent = msg || ''; }
+function handleBackupText(text, fileLabel){
+  showReadErr(''); S.pending = null; $('bk-preview').hidden = true; $('bk-preview').innerHTML = '';
+  var r = parseBackupText(text);
+  if (!r.ok) { showReadErr('❌ ' + r.error); return; }
+  var pl = planRestore(r.backup, 'local'), pc = planRestore(r.backup, 'cloud');
+  var source = (r.hasLocal && pl.nKeys) ? 'local' : 'cloud';
+  var both = r.hasLocal && r.hasCloud && pl.nKeys && pc.nKeys && !sameKeys(r.backup.local.keys, r.backup.cloud.keys);
+  S.pending = { backup:r.backup, source:source, both:both, fileLabel:fileLabel || '' };
+  renderPreview();
+}
+function renderPreview(){
+  var p = S.pending, box = $('bk-preview'); if (!p) { box.hidden = true; return; }
+  var plan = planRestore(p.backup, p.source);
+  var curKeys = readLocal();
+  var merged = Object.assign({}, curKeys, plan.accepted);   // 還原後的樣子：備份檔有的換掉，沒有的保留現有
+  var cur = countRows(curKeys), aft = countRows(merged);
+  var h = '';
+  h += '<div class="meta" style="margin-top:12px">備份檔：' + (p.fileLabel ? esc(p.fileLabel) + '・' : '') + '存於 ' + esc(fmtTime(Date.parse(p.backup.created))) + '（' + esc(ageText(Date.parse(p.backup.created))) + '）' + (p.backup.reason === 'pre-restore' ? '・這是一份「還原前備份」' : '') + '</div>';
+  if (p.both) {
+    h += '<label for="bk-source" class="meta" style="display:block;margin-top:10px">這份備份同時有兩份資料，要用哪一份還原？</label>' +
+         '<select class="sel" id="bk-source"><option value="local"' + (p.source === 'local' ? ' selected' : '') + '>這台裝置的資料（備份當時）</option><option value="cloud"' + (p.source === 'cloud' ? ' selected' : '') + '>雲端的資料（備份當時）</option></select>';
+  }
+  var anyDown = false;
+  h += '<table class="cnt" id="bk-preview-table" aria-label="還原前後的筆數對照"><tr><th>項目</th><th>現在</th><th>還原後</th><th>變化</th></tr>';
+  aft.forEach(function(r, i){
+    var c = cur[i].n, f = r.n, chg = '相同', cls = '';
+    if (c !== f) {
+      if (c == null) { chg = '+' + f; cls = 'up'; }
+      else if (f == null || f < c) { chg = '−' + (c - (f || 0)) + ' ⚠️'; cls = 'dn'; anyDown = true; }
+      else { chg = '+' + (f - c); cls = 'up'; }
+    }
+    h += '<tr class="' + cls + '"><td>' + r.icon + ' ' + esc(r.label) + '</td><td>' + fmtN(c) + '</td><td>' + fmtN(f) + '</td><td class="chg">' + chg + '</td></tr>';
+  });
+  h += '</table>';
+  if (!plan.nKeys) h += '<div class="note bad">這份備份裡沒有可以還原的資料（沒有任何通過檢查的項目），沒辦法還原。</div>';
+  else h += '<div class="meta">這次會寫入 ' + plan.nKeys + ' 個項目（共 ' + KEY_NAMES.length + ' 個）；備份檔裡沒有的項目，保留現有的不動。</div>';
+  if (anyDown) h += '<div class="note bad">⚠️ 有些項目還原後的筆數比現在少。這些多出來的資料還原後會從小秘書裡消失（還原前會先存一份，之後還能救回來）。</div>';
+  if (plan.skipped.length) h += '<div class="note bad">下面這些項目在備份檔裡壞掉了，<strong>會略過、保留現有的</strong>：<ul>' + plan.skipped.map(function(s){ return '<li>' + esc(s.label) + '：' + esc(s.why) + '</li>'; }).join('') + '</ul></div>';
+  if (plan.unknown) h += '<div class="note plain">備份檔裡另外有 ' + plan.unknown + ' 個不認得的項目，已略過（不會寫入）。</div>';
+  // 帳號與超級密碼也是備份的一部分：備份之後改過密碼的話，還原會連密碼一起換回舊的，先講清楚
+  var credChanged = ['auth_users','super_password_hash'].filter(function(k){ return k in plan.accepted && plan.accepted[k] !== curKeys[k]; });
+  if (credChanged.length) h += '<div class="note plain">🔑 備份檔裡的帳號與超級密碼也會換回備份當時的樣子。如果備份之後改過密碼，還原後要改用舊密碼登入。</div>';
+  plan.warnings.forEach(function(w){ h += '<div class="note bad">⚠️ ' + esc(w) + '</div>'; });
+  var s = syncInfo();
+  h += '<label class="chk"><input type="checkbox" id="bk-confirm"><span>我了解：這台裝置' + (s.enabled ? '和雲端' : '') + '的資料會被換成備份檔的內容。</span></label>';
+  h += '<button type="button" class="btn dng" id="bk-restore" disabled>還原（整份換成備份檔）</button>';
+  box.innerHTML = h; box.hidden = false;
+  $('bk-confirm').addEventListener('change', function(){ $('bk-restore').disabled = !this.checked || S.busy || !plan.nKeys; });
+  $('bk-restore').addEventListener('click', onRestore);
+  var sel = $('bk-source');
+  if (sel) sel.addEventListener('change', function(){ S.pending.source = this.value; renderPreview(); });
+}
+
+function showResult(kind, html){
+  $('bk-result').innerHTML = '<div class="card"><div class="note ' + kind + '" style="margin-top:0">' + html + '</div></div>';
+  try { $('bk-result').scrollIntoView({ block:'nearest' }); } catch(_){}
+}
+function afterTable(){
+  var rows = countRows(readLocal());
+  return '<table class="cnt" id="bk-after-table" aria-label="還原後的筆數"><tr><th>項目</th><th>這台裝置現在</th></tr>' + rows.map(function(r){ return '<tr><td>' + r.icon + ' ' + esc(r.label) + '</td><td>' + fmtN(r.n) + '</td></tr>'; }).join('') + '</table>';
+}
+async function runRestore(backup, source, btn){
+  if (S.busy) return; S.busy = true; if (btn) btn.disabled = true;
+  $('bk-result').innerHTML = '';
+  try {
+    var r = await doRestore(backup, source);
+    setStatus('');
+    if (!r.ok) { showResult('bad', '❌ ' + esc(r.message)); renderCountTable(); renderUndo(); return; }
+    var h = '<strong>✅ 還原完成</strong><br>已把 ' + r.plan.nKeys + ' 個項目換成備份檔的內容。';
+    if (r.cloud.enabled) h += '<br>雲端也已經更新' + (r.cloud.preserved > 0 ? '（雲端另外保留了 ' + r.cloud.preserved + ' 筆 LINE 剛傳來的新資料，下次開啟小秘書時會出現）' : '') + '。';
+    else h += '<br>這台裝置沒有開啟雲端同步，所以只更新了這台裝置。';
+    if (r.stashed === 'full') h += '<br>「還原前備份」已下載，並暫存在這台裝置上（下面第 ③ 區可以一鍵復原）。';
+    else if (r.stashed === 'local') h += '<br>「還原前備份」已下載；暫存在這台裝置上的只有這台裝置的資料（雲端那份太大，沒有暫存）。';
+    else h += '<br>「還原前備份」已下載。<strong>這台裝置的空間不夠暫存，所以請確認那個檔案真的存下來了。</strong>';
+    h += '<br><strong>請把其他開著的小秘書分頁都關掉</strong>，再回到小秘書；不然舊分頁可能會把舊資料寫回來。' + afterTable();
+    h += '<a class="btn pri" href="/" style="text-decoration:none">回到小秘書</a>';
+    showResult('good', h);
+    S.pending = null; $('bk-preview').hidden = true; $('bk-preview').innerHTML = ''; $('bk-file').value = '';
+    renderCountTable(); renderUndo(); loadCloudCounts();
+  } catch(e){
+    showResult('bad', '❌ 還原時發生意外：' + esc(String((e && e.message) || e).slice(0, 100)) + '。請重新整理本頁確認資料；如果資料不對，用剛下載的「還原前備份」檔案還原。');
+  } finally { S.busy = false; if (btn) btn.disabled = false; }
+}
+function onRestore(){ if (S.pending) runRestore(S.pending.backup, S.pending.source, $('bk-restore')); }
+
+function renderUndo(){
+  var o = stashLoad(), card = $('bk-undo-card');
+  if (!o) { card.hidden = true; return; }
+  card.hidden = false;
+  var K = (o.backup.local && o.backup.local.keys) || {};
+  $('bk-undo-info').textContent = '存於 ' + fmtTime(o.t) + '（' + ageText(o.t) + '）・約 ' + totalOf(K) + ' 筆資料・暫存最多保留 ' + STASH_DAYS + ' 天';
+}
+function onUndo(){
+  var o = stashLoad(); if (!o) { renderUndo(); return; }
+  var b = o.backup;
+  runRestore(b, (b.local && b.local.keys && Object.keys(b.local.keys).length) ? 'local' : 'cloud', $('bk-undo'));
+}
+function onUndoDownload(){ var o = stashLoad(); if (!o) { renderUndo(); return; } download(backupFileName('pre-restore'), JSON.stringify(o.backup)); }
+function onUndoDelete(){ stashDrop(); renderUndo(); }
+
+// ---------------------------------------------------------------
+// 啟動
+// ---------------------------------------------------------------
+function enter(){
+  $('bk-gate').hidden = true; $('bk-main').hidden = false;
+  renderCountTable(); renderLast(); renderUndo(); loadCloudCounts();
+}
+function tryGate(){
+  var pw = $('bk-gate-pw').value;
+  if (checkSuper(pw)) { $('bk-gate-pw').value = ''; enter(); }
+  else { $('bk-gate-err').hidden = false; }
+}
+function init(){
+  stashPurgeOld();
+  $('bk-gate-go').addEventListener('click', tryGate);
+  $('bk-gate-pw').addEventListener('keydown', function(e){ if (e.key === 'Enter') tryGate(); });
+  $('bk-download').addEventListener('click', onDownload);
+  $('bk-copy').addEventListener('click', onCopy);
+  $('bk-undo').addEventListener('click', onUndo);
+  $('bk-undo-dl').addEventListener('click', onUndoDownload);
+  $('bk-undo-del').addEventListener('click', onUndoDelete);
+  $('bk-paste-read').addEventListener('click', function(){ handleBackupText($('bk-paste').value, '貼上的內容'); });
+  $('bk-file').addEventListener('change', function(){
+    var f = this.files && this.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){ handleBackupText(String(rd.result || ''), f.name); };
+    rd.onerror = function(){ showReadErr('❌ 讀不到這個檔案，請再試一次，或改用下面的「貼上備份內容」。'); };
+    rd.readAsText(f);
+  });
+  if (gateRequired()) { $('bk-gate').hidden = false; $('bk-main').hidden = true; }
+  else enter();
+}
+
+// 給測試用（不影響正常使用）
+window.SDA_BK = {
+  FORMAT: FORMAT, PAGE_VERSION: PAGE_VERSION, KEYS: KEY_NAMES.slice(), KIND: KIND, LABEL: LABEL, ROWS: ROWS, isKey: isKey,
+  simpleHash: simpleHash, checkSuper: checkSuper, gateRequired: gateRequired,
+  checkValue: checkValue, countRows: countRows, countsObject: countsObject, totalOf: totalOf,
+  readLocal: readLocal, syncInfo: syncInfo, makeBackup: makeBackup, parseBackupText: parseBackupText, planRestore: planRestore,
+  writeKeysAtomic: writeKeysAtomic, revertKeys: revertKeys, pushCloud: pushCloud, fetchCloud: fetchCloud,
+  stashSave: stashSave, stashLoad: stashLoad, stashDrop: stashDrop, stashPurgeOld: stashPurgeOld,
+  doRestore: doRestore, backupFileName: backupFileName, explainNet: explainNet, sameKeys: sameKeys,
+  LS_LAST: LS_LAST, LS_STASH: LS_STASH, STASH_MAX: STASH_MAX, STASH_DAYS: STASH_DAYS, APP_TOKEN: APP_TOKEN
+};
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+})();
+</script>
+</body>
+</html>
