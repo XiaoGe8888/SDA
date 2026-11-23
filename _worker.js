@@ -7409,6 +7409,15 @@ async function botVersionText(env, userId) {
 // ---------- 主路由 ----------
 export default {
   async fetch(request, env, ctx) {
+    if (new URL(request.url).pathname === '/api/debug-calnote') {
+      return new Response(JSON.stringify({
+        hasBase: !!env.CALNOTE_WORKER_URL,
+        base: env.CALNOTE_WORKER_URL || null,
+        hasSecret: !!env.CALNOTE_INTERNAL_SECRET,
+        secretLen: env.CALNOTE_INTERNAL_SECRET ? env.CALNOTE_INTERNAL_SECRET.length : 0,
+        testMatch: CALNOTE_TRIGGER_PATTERNS.some((re) => re.test('待辦選單')),
+      }, null, 2), { headers: { 'content-type': 'application/json' } });
+    }
     const url = new URL(request.url);
     if (url.pathname === '/api/gemini') return handleGemini(request, env);
     if (url.pathname === '/api/sync') return handleSync(request, env);
