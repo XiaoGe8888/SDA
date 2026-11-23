@@ -7438,6 +7438,7 @@ export default {
         hasSecret: !!env.CALNOTE_INTERNAL_SECRET,
         secretLen: env.CALNOTE_INTERNAL_SECRET ? env.CALNOTE_INTERNAL_SECRET.length : 0,
         testMatch: CALNOTE_TRIGGER_PATTERNS.some((re) => re.test('待辦選單')),
+        allKeys: Object.keys(env),
       }, null, 2), { headers: { 'content-type': 'application/json' } });
     }
     const url = new URL(request.url);
