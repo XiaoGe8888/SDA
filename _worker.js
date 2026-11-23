@@ -4176,7 +4176,7 @@ function looksLikeCalnoteCommand(text, ev) {
 async function handleCalnoteForward(ev, token, env) {
     try {
       const dbgText = ev.message && typeof ev.message.text === 'string' ? ev.message.text : null;
-      if (dbgText !== null) {
+      if (false && dbgText !== null) {
         await lineReply(token, ev.replyToken, '除錯 debug:' + JSON.stringify(dbgText) + ' / group=' + isGroupSource(ev.source));
         return true;
       }
