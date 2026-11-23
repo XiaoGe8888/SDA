@@ -4162,8 +4162,8 @@ function looksLikeCalnoteCommand(text, ev) {
       return false;
     }
   }
-  return CALNOTE_TRIGGER_PATTERNS.some((re) => re.test(t));
-}
+  console.log('calnote 比對用文字(JSON):', JSON.stringify(t));
+  return CALNOTE_TRIGGER_PATTERNS.some((re) => re.test(t.trim()));}
 
 /**
  * 轉送到 calnote 的內部API。CALNOTE_WORKER_URL／CALNOTE_INTERNAL_SECRET
