@@ -4186,8 +4186,23 @@ async function handleCalnoteForward(ev, token, env) {
   if (!base || !secret) return false;
   if (!ev.message || typeof ev.message.text !== 'string') return false;
   const text = ev.message.text;
-  if (!looksLikeCalnoteCommand(text, ev)) return false;
-
+  const cmdMatch = looksLikeCalnoteCommand(text, ev);
+  let dbgMsg = '除錯2 cmdMatch=' + cmdMatch;
+  if (cmdMatch) {
+    try {
+      const r = await fetch(base.replace(/\/+$/, '') + '/internal/dispatch', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-internal-secret': secret },
+        body: JSON.stringify({ text, source: ev.source, mention: ev.message.mention }),
+      });
+      const bodyText = await r.text();
+      dbgMsg += ' / status=' + r.status + ' / body=' + bodyText.slice(0, 300);
+    } catch (e) {
+      dbgMsg += ' / fetchErr=' + (e && e.message);
+    }
+  }
+  try { await lineReply(token, ev.replyToken, dbgMsg); } catch (e) {}
+  return true;
   let res;
   try {
     const controller = new AbortController();
