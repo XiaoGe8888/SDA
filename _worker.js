@@ -4208,8 +4208,7 @@ async function handleCalnoteForward(ev, token, env) {
   await lineReplyMessages(token, ev.replyToken, data.reply); // 轉送成功後的回覆萬一失敗，交給外層既有的 catch 統一處理（跟其他既有handler一致，不另外吞掉）
   return true;
 }
-
-async function handleLine(request, env) {
+async function handleLine(request, env, ctx) {
   // LINE 的 webhook 只會用 POST。用瀏覽器直接開會是 GET，回個 OK 方便測試。
   if (request.method !== 'POST') return new Response('LINE webhook OK');
 
@@ -4231,37 +4230,58 @@ async function handleLine(request, env) {
   catch (e) { return new Response('OK'); }
 
   const events = data.events || [];
-  for (const rawEv of events) {
-    let ev = rawEv;
-    if (rawEv && rawEv.type === 'postback') { // V10.5：隱藏按鈕（九宮格、再玩一次…）→ 當成使用者打了那串字，往下走同一條路
-      ev = postbackAsTextEvent(rawEv);
-      if (!ev) continue;
-    }
-    if (ev.type === 'join' && ev.source && isGroupSource(ev.source)) {
-      // 官方帳號被加進群組／聊天室：馬上登記，管理頁的「群組與權限」不用等到有人在裡面傳訊息就找得到（只登記，不回話、不打擾）
-      try { await touchRegistry(ev, token, env, makeCtx(ev)); } catch (e) {}
-      continue;
-    }
-    if (ev.type === 'message' && ev.message && ev.message.type === 'image' && ev.replyToken) {
-      // V10.3：照片（拍照、相簿、上傳、貼上圖片）。只有「自己開了紀錄流程」或 1 對 1 直接傳的才處理，群組裡別人傳的照片一律不理
-      try {
-        ev.appOrigin = new URL(request.url).origin;
-        await handleRec4Image(ev, token, env);
-      } catch (e) {
-        if (ev._rec4Engaged) { try { await lineReply(token, ev.replyToken, '照片處理時發生了一點問題 🙏 不影響文字紀錄，請直接用文字輸入，或稍後再傳一次照片'); } catch (e2) {} }
+
+  // V-fix（修正 calnote 轉送偶爾完全沒回覆的問題）：
+  // 實際處理每一個事件（尤其是轉送 calnote 這種多一趟網路來回、比原本
+  // 六個功能慢一點的）包成一個函式，透過 ctx.waitUntil 丟到背景執行；
+  // webhook 這支 fetch 本身先快速回 200 OK。
+  // 原因：LINE 的 webhook 呼叫端如果等太久會自己斷線，Cloudflare 偵測到
+  // 用戶端斷線後會把還在跑的處理直接取消掉（連線記錄會顯示
+  // outcome: canceled），使用者因此完全收不到回覆、也不會收到任何錯誤
+  // 訊息。改成 waitUntil 背景執行後，就算這次 webhook 的 HTTP 回應已經
+  // 送出，Cloudflare 仍然會讓背景這段繼續跑完、把真正的回覆訊息推給
+  // LINE，不會被中途取消。
+  async function processAll() {
+    for (const rawEv of events) {
+      let ev = rawEv;
+      if (rawEv && rawEv.type === 'postback') { // V10.5：隱藏按鈕（九宮格、再玩一次…）→ 當成使用者打了那串字，往下走同一條路
+        ev = postbackAsTextEvent(rawEv);
+        if (!ev) continue;
       }
-      continue;
-    }
-    if (ev.type === 'message' && ev.message && ev.message.type === 'text' && ev.replyToken) {
-      try {
-        ev.appOrigin = new URL(request.url).origin; // 給「開啟App」按鈕組網址用
-        const handled = (await handleCalnoteForward(ev, token, env)) || (await handleKeywordRouter(ev, token, env)) || (await handleRec4Message(ev, token, env)) || (await handleOpMessage(ev, token, env)) || (await handleQuickMessage(ev, token, env)) || (await handleFlagshipMessage(ev, token, env)) || (await handleStickerCardMessage(ev, token, env));
-        if (!handled) await handleExpenseMessage(ev, token, env);
-      } catch (e) {
-        try { await lineReply(token, ev.replyToken, '發生了一點問題 🙏 請再試一次'); } catch (e2) {}
+      if (ev.type === 'join' && ev.source && isGroupSource(ev.source)) {
+        // 官方帳號被加進群組／聊天室：馬上登記，管理頁的「群組與權限」不用等到有人在裡面傳訊息就找得到（只登記，不回話、不打擾）
+        try { await touchRegistry(ev, token, env, makeCtx(ev)); } catch (e) {}
+        continue;
+      }
+      if (ev.type === 'message' && ev.message && ev.message.type === 'image' && ev.replyToken) {
+        // V10.3：照片（拍照、相簿、上傳、貼上圖片）。只有「自己開了紀錄流程」或 1 對 1 直接傳的才處理，群組裡別人傳的照片一律不理
+        try {
+          ev.appOrigin = new URL(request.url).origin;
+          await handleRec4Image(ev, token, env);
+        } catch (e) {
+          if (ev._rec4Engaged) { try { await lineReply(token, ev.replyToken, '照片處理時發生了一點問題 🙏 不影響文字紀錄，請直接用文字輸入，或稍後再傳一次照片'); } catch (e2) {} }
+        }
+        continue;
+      }
+      if (ev.type === 'message' && ev.message && ev.message.type === 'text' && ev.replyToken) {
+        try {
+          ev.appOrigin = new URL(request.url).origin; // 給「開啟App」按鈕組網址用
+          const handled = (await handleCalnoteForward(ev, token, env)) || (await handleKeywordRouter(ev, token, env)) || (await handleRec4Message(ev, token, env)) || (await handleOpMessage(ev, token, env)) || (await handleQuickMessage(ev, token, env)) || (await handleFlagshipMessage(ev, token, env)) || (await handleStickerCardMessage(ev, token, env));
+          if (!handled) await handleExpenseMessage(ev, token, env);
+        } catch (e) {
+          try { await lineReply(token, ev.replyToken, '發生了一點問題 🙏 請再試一次'); } catch (e2) {}
+        }
       }
     }
   }
+
+  if (ctx && typeof ctx.waitUntil === 'function') {
+    ctx.waitUntil(processAll());
+  } else {
+    // 理論上不會拿不到 ctx；萬一拿不到，退回原本同步等待寫法，至少不會整批不處理
+    await processAll();
+  }
+
   return new Response('OK');
 }
 
@@ -7393,7 +7413,7 @@ export default {
     if (url.pathname === '/api/gemini') return handleGemini(request, env);
     if (url.pathname === '/api/sync') return handleSync(request, env);
     if (url.pathname === '/api/health') return handleHealth(request, env);
-    if (url.pathname === '/api/line') return handleLine(request, env);
+    if (url.pathname === '/api/line') return handleLine(request, env, ctx);
     if (url.pathname.indexOf('/api/line-config') === 0) return handleLineConfigApi(request, env);
     if (url.pathname === '/api/line-log') return handleLineLog(request, env);
     if (url.pathname === '/api/line-log-remove') return handleLineLogRemove(request, env);
