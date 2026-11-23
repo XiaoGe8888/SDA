@@ -4174,6 +4174,13 @@ function looksLikeCalnoteCommand(text, ev) {
  * 不會讓使用者收不到回覆或讓整個訊息處理卡住。
  */
 async function handleCalnoteForward(ev, token, env) {
+    try {
+      const dbgText = ev.message && typeof ev.message.text === 'string' ? ev.message.text : null;
+      if (dbgText !== null) {
+        await lineReply(token, ev.replyToken, '除錯 debug:' + JSON.stringify(dbgText) + ' / group=' + isGroupSource(ev.source));
+        return true;
+      }
+    } catch (e) {}
   const base = env.CALNOTE_WORKER_URL;
   const secret = env.CALNOTE_INTERNAL_SECRET;
   if (!base || !secret) return false;
