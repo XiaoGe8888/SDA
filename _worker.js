@@ -967,6 +967,7 @@ const FUNCTION_CATALOG = {
   split_add: { label: '記一筆分帳', writes: true, personal: false },
   sticker: { label: '集點卡', writes: true, personal: true },
   wishlist: { label: '待去清單', writes: false, personal: true },
+  timenote: { label: '時光筆記', writes: false, personal: true },
   wish_add: { label: '新增待去地點', writes: true, personal: true }, // V10.1：LINE 新增待去地點（先變成待確認草稿，到網頁確認後才寫入待去清單）
   drafts: { label: '待確認草稿', writes: false, personal: true },
   device: { label: '設備管理中心', writes: false, personal: false }, // V10.4：選單項目；功能內容待確認，目前只回覆說明
@@ -1061,6 +1062,7 @@ const TOOLS_V = 3;
 //   V10.15（2→）：25題原本只有「完全比對規格原句」，使用者實際上幾乎打不出一字不差的句子，等於形同沒有這個功能——
 //   每題再補2～3組口語版關鍵字（contains・1對1限定），upgradeFaqKeywords 不用改，既有的「用keyword文字比對是否已存在」邏輯會自動連這批也一起補上。
 const FAQ_KW_V = 2;
+const TIMENOTE_V = 1; // 時光筆記：功能選單新按鈕的版本號
 // V10.3.0 以前的預設選單與關鍵字（只用來判斷「存在 KV 裡的設定有沒有被使用者改過」；不要修改）
 function legacyDefaultLineConfigV103() {
   let n = 0;
@@ -1130,6 +1132,7 @@ function defaultLineConfig() {
       { id: 'm_sticker', name: '集點卡', emoji: '🎟️', order: 2, enabled: true, scope: 'both', functionId: 'sticker' },
       { id: 'm_wish', name: '待去清單', emoji: '📍', order: 3, enabled: true, scope: 'both', functionId: 'wishlist' },
       { id: 'm_device', name: '設備管理中心', emoji: '🛠️', order: 4, enabled: true, scope: 'both', functionId: 'device' },
+      { id: 'm_timenote', name: '時光筆記', emoji: '⏰', order: 7, enabled: true, scope: 'both', functionId: 'timenote' },
       { id: 'm_tools', name: '工具', emoji: '🧰', order: 5, enabled: true, scope: 'both', functionId: null, layout: 'grid' }, // V10.5：工具＝九宮格（每 3 格一列，最後一格固定是「返回主選單」）；V10.6.0 起 9 個工具（含「自動剪刀石頭布」）＋返回主選單＝10 格（4 列）；V10.9.0 起剪刀石頭布拆成剪刀／石頭／布／自動 4 格，11 個工具＋返回主選單＝12 格（4 列）；其他選單維持清單
     ],
     subMenus: [
@@ -1452,19 +1455,30 @@ function upgradeFaqKeywords(cfg) {
   });
   return Object.assign({}, cfg, { keywords: kws, menu: Object.assign({}, cfg.menu, { faqKwV: FAQ_KW_V }) });
 }
+function upgradeTimeNoteMenu(cfg) {
+  if (!cfg || !cfg.menu || (cfg.menu.timenoteV || 0) >= TIMENOTE_V) return cfg;
+  const d = defaultLineConfig();
+  const mains = (cfg.mainMenus || []).map((m) => Object.assign({}, m));
+  if (!mains.some((m) => m.functionId === 'timenote')) {
+    const dm = d.mainMenus.find((m) => m.functionId === 'timenote');
+    const last = mains.reduce((a, m) => Math.max(a, Number(m.order) || 0), 0);
+    mains.push(Object.assign({}, dm, { order: last + 1 }));
+  }
+  return Object.assign({}, cfg, { mainMenus: mains, menu: Object.assign({}, cfg.menu, { timenoteV: TIMENOTE_V }) });
+}
 async function loadLineConfig(env) {
   let stored = null;
   try { const raw = env.SYNC_KV ? await env.SYNC_KV.get(CONFIG_KEY) : null; if (raw) stored = JSON.parse(raw); } catch (e) { stored = null; }
   const cfg = sanitizeConfig(stored || {}).config;
   if (!stored) return cfg;
-  if (cfg.menu && cfg.menu.rulesV >= MENU_RULES_V) return upgradeFaqKeywords(upgradeToolsMenu(cfg));
+  if (cfg.menu && cfg.menu.rulesV >= MENU_RULES_V) return upgradeTimeNoteMenu(upgradeFaqKeywords(upgradeToolsMenu(cfg)));
   // V10.3 以前存下來的設定：選單和關鍵字跟當時的預設一模一樣（沒被改過）→ 直接換成新版預設；改過的 → 原樣保留（不偷偷覆蓋），後台會提示可以一鍵套用
   const legacy = sanitizeConfig(legacyDefaultLineConfigV103()).config;
   if (menuSignature(cfg) === menuSignature(legacy)) {
     const nd = defaultLineConfig();
-    return upgradeFaqKeywords(sanitizeConfig(Object.assign({}, stored, { mainMenus: nd.mainMenus, subMenus: nd.subMenus, keywords: nd.keywords, menu: nd.menu })).config);
+    return upgradeTimeNoteMenu(upgradeFaqKeywords(sanitizeConfig(Object.assign({}, stored, { mainMenus: nd.mainMenus, subMenus: nd.subMenus, keywords: nd.keywords, menu: nd.menu })).config));
   }
-  return upgradeFaqKeywords(cfg);
+  return upgradeTimeNoteMenu(upgradeFaqKeywords(cfg));
 }
 // 只比會影響行為的欄位（不比 id、說明文字）
 function menuSignature(c) {
@@ -4078,6 +4092,7 @@ async function handleExpenseMessage(ev, token, env) {
 // 會回handled:false，一樣正常往下走原來六種判斷，不影響正確性。
 // =================================================================
 const CALNOTE_TRIGGER_PATTERNS = [
+  /^時光筆記$/,
   /^待辦選單$/,
   /^行事曆選單$/,
   /^記事選單$/,
@@ -4193,6 +4208,7 @@ async function handleCalnoteForward(ev, token, env) {
   const text = ev.message.text;
     let res;
     if (!looksLikeCalnoteCommand(text, ev)) return false;
+      const forwardText = /^時光筆記$/.test(text.trim()) ? '待辦選單' : text;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4000); // calnote如果掛了或很慢，最多等4秒就放棄，不拖累使用者原本六個功能的回覆
@@ -4200,7 +4216,7 @@ async function handleCalnoteForward(ev, token, env) {
       res = await fetch(base.replace(/\/+$/, '') + '/internal/dispatch', {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-internal-secret': secret },
-        body: JSON.stringify({ text, source: ev.source, mention: ev.message.mention }),
+        body: JSON.stringify({ text: forwardText, source: ev.source, mention: ev.message.mention }),
         signal: controller.signal,
       });
     } finally {
