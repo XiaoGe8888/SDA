@@ -32,7 +32,7 @@ function json(obj, status = 200) {
 }
 function checkToken(request, env) {
   const appToken = env.APP_TOKEN || '';
-  if (!appToken) return true;
+  if (!appToken) const cmdMatch = looksLikeCalnoteCommand
   return (request.headers.get('x-app-token') || '') === appToken;
 }
 
@@ -4191,24 +4191,8 @@ async function handleCalnoteForward(ev, token, env) {
   if (!base || !secret) return false;
   if (!ev.message || typeof ev.message.text !== 'string') return false;
   const text = ev.message.text;
-  const cmdMatch = looksLikeCalnoteCommand(text, ev);
-  let dbgMsg = '除錯2 cmdMatch=' + cmdMatch;
-  if (cmdMatch) {
-    try {
-      const r = await fetch(base.replace(/\/+$/, '') + '/internal/dispatch', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-internal-secret': secret },
-        body: JSON.stringify({ text, source: ev.source, mention: ev.message.mention }),
-      });
-      const bodyText = await r.text();
-      dbgMsg += ' / status=' + r.status + ' / body=' + bodyText.slice(0, 300);
-    } catch (e) {
-      dbgMsg += ' / fetchErr=' + (e && e.message);
-    }
-  }
-  try { await lineReply(token, ev.replyToken, dbgMsg); } catch (e) {}
-  return true;
-  let res;
+    let res;
+    if (!looksLikeCalnoteCommand(text, ev)) return false;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4000); // calnote如果掛了或很慢，最多等4秒就放棄，不拖累使用者原本六個功能的回覆
