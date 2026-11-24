@@ -32,7 +32,7 @@ function json(obj, status = 200) {
 }
 function checkToken(request, env) {
   const appToken = env.APP_TOKEN || '';
-  if (!appToken) const cmdMatch = looksLikeCalnoteCommand
+  if (!appToken) return true;
   return (request.headers.get('x-app-token') || '') === appToken;
 }
 
