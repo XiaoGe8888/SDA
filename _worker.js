@@ -4224,14 +4224,19 @@ async function handleCalnoteForward(ev, token, env) {
     }
   } catch (e) {
     console.log('calnote 轉送失敗（連不上或逾時），交回原本的指令判斷', e && e.message);
+        try { await lineReply(token, ev.replyToken, '除錯3 fetchErr=' + (e && e.message)); } catch (e2) {}
     return false;
   }
-  if (!res || !res.ok) return false;
-
+  if (!res || !res.ok) {
+    try { await lineReply(token, ev.replyToken, '除錯3 status=' + (res && res.status)); } catch (e) {}
+    return false;
+  }
   let data;
   try { data = await res.json(); } catch (e) { return false; }
-  if (!data || data.handled !== true || !Array.isArray(data.reply) || !data.reply.length) return false;
-
+  if (!data || data.handled !== true || !Array.isArray(data.reply) || !data.reply.length) {
+    try { await lineReply(token, ev.replyToken, '除錯3 data=' + JSON.stringify(data).slice(0, 300)); } catch (e) {}
+    return false;
+  }
   await lineReplyMessages(token, ev.replyToken, data.reply); // 轉送成功後的回覆萬一失敗，交給外層既有的 catch 統一處理（跟其他既有handler一致，不另外吞掉）
   return true;
 }
