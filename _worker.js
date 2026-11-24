@@ -4194,6 +4194,23 @@ function looksLikeCalnoteCommand(text, ev) {
  * 不會讓使用者收不到回覆或讓整個訊息處理卡住。
  */
 async function handleCalnoteForward(ev, token, env) {
+  // 時光筆記：按下「時光筆記」不直接轉給 calnote，先列出底下 5 個模組讓使用者選，點了再送出對應文字（跟打字效果一樣，會被 handleCalnoteForward 轉送出去）
+function timeNoteModuleBubble() {
+  const mods = [
+    { emoji: '📝', name: '待辦選單' },
+    { emoji: '📅', name: '行事曆選單' },
+    { emoji: '🗒️', name: '記事選單' },
+    { emoji: '⏳', name: '倒數日選單' },
+    { emoji: '🧮', name: '日期計算選單' },
+  ];
+  const buttons = mods.map((m) => iconButton(m.emoji + ' ' + m.name, m.name, 'secondary'));
+  const body = [
+    iconRow({ type: 'text', text: '⏰ 時光筆記', weight: 'bold', size: 'xl', color: '#5c4b37', wrap: true }),
+    { type: 'text', text: '請選擇要使用的模組：', size: 'xs', color: '#8b8b8b', wrap: true, margin: 'sm' },
+    { type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: buttons },
+  ];
+  return { type: 'flex', altText: '時光筆記：請選擇 待辦選單／行事曆選單／記事選單／倒數日選單／日期計算選單', contents: { type: 'bubble', body: { type: 'box', layout: 'vertical', contents: body } } };
+}
     try {
       const dbgText = ev.message && typeof ev.message.text === 'string' ? ev.message.text : null;
       if (false && dbgText !== null) {
@@ -4206,9 +4223,12 @@ async function handleCalnoteForward(ev, token, env) {
   if (!base || !secret) return false;
   if (!ev.message || typeof ev.message.text !== 'string') return false;
   const text = ev.message.text;
+      if (text.trim() === '時光筆記') {
+      await lineReplyCards(token, ev.replyToken, [timeNoteModuleBubble()], '時光筆記：請輸入 待辦選單／行事曆選單／記事選單／倒數日選單／日期計算選單 其中一個');
+      return true;
+    }
     let res;
     if (!looksLikeCalnoteCommand(text, ev)) return false;
-      const forwardText = /^時光筆記$/.test(text.trim()) ? '待辦選單' : text;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4000); // calnote如果掛了或很慢，最多等4秒就放棄，不拖累使用者原本六個功能的回覆
@@ -4216,7 +4236,7 @@ async function handleCalnoteForward(ev, token, env) {
       res = await fetch(base.replace(/\/+$/, '') + '/internal/dispatch', {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-internal-secret': secret },
-        body: JSON.stringify({ text: forwardText, source: ev.source, mention: ev.message.mention }),
+        body: JSON.stringify({ text,source: ev.source, mention: ev.message.mention }),
         signal: controller.signal,
       });
     } finally {
