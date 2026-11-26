@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>時光筆記｜日常小秘書</title>
+<style>
+/* 這一頁刻意「自給自足」：不載入任何外部字型/圖示，也不用index.html的程式，單獨打開也能用。
+   這一頁本身不存任何資料——所有待辦/行事曆/記事/倒數日資料都存在 calnote（時光筆記的後端），
+   這裡只是把你打的字／按的按鈕，原封不動送到跟LINE共用的同一套大腦，再把回覆畫成網頁卡片。
+   需要同步碼（跟App「雲端同步」設定的是同一組），用來讓伺服器知道要接到你綁定的哪個LINE身分。 */
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+:root{
+  --bg:#fcfaf7;--sur:#fff;--bdr:#e5e7eb;--bd:#5c4b37;--br:#8b7355;--amb:#d4a373;--crm:#f5ede4;
+  --t:#5c4b37;--t5:#6b7280;--warn:#b91c1c;--warn-bg:#fef2f2;--warn-bdr:#fecaca;
+  --ok:#15803d;--ok-bg:#f0fdf4;--ok-bdr:#bbf7d0;--note:#92400e;--note-bg:#fffbeb;--note-bdr:#fde68a;
+  --bub-me:#8b7355;--bub-me-t:#fff;
+}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;min-height:100vh;display:flex;flex-direction:column}
+button,input,select,textarea{font:inherit;color:inherit}
+button{touch-action:manipulation;cursor:pointer}
+a{color:var(--br)}
+
+#topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--bdr);padding:12px 14px calc(10px + env(safe-area-inset-top,0px)) 14px;padding-top:max(12px,env(safe-area-inset-top,0px))}
+.tb-title{display:flex;align-items:center;gap:8px;font-family:"Noto Serif TC",serif;font-weight:800;color:var(--bd);font-size:17px}
+.tb-sub{font-size:11.5px;color:var(--t5);margin-top:2px}
+
+.tabbar{display:flex;gap:6px;overflow-x:auto;padding:10px 12px 0;scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tabbtn{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:8px 13px;border-radius:999px;border:1px solid var(--bdr);background:var(--sur);color:var(--t);font-size:13px;font-weight:700;white-space:nowrap}
+.tabbtn.active{background:var(--bd);border-color:var(--bd);color:#fff}
+
+#content{flex:1;display:flex;flex-direction:column;max-width:640px;margin:0 auto;width:100%;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px));min-width:0}
+.panel{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+
+.menuSlot{min-width:0}
+.feed{display:flex;flex-direction:column;gap:10px;min-height:40px}
+.feed:empty::before{content:'';}
+
+.row-me{display:flex;justify-content:flex-end}
+.bub-me{background:var(--bub-me);color:var(--bub-me-t);border-radius:14px 14px 3px 14px;padding:9px 13px;max-width:82%;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+.row-reply{display:flex;flex-direction:column;gap:6px;min-width:0}
+.plaintext{background:var(--sur);border:1px solid var(--bdr);border-radius:3px 14px 14px 14px;padding:10px 13px;max-width:92%;font-size:13.5px;white-space:pre-wrap;word-break:break-word;align-self:flex-start}
+.sysnote{font-size:12px;color:var(--t5);background:var(--crm);border-radius:10px;padding:7px 11px;align-self:flex-start}
+.errnote{font-size:12.5px;color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn-bdr);border-radius:10px;padding:8px 11px;align-self:flex-start;max-width:92%}
+
+/* ===== Flex 卡片渲染（bubble / carousel / box / text / image） ===== */
+.carowrap{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}
+.carowrap::-webkit-scrollbar{display:none}
+.carowrap>.fx-bubble{flex:0 0 240px;scroll-snap-align:start}
+.fx-bubble{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;max-width:300px}
+.fx-sec{padding:10px 12px}
+.fx-sec+.fx-sec{border-top:1px solid #f1ece5}
+.fx-box{display:flex;min-width:0}
+.fx-box.lay-vertical{flex-direction:column}
+.fx-box.lay-horizontal{flex-direction:row;align-items:center}
+.fx-box.lay-baseline{flex-direction:row;align-items:baseline}
+.fx-actionable{cursor:pointer;transition:opacity .12s}
+.fx-actionable:active{opacity:.6}
+.fx-text{min-width:0}
+.fx-text.wrap{white-space:pre-wrap;word-break:break-word}
+.fx-text.nowrap{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx-img{display:block;object-fit:contain;flex:0 0 auto}
+.fx-sep{border:none;border-top:1px solid var(--bdr);flex:0 0 auto}
+.fx-inert{opacity:.55;font-size:12px;padding:4px 0}
+
+.inputwrap{position:sticky;bottom:0;background:var(--bg);padding-top:8px;display:flex;flex-direction:column;gap:6px;margin-top:auto}
+.inputrow{display:flex;gap:8px;align-items:flex-end}
+.cmdbox{flex:1;min-width:0;border:1px solid var(--bdr);border-radius:13px;padding:10px 12px;background:#fff;font-size:15px;resize:none;max-height:120px;min-height:44px}
+.sendbtn{flex:0 0 auto;background:var(--br);color:#fff;border:none;border-radius:13px;min-width:56px;min-height:44px;font-weight:800;font-size:14px}
+.sendbtn:disabled{opacity:.5}
+.hint{font-size:11px;color:var(--t5);padding:0 2px}
+.refreshbtn{align-self:flex-start;border:1px solid var(--bdr);background:var(--sur);color:var(--t5);font-size:11.5px;padding:5px 10px;border-radius:999px;margin-bottom:2px}
+
+.loading{display:flex;align-items:center;gap:8px;color:var(--t5);font-size:12.5px;padding:8px 2px}
+.spin{width:13px;height:13px;border-radius:50%;border:2px solid var(--bdr);border-top-color:var(--br);animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="tb-title">⏰ 時光筆記</div>
+  <div class="tb-sub">待辦事項・行事曆・記事本・倒數日・日期計算——跟LINE是同一份資料</div>
+  <div class="tabbar" id="tabbar"></div>
+</div>
+
+<div id="content"></div>
+
+<script>
+'use strict';
+
+// ===== 模組定義：id、分頁顯示文字、對應 calnote 的「選單」觸發字、指令範例（給輸入框placeholder用）=====
+var MODULES = [
+  { id:'todo',      label:'📝 待辦',   menu:'待辦選單',     placeholder:'例如：待辦 2026-12-25 14:00 買聖誕禮物 / 查詢待辦' },
+  { id:'event',     label:'📅 行事曆', menu:'行事曆選單',   placeholder:'例如：2026-12-25 14:00 公司尾牙 / 本週行程' },
+  { id:'note',      label:'🗒️ 記事',  menu:'記事選單',     placeholder:'例如：記事 密碼忘記找IT部 / 查詢記事' },
+  { id:'countdown', label:'⏳ 倒數日', menu:'倒數日選單',   placeholder:'例如：倒數日 2027-02-14 情人節 / 查詢倒數日' },
+  { id:'datecalc',  label:'🧮 日期計算', menu:'日期計算選單', placeholder:'例如：計算 2026-01-01 到 2026-12-31 中間幾天' },
+];
+
+var curTab = MODULES[0].id;
+var loadedOnce = {}; // 每個分頁第一次打開才自動送出選單指令，之後切換分頁不重送（避免每次切換都重打一次API）
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ===== 分頁列 + 內容骨架 =====
+function buildChrome(){
+  var tb = $('tabbar');
+  tb.innerHTML = MODULES.map(function(m){
+    return '<button class="tabbtn' + (m.id===curTab?' active':'') + '" data-tab="' + m.id + '">' + m.label + '</button>';
+  }).join('');
+  tb.querySelectorAll('.tabbtn').forEach(function(btn){
+    btn.addEventListener('click', function(){ switchTab(btn.getAttribute('data-tab')); });
+  });
+
+  var c = $('content');
+  c.innerHTML = MODULES.map(function(m){
+    return '<div class="panel" id="panel-' + m.id + '" ' + (m.id===curTab?'':'hidden') + '>'
+      + '<div class="menuSlot" id="menuSlot-' + m.id + '"></div>'
+      + '<div class="feed" id="feed-' + m.id + '"></div>'
+      + '<div class="inputwrap">'
+      +   '<div class="inputrow">'
+      +     '<textarea class="cmdbox" id="cmd-' + m.id + '" rows="1" placeholder="' + esc(m.placeholder) + '"></textarea>'
+      +     '<button class="sendbtn" id="send-' + m.id + '">送出</button>'
+      +   '</div>'
+      +   '<div class="hint">可以直接點上面卡片的按鈕，或在這裡打指令送出（Ctrl/Cmd+Enter 送出，Enter 換行）</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  MODULES.forEach(function(m){
+    var box = $('cmd-' + m.id), btn = $('send-' + m.id);
+    btn.addEventListener('click', function(){ submitFromBox(m.id); });
+    box.addEventListener('keydown', function(e){
+      if ((e.key === 'Enter') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submitFromBox(m.id); }
+    });
+    box.addEventListener('input', function(){
+      box.style.height = 'auto';
+      box.style.height = Math.min(box.scrollHeight, 120) + 'px';
+    });
+  });
+}
+
+function submitFromBox(tabId){
+  var box = $('cmd-' + tabId);
+  var text = box.value.trim();
+  if (!text) return;
+  box.value = ''; box.style.height = 'auto';
+  sendCommand(tabId, text);
+}
+
+function switchTab(id){
+  if (id === curTab) return;
+  $('panel-' + curTab).hidden = true;
+  curTab = id;
+  $('panel-' + curTab).hidden = false;
+  document.querySelectorAll('.tabbtn').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-tab') === curTab);
+  });
+  ensureMenuLoaded(curTab);
+}
+
+function ensureMenuLoaded(tabId){
+  if (loadedOnce[tabId]) return;
+  loadedOnce[tabId] = true;
+  var mod = MODULES.filter(function(m){ return m.id === tabId; })[0];
+  var slot = $('menuSlot-' + tabId);
+  slot.innerHTML = '<div class="loading"><div class="spin"></div>讀取' + esc(mod.label.replace(/^\S+\s*/,'')) + '選單…</div>';
+  sendCommandSilent(mod.menu).then(function(result){
+    slot.innerHTML = '';
+    if (result.reply) result.reply.forEach(function(msg){ slot.appendChild(renderLineMessage(msg, tabId)); });
+    var refresh = document.createElement('button');
+    refresh.className = 'refreshbtn';
+    refresh.textContent = '🔄 重新整理選單';
+    refresh.addEventListener('click', function(){ loadedOnce[tabId] = false; slot.innerHTML=''; ensureMenuLoaded(tabId); });
+    slot.appendChild(refresh);
+  });
+}
+
+// ===== 送指令：有畫面回饋版本（使用者自己打字/點按鈕時用）=====
+function sendCommand(tabId, text){
+  var feed = $('feed-' + tabId);
+  var meRow = document.createElement('div');
+  meRow.className = 'row-me';
+  var bub = document.createElement('div');
+  bub.className = 'bub-me';
+  bub.textContent = text;
+  meRow.appendChild(bub);
+  feed.appendChild(meRow);
+
+  var loadingRow = document.createElement('div');
+  loadingRow.className = 'loading';
+  loadingRow.innerHTML = '<div class="spin"></div>處理中…';
+  feed.appendChild(loadingRow);
+  loadingRow.scrollIntoView({ block:'nearest', behavior:'smooth' });
+
+  return callApi(text).then(function(result){
+    loadingRow.remove();
+    var replyRow = document.createElement('div');
+    replyRow.className = 'row-reply';
+    (result.reply || []).forEach(function(msg){ replyRow.appendChild(renderLineMessage(msg, tabId)); });
+    feed.appendChild(replyRow);
+    replyRow.scrollIntoView({ block:'nearest', behavior:'smooth' });
+  });
+}
+
+// ===== 送指令：安靜版本（分頁初次自動載入選單時用，不往聊天紀錄裡加「你：XX選單」那一行）=====
+function sendCommandSilent(text){
+  return callApi(text);
+}
+
+function callApi(text){
+  var code = '';
+  try { code = localStorage.getItem('sync_code') || ''; } catch (e) {}
+  return fetch('/api/calnote', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code, text: text }),
+  }).then(function(res){ return res.json(); })
+    .catch(function(){ return { ok:false, reply:[{ type:'text', text:'連線失敗，請檢查網路後再試一次。' }] }; });
+}
+
+// ===================================================================
+// ===== LINE 訊息 → 網頁 HTML 渲染器 =====
+// 只支援 calnote 實際用到的訊息/元件/動作種類（text／flex(bubble／carousel)／
+// box／text／image／message action／postback(displayText 或 fillInText)／
+// template(confirm)）。遇到沒看過的型別一律安全略過，不會整個壞掉。
+// ===================================================================
+function renderLineMessage(msg, tabId){
+  if (!msg || typeof msg !== 'object') return document.createElement('div');
+  if (msg.type === 'text') {
+    var d = document.createElement('div');
+    d.className = 'plaintext';
+    d.textContent = msg.text || '';
+    return d;
+  }
+  if (msg.type === 'flex') {
+    return renderFlexRoot(msg.contents, tabId);
+  }
+  if (msg.type === 'template' && msg.template && msg.template.type === 'confirm') {
+    var wrap = document.createElement('div');
+    var txt = document.createElement('div');
+    txt.className = 'plaintext';
+    txt.textContent = msg.template.text || '';
+    wrap.appendChild(txt);
+    var note = document.createElement('div');
+    note.className = 'fx-inert';
+    note.textContent = '（這個操作需要二次確認，請在 LINE 對話裡完成確認）';
+    wrap.appendChild(note);
+    return wrap;
+  }
+  var fallback = document.createElement('div');
+  fallback.className = 'sysnote';
+  fallback.textContent = '（有一則訊息的格式目前還不支援在網頁上顯示）';
+  return fallback;
+}
+
+function renderFlexRoot(contents, tabId){
+  if (!contents) return document.createElement('div');
+  if (contents.type === 'carousel') {
+    var row = document.createElement('div');
+    row.className = 'carowrap';
+    (contents.contents || []).forEach(function(b){ row.appendChild(renderBubble(b, tabId)); });
+    return row;
+  }
+  if (contents.type === 'bubble') return renderBubble(contents, tabId);
+  return document.createElement('div');
+}
+
+function renderBubble(bubble, tabId){
+  var card = document.createElement('div');
+  card.className = 'fx-bubble';
+  ['header','hero','body','footer'].forEach(function(k){
+    if (!bubble[k]) return;
+    var sec = document.createElement('div');
+    sec.className = 'fx-sec';
+    sec.appendChild(renderFlexComponent(bubble[k], tabId));
+    card.appendChild(sec);
+  });
+  return card;
+}
+
+var FX_SIZE_PX = { xxs:'10px', xs:'11px', sm:'12.5px', md:'14px', lg:'16px', xl:'18px', xxl:'20px', '3xl':'24px', '4xl':'28px', '5xl':'32px' };
+
+function renderFlexComponent(node, tabId){
+  if (!node || typeof node !== 'object') return document.createElement('span');
+
+  if (node.type === 'box') {
+    var el = document.createElement('div');
+    el.className = 'fx-box lay-' + (node.layout || 'vertical');
+    if (node.spacing) el.style.gap = node.spacing === 'xs' ? '4px' : node.spacing === 'sm' ? '7px' : node.spacing === 'md' ? '11px' : node.spacing === 'lg' ? '16px' : '20px';
+    if (node.paddingAll) el.style.padding = node.paddingAll;
+    if (node.backgroundColor) el.style.background = node.backgroundColor;
+    if (node.borderColor) el.style.borderColor = node.borderColor;
+    if (node.borderWidth) el.style.borderStyle = 'solid', el.style.borderWidth = node.borderWidth;
+    if (node.cornerRadius) el.style.borderRadius = node.cornerRadius === 'md' ? '10px' : node.cornerRadius === 'lg' ? '14px' : node.cornerRadius;
+    if (node.alignItems) el.style.alignItems = node.alignItems === 'center' ? 'center' : node.alignItems;
+    if (node.justifyContent) el.style.justifyContent = node.justifyContent === 'center' ? 'center' : node.justifyContent;
+    if (typeof node.flex === 'number') el.style.flex = node.flex === 0 ? '0 0 auto' : String(node.flex);
+    (node.contents || []).forEach(function(child){ el.appendChild(renderFlexComponent(child, tabId)); });
+    wireAction(el, node.action, tabId);
+    return el;
+  }
+
+  if (node.type === 'text') {
+    var t = document.createElement(node.contents ? 'div' : 'span');
+    t.className = 'fx-text ' + (node.wrap ? 'wrap' : 'nowrap');
+    t.textContent = node.text || '';
+    if (node.weight === 'bold') t.style.fontWeight = '800';
+    if (node.size) t.style.fontSize = FX_SIZE_PX[node.size] || node.size;
+    if (node.color) t.style.color = node.color;
+    if (typeof node.flex === 'number') t.style.flex = node.flex === 0 ? '0 0 auto' : String(node.flex);
+    wireAction(t, node.action, tabId);
+    return t;
+  }
+
+  if (node.type === 'image') {
+    var img = document.createElement('img');
+    img.className = 'fx-img';
+    img.src = node.url || '';
+    img.alt = '';
+    if (node.size) { img.style.width = node.size; img.style.height = node.size; }
+    wireAction(img, node.action, tabId);
+    return img;
+  }
+
+  if (node.type === 'separator') {
+    var hr = document.createElement('hr');
+    hr.className = 'fx-sep';
+    return hr;
+  }
+
+  // 其餘沒遇過的元件型別（span/filler/icon/video…）：安全略過，回空節點，不讓整張卡片壞掉
+  return document.createElement('span');
+}
+
+// 把一個 Flex 節點的 action 轉成實際可以送出的行為：
+//  · message action → 直接送出 action.text
+//  · postback + displayText（有「看起來像打了這行字」的版本）→ 送出 displayText
+//  · postback + fillInText（像「新增待辦」這種只是預填文字、要使用者自己打完的按鈕）→ 填進輸入框、不送出
+//  · postback 兩者都沒有（calnote內部用的opaque token，例如刪除二次確認的「是/否」）→ 無法安全轉譯，不綁定點擊
+//  · uri → 另開新分頁
+function wireAction(el, action, tabId){
+  if (!action) return;
+  if (action.type === 'message' && action.text) {
+    el.classList.add('fx-actionable');
+    el.addEventListener('click', function(){ sendCommand(tabId, action.text); });
+    return;
+  }
+  if (action.type === 'postback') {
+    if (action.inputOption === 'openKeyboard' && action.fillInText) {
+      el.classList.add('fx-actionable');
+      el.addEventListener('click', function(){
+        var box = $('cmd-' + tabId);
+        box.value = action.fillInText;
+        box.focus();
+        box.selectionStart = box.selectionEnd = box.value.length;
+        box.dispatchEvent(new Event('input'));
+      });
+      return;
+    }
+    if (action.displayText) {
+      el.classList.add('fx-actionable');
+      el.addEventListener('click', function(){ sendCommand(tabId, action.displayText); });
+      return;
+    }
+    return; // opaque postback，無法安全轉譯成文字指令，維持不可點擊
+  }
+  if (action.type === 'uri' && action.uri) {
+    el.classList.add('fx-actionable');
+    el.addEventListener('click', function(){ window.open(action.uri, '_blank', 'noopener'); });
+  }
+}
+
+// ===== 啟動 =====
+buildChrome();
+ensureMenuLoaded(curTab);
+</script>
+</body>
+</html>
