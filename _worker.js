@@ -3997,6 +3997,7 @@ async function handleExpenseMessage(ev, token, env) {
       }
     } catch (e) {}
     await kv.put('line:usersync:' + userId, code);
+        await kv.put('line:codesync:' + code, userId); // 反向索引（code→userId）：給網頁版時光筆記橋接用，查「這組同步碼背後是哪個LINE使用者」
     const summary = codeExists
       ? ('這組碼目前有：🧋飲料 ' + drinkCount + ' 筆・🍱美食 ' + mealCount + ' 筆・🚆交通 ' + travelCount + ' 筆\n如果數字跟你App裡看到的對不起來，代表可能打錯碼了，可以重新傳一次「同步碼 正確的碼」覆蓋。')
       : '⚠️ 這組碼目前雲端還查不到資料（可能是還沒同步過，或是打錯了）。如果是新帳號還沒同步過，這是正常的；如果你App裡明明有資料，麻煩再檢查一次同步碼有沒有打對。';
@@ -4260,7 +4261,63 @@ function timeNoteModuleBubble() {
   await lineReplyMessages(token, ev.replyToken, data.reply); // 轉送成功後的回覆萬一失敗，交給外層既有的 catch 統一處理（跟其他既有handler一致，不另外吞掉）
   return true;
 }
-async function handleLine(request, env, ctx) {
+// ---------- /api/calnote：給網頁版「時光筆記」用的橋接端點 ----------
+// 跟上面 handleCalnoteForward（LINE那條路）做一樣的事——把文字轉送給 calnote 的
+// /internal/dispatch——差別只在「使用者是誰」：LINE那邊是從LINE事件的
+// ev.source直接拿userId；網頁不知道LINE userId，只知道使用者在App設定過的
+// 同步碼，所以先查 line:codesync:<code> 反查出綁定時存的userId（綁定同步碼
+// 時，上面已經順手多存一份這個反向索引）；查不到（還沒綁過、或是這次上線
+// 前就綁的舊資料，還沒有反向索引）就請使用者去LINE重新傳一次「同步碼」。
+// 回傳一律是 {ok, reply}（reply是LINE訊息陣列，文字或flex卡片都有可能），
+// 不管成功失敗都包成同一種形狀，方便網頁端用同一套渲染器顯示，不用分支判斷。
+async function handleCalnoteWeb(request, env) {
+  if (request.method === 'OPTIONS') return withCORS(new Response(null, { status: 204 }));
+  if (!checkToken(request, env)) return withCORS(json({ error: 'unauthorized' }, 401));
+  if (request.method !== 'POST') return withCORS(json({ error: 'method not allowed' }, 405));
+
+  let body;
+  try { body = await request.json(); } catch (e) { return withCORS(json({ error: 'invalid JSON body' }, 400)); }
+  const code = String((body && body.code) || '').trim().toUpperCase();
+  const text = String((body && body.text) || '').trim();
+  const friendly = (t) => withCORS(json({ ok: false, reply: [{ type: 'text', text: t }] }));
+  if (!code) return friendly('缺少同步碼，請先到「雲端同步」設定好同步碼再使用時光筆記。');
+  if (!text) return friendly('請輸入或選擇一個指令。');
+
+  const base = env.CALNOTE_WORKER_URL;
+  const secret = env.CALNOTE_INTERNAL_SECRET;
+  if (!base || !secret) return friendly('伺服器還沒設定時光筆記的連線資訊，請聯絡管理員。');
+
+  const kv = env.SYNC_KV;
+  if (!kv) return friendly('伺服器目前沒有連接資料庫，請稍後再試。');
+  let userId;
+  try { userId = await kv.get('line:codesync:' + code); } catch (e) { userId = null; }
+  if (!userId) return friendly('這組同步碼還沒連結 LINE 身分，請先在 LINE 對機器人重新傳一次「同步碼 ' + code + '」綁定一次（只要綁定一次之後，網頁版時光筆記就能正常使用）。');
+
+  let res;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000); // calnote如果掛了或很慢，最多等4秒就放棄，不讓網頁一直轉圈
+    try {
+      res = await fetch(base.replace(/\/+$/, '') + '/internal/dispatch', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-internal-secret': secret },
+        body: JSON.stringify({ text, source: { type: 'user', userId }, mention: null }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e) {
+    return friendly('暫時連不上時光筆記的伺服器，請稍後再試一次。');
+  }
+  if (!res || !res.ok) return friendly('時光筆記伺服器回應異常（狀態碼 ' + (res && res.status) + '），請稍後再試。');
+  let data;
+  try { data = await res.json(); } catch (e) { return friendly('時光筆記伺服器回應的內容讀不懂，請稍後再試。'); }
+  if (!data || data.handled !== true || !Array.isArray(data.reply) || !data.reply.length) {
+    return friendly('我沒有看懂這個指令格式，可以試試快速按鈕，或確認輸入格式是否正確。');
+  }
+  return withCORS(json({ ok: true, reply: data.reply }));
+}async function handleLine(request, env, ctx) {
   // LINE 的 webhook 只會用 POST。用瀏覽器直接開會是 GET，回個 OK 方便測試。
   if (request.method !== 'POST') return new Response('LINE webhook OK');
 
@@ -7474,6 +7531,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/api/gemini') return handleGemini(request, env);
     if (url.pathname === '/api/sync') return handleSync(request, env);
+    if (url.pathname === '/api/calnote') return handleCalnoteWeb(request, env);
     if (url.pathname === '/api/health') return handleHealth(request, env);
     if (url.pathname === '/api/line') return handleLine(request, env, ctx);
     if (url.pathname.indexOf('/api/line-config') === 0) return handleLineConfigApi(request, env);
