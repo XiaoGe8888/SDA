@@ -5807,6 +5807,7 @@ registerMenuItem({id:'split',label:'分帳',icon:'🧾',placement:'daily',builti
 registerMenuItem({id:'sticker',label:'集點卡',icon:'🌟',placement:'daily',builtin:true,open:function(){openStickerCard();}});
 registerMenuItem({id:'wish',label:'待去清單',icon:'🗺️',placement:'daily',builtin:true,open:function(){openWishlist();}});
 registerMenuItem({id:'collect',label:'收集整理',icon:'🗂️',open:function(){openCollect();}}); // 新頁面：不給 placement／builtin，照預設規則先只出現在「日常小秘書」、並標示🆕新頁面，由你之後用「選單設定」決定要不要放進日常紀錄
+  registerMenuItem({id:'timenote',label:'時光筆記',icon:'⏰',open:function(){openTimenote();}}); // 新頁面：待辦/行事曆/記事本/倒數日/日期計算，資料存在calnote（跟LINE「時光筆記」共用），這裡只是多一種看／用的方式
 registerMenuItem({id:'overview',label:'全館總覽',icon:'📊',placement:'single',noDaily:true,block:true,builtin:true,open:function(){homeSetView('overview');}});
 registerMenuItem({id:'settings',label:'設定',icon:'⚙️',placement:'single',locked:true,builtin:true,open:function(){homeSetView('settings');}});
 registerMenuItem({id:'sync',label:'雲端同步',icon:'☁️',placement:'single',builtin:true,open:function(){openSyncSheet();}});
@@ -7495,6 +7496,26 @@ function openCollect(){
 }
 function closeCollect(){
   const m=document.getElementById('collect-modal');
+  if(m)m.remove();
+  document.body.style.overflow='';
+  if(currentModule===null&&typeof renderHome==='function')renderHome();
+}
+  function openTimenote(){
+  const old=document.getElementById('timenote-modal');
+  if(old)old.remove();
+  const m=document.createElement('div');
+  m.id='timenote-modal';
+  m.style.cssText='position:fixed;inset:0;z-index:9000;background:var(--bg);display:flex;flex-direction:column';
+  m.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top,0px));background:var(--sur);border-bottom:1px solid var(--bdr)">'
+    +'<button onclick="closeTimenote()" style="border:1px solid var(--bdr);background:var(--bg);color:var(--br);font-family:inherit;font-size:13px;font-weight:900;padding:7px 12px;border-radius:10px;cursor:pointer;touch-action:manipulation">← 日常小秘書</button>'
+    +'<a href="/timenote.html" target="_blank" rel="noopener" style="font-size:11px;color:var(--t5);text-decoration:none">↗ 新分頁開啟</a>'
+    +'</div>'
+    +'<iframe id="timenote-frame" src="/timenote.html" title="時光筆記" style="flex:1;width:100%;border:0;background:var(--bg)"></iframe>';
+  document.body.appendChild(m);
+  document.body.style.overflow='hidden';
+}
+function closeTimenote(){
+  const m=document.getElementById('timenote-modal');
   if(m)m.remove();
   document.body.style.overflow='';
   if(currentModule===null&&typeof renderHome==='function')renderHome();
