@@ -1788,6 +1788,13 @@ async function syncFetchRemote(code){
 }
 async function syncPull(){
   if(!syncEnabled || !syncCode || syncInFlight) return;
+  // 修復：這台裝置可能還有「已經存檔、但還沒真的送到雲端」的本機變更（例如剛存檔1.5秒內
+  // 就重新整理或切換分頁回來，原本排隊要上傳的動作被取消了）。這裡先強制把它送出去，
+  // 不然下面抓到的雲端資料會是舊的，會把剛剛的本機變更蓋掉。
+  if(localStorage.getItem('sync_dirty')==='1'){
+    await syncPush();
+    if(localStorage.getItem('sync_dirty')==='1') return; // 剛剛那次上傳沒有成功（例如沒有網路），本機變更還沒送出去，這次先不要抓雲端資料蓋掉它，之後有機會再自動補送
+  }
   syncInFlight=true; setSyncStatus('同步中…');
   try{
     const data = await syncFetchRemote(syncCode);
@@ -1802,8 +1809,9 @@ async function syncPull(){
   }catch(e){ syncMarkFail(e); }
   finally{ syncInFlight=false; }
 }
-function schedulePush(){ if(!syncEnabled || !syncCode || applyingRemote) return; clearTimeout(syncPushTimer); syncPushTimer=setTimeout(syncPush, 1500); }
+function schedulePush(){ if(!syncEnabled || !syncCode || applyingRemote) return; try{ localStorage.setItem('sync_dirty','1'); }catch(_){} clearTimeout(syncPushTimer); syncPushTimer=setTimeout(syncPush, 1500); }
 async function syncPush(){
+  clearTimeout(syncPushTimer); syncPushTimer=null;
   if(!syncEnabled || !syncCode) return;
   setSyncStatus('同步中…');
   try{
@@ -1814,6 +1822,7 @@ async function syncPush(){
     // 伺服器替我們保留了 LINE 剛寫進來的紀錄（我們這份資料還沒有它們）：先不前進「已同步的版本」，下次拉取才會拿到，期間每次上傳都會繼續保護它們
     if(rj && rj.updated_at && !(rj.preserved>0)){ try{ localStorage.setItem('sync_base', String(rj.updated_at)); }catch(e){} }
     localStorage.setItem('last_sync', String(Date.now()));
+    try{ localStorage.removeItem('sync_dirty'); }catch(_){} // 修復：確認真的送出成功了，才清掉「還有本機變更沒上傳」的註記
     syncMarkOk();
     setSyncStatus('已同步 · '+fmtSyncTime(Date.now()));
   }catch(e){ syncMarkFail(e); }
