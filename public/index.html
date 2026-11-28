@@ -1827,6 +1827,24 @@ async function syncPush(){
     setSyncStatus('已同步 · '+fmtSyncTime(Date.now()));
   }catch(e){ syncMarkFail(e); }
 }
+function schedulePush(){ if(!syncEnabled || !syncCode || applyingRemote) return; try{ localStorage.setItem('sync_dirty','1'); }catch(_){} clearTimeout(syncPushTimer); syncPushTimer=setTimeout(syncPush, 1500); }
+async function syncPush(){
+  clearTimeout(syncPushTimer); syncPushTimer=null;
+  if(!syncEnabled || !syncCode) return;
+  setSyncStatus('同步中…');
+  try{
+    const body=JSON.stringify({ code:syncCode, data:collectAllData(), updated_at:Date.now(), base:Number(localStorage.getItem('sync_base')||0) });
+    const res=await fetch(SYNC_URL,{ method:'POST', headers:{ 'Content-Type':'application/json', ...aiTokenHeader() }, body });
+    if(!res.ok) throw await syncHttpError('POST',res);
+    let rj=null; try{ rj=await res.json(); }catch(e){}
+    // 伺服器替我們保留了 LINE 剛寫進來的紀錄（我們這份資料還沒有它們）：先不前進「已同步的版本」，下次拉取才會拿到，期間每次上傳都會繼續保護它們
+    if(rj && rj.updated_at && !(rj.preserved>0)){ try{ localStorage.setItem('sync_base', String(rj.updated_at)); }catch(e){} }
+    localStorage.setItem('last_sync', String(Date.now()));
+    try{ localStorage.removeItem('sync_dirty'); }catch(_){} // 修復：確認真的送出成功了，才清掉「還有本機變更沒上傳」的註記
+    syncMarkOk();
+    setSyncStatus('已同步 · '+fmtSyncTime(Date.now()));
+  }catch(e){ syncMarkFail(e); }
+}
 // 自動推送：任何資料變動就排程上傳（套用雲端資料時暫停，避免迴圈）
 (function(){
   const _set = localStorage.setItem.bind(localStorage);
